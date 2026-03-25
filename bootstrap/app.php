@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'track.activity' => \App\Http\Middleware\TrackUserActivity::class,
+            'turnstile' => \App\Http\Middleware\VerifyTurnstile::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -21,16 +21,16 @@ use Illuminate\Support\Facades\Route;
 Route::get('/site.webmanifest', [ManifestController::class, 'show'])->name('manifest');
 
 // Reports Export Route
-Route::get('/reports/export', [\App\Http\Controllers\ReportController::class, 'export'])->name('reports.export');
+// Route::get('/reports/export', [\App\Http\Controllers\ReportController::class, 'export'])->name('reports.export');
 
 // Payment callback route (for gateway redirects)
-Route::get('/payment/callback/{transactionRef}', [\App\Http\Controllers\PaymentController::class, 'callback'])
-    ->name('payment.callback');
+// Route::get('/payment/callback/{transactionRef}', [\App\Http\Controllers\PaymentController::class, 'callback'])
+//     ->name('payment.callback');
 
 // Payment webhook route (for gateway callbacks - no CSRF protection)
-Route::post('/payment/webhook/{gateway}', [\App\Http\Controllers\PaymentWebhookController::class, 'handle'])
-    ->name('payment.webhook')
-    ->withoutMiddleware(['web']);
+// Route::post('/payment/webhook/{gateway}', [\App\Http\Controllers\PaymentWebhookController::class, 'handle'])
+//    ->name('payment.webhook')
+//    ->withoutMiddleware(['web']);
 
 // React App Routes with SEO
 // Language Switcher
@@ -52,14 +52,14 @@ Route::middleware([SetLocaleMiddleware::class])->group(function () {
     Route::get('/forgot-password', [ReactAppController::class, 'home'])->name('forgot-password');
     Route::get('/verify-email', [ReactAppController::class, 'home'])->name('verify-email');
     Route::get('/dashboard', [ReactAppController::class, 'home'])->name('dashboard');
-    Route::get('/org/verify-email/{id}/{hash}', [\App\Http\Controllers\Api\OrganizationAuthController::class, 'verifyEmail'])
-        ->name('org.verify-email');
+    // Route::get('/org/verify-email/{id}/{hash}', [\App\Http\Controllers\Api\OrganizationAuthController::class, 'verifyEmail'])
+    //    ->name('org.verify-email');
 
-    Route::middleware('auth:organization')->group(function () {
-        Route::get('/verification/download/{file}', [\App\Http\Controllers\Api\VerificationController::class, 'downloadDocument'])
-            ->where('file', '.*')
-            ->name('organization.verification.download');
-    });
+    // Route::middleware('auth:organization')->group(function () {
+    //     Route::get('/verification/download/{file}', [\App\Http\Controllers\Api\VerificationController::class, 'downloadDocument'])
+    //         ->where('file', '.*')
+    //         ->name('organization.verification.download');
+    // });
 
     // Catch-all for SPA
     Route::get('/{any?}', [ReactAppController::class, 'home'])->where('any', '^(?!admin|api|site\.webmanifest|storage|lang).*$');

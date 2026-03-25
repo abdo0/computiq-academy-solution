@@ -71,9 +71,32 @@ Route::prefix('v1')->group(function () {
     });
 
     // Contact Form (public)
-    Route::post('/contact', [\App\Http\Controllers\Api\ContactController::class, 'store'])->name('api.v1.contact.store');
+    Route::post('/contact', [\App\Http\Controllers\Api\ContactController::class, 'store'])->name('api.v1.contact.store')->middleware('turnstile');
 
     // Newsletter Subscription (public)
-    Route::post('/subscribe', [\App\Http\Controllers\Api\SubscriberController::class, 'store'])->name('api.v1.subscribe');
+    Route::post('/subscribe', [\App\Http\Controllers\Api\SubscriberController::class, 'store'])->name('api.v1.subscribe')->middleware('turnstile');
+
+    // ========================================================================
+    // User Auth Routes
+    // ========================================================================
+    Route::prefix('user')->group(function () {
+        // Public auth routes
+        Route::post('/login', [\App\Http\Controllers\Api\UserAuthController::class, 'login'])->name('api.v1.user.login');
+        Route::post('/register', [\App\Http\Controllers\Api\UserAuthController::class, 'register'])->name('api.v1.user.register');
+        Route::post('/forgot-password', [\App\Http\Controllers\Api\UserAuthController::class, 'forgotPassword'])->name('api.v1.user.forgot-password');
+        Route::post('/reset-password', [\App\Http\Controllers\Api\UserAuthController::class, 'resetPassword'])->name('api.v1.user.reset-password');
+
+        // Authenticated user routes
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::post('/logout', [\App\Http\Controllers\Api\UserAuthController::class, 'logout'])->name('api.v1.user.logout');
+            Route::get('/profile', [\App\Http\Controllers\Api\UserAuthController::class, 'profile'])->name('api.v1.user.profile');
+            Route::post('/profile', [\App\Http\Controllers\Api\UserAuthController::class, 'updateProfile'])->name('api.v1.user.profile.update');
+            Route::post('/profile/email', [\App\Http\Controllers\Api\UserAuthController::class, 'updateEmail'])->name('api.v1.user.profile.email');
+            Route::post('/profile/email/verify-otp', [\App\Http\Controllers\Api\UserAuthController::class, 'verifyEmailOTP'])->name('api.v1.user.profile.email.verify');
+            Route::post('/profile/password', [\App\Http\Controllers\Api\UserAuthController::class, 'updatePassword'])->name('api.v1.user.profile.password');
+            Route::post('/locale', [\App\Http\Controllers\Api\UserAuthController::class, 'updateLocale'])->name('api.v1.user.locale');
+            Route::get('/dashboard/stats', [\App\Http\Controllers\Api\UserAuthController::class, 'dashboardStats'])->name('api.v1.user.dashboard.stats');
+        });
+    });
 
 });

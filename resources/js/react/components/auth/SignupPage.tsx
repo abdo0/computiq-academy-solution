@@ -9,6 +9,7 @@ import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 import { useTranslation } from '../../contexts/TranslationProvider';
 import AuthLayout from './AuthLayout';
+import Turnstile from '../common/Turnstile';
 
 const SignupPage: React.FC = () => {
     const [name, setName] = useState('');
@@ -16,6 +17,7 @@ const SignupPage: React.FC = () => {
     const [password, setPassword] = useState('');
     const [passwordConfirmation, setPasswordConfirmation] = useState('');
     const [phone, setPhone] = useState('');
+    const [turnstileToken, setTurnstileToken] = useState('');
 
     const [errors, setErrors] = useState<Record<string, string[]>>({});
 
@@ -41,6 +43,7 @@ const SignupPage: React.FC = () => {
             password_confirmation: passwordConfirmation,
             phone,
             locale: language,
+            'cf-turnstile-response': turnstileToken,
         });
 
         if (result.success) {
@@ -56,15 +59,15 @@ const SignupPage: React.FC = () => {
 
     return (
         <AuthLayout 
-            title={__('Auth signup title')} 
-            subtitle={__('Auth signup subtitle')}
+            title={__('Create an account')} 
+            subtitle={__('Join our learning platform today')}
         >
             <form className="space-y-6" onSubmit={handleSubmit}>
                 <div className="space-y-4">
                     {/* Name */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {__('Form name')}
+                            {__('Full name')}
                         </label>
                         <div className="relative">
                             <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none text-gray-400">
@@ -74,7 +77,7 @@ const SignupPage: React.FC = () => {
                                 type="text"
                                 required
                                 className={`block w-full ps-10 pe-3 py-3 border ${getFieldError('name') ? 'border-red-500' : 'border-gray-200 dark:border-gray-600'} bg-gray-50/50 dark:bg-gray-700/50 text-gray-900 dark:text-white rounded-xl focus:ring-brand-500 focus:border-brand-500 focus:bg-white dark:focus:bg-gray-700 outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500`}
-                                placeholder={__('Form name')}
+                                placeholder={__('Full name')}
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                             />
@@ -89,7 +92,7 @@ const SignupPage: React.FC = () => {
 
                     {/* Email */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{__('Form email')}</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{__('Email address')}</label>
                         <div className="relative">
                             <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none text-gray-400">
                                 <Mail size={18} />
@@ -114,7 +117,7 @@ const SignupPage: React.FC = () => {
                     {/* Phone */}
                     <div dir="ltr">
                         <label className={`block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
-                            {__('Form phone')}
+                            {__('Phone number')}
                         </label>
                         <PhoneInput
                             country={'iq'}
@@ -135,7 +138,7 @@ const SignupPage: React.FC = () => {
 
                     {/* Password */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{__('Form password')}</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{__('Password')}</label>
                         <div className="relative">
                             <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none text-gray-400">
                                 <Lock size={18} />
@@ -160,7 +163,7 @@ const SignupPage: React.FC = () => {
 
                     {/* Confirm Password */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{__('Form confirm password')}</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{__('Confirm password')}</label>
                         <div className="relative">
                             <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none text-gray-400">
                                 <Lock size={18} />
@@ -177,6 +180,8 @@ const SignupPage: React.FC = () => {
                     </div>
                 </div>
 
+                <Turnstile onVerify={setTurnstileToken} onExpire={() => setTurnstileToken('')} />
+
                 <button
                     type="submit"
                     disabled={isLoading}
@@ -185,17 +190,17 @@ const SignupPage: React.FC = () => {
                     {isLoading ? (
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
-                        __('Auth signup btn')
+                        __('Create account')
                     )}
                 </button>
 
                 <div className="text-center text-sm text-gray-600 dark:text-gray-400 mt-6 pt-6 border-t border-gray-100 dark:border-gray-700/50">
-                    {__('Auth have account')} {' '}
+                    {__('Already have an account?')} {' '}
                     <AppLink
                         to={'/login'}
                         className="font-bold text-brand-600 hover:text-brand-500 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
                     >
-                        {__('Auth login link')}
+                        {__('Log in')}
                     </AppLink>
                 </div>
             </form>

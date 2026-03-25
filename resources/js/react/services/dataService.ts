@@ -369,10 +369,10 @@ export const dataService = {
 
 // Auth Service for User
 export const userAuthService = {
-    login: async (email: string, password: string, remember: boolean = false): Promise<{ success: boolean; user?: any; error?: string }> => {
+    login: async (email: string, password: string, remember: boolean = false, turnstileToken?: string): Promise<{ success: boolean; user?: any; error?: string; requires2FA?: boolean }> => {
         try {
             await initializeCsrf();
-            const response = await api.post('/user/login', { email, password, remember });
+            const response = await api.post('/user/login', { email, password, remember, 'cf-turnstile-response': turnstileToken });
 
             // Our API wraps payload in `data`, with user under `data.user`
             const user = response.data?.data?.user || response.data?.user;
@@ -386,7 +386,7 @@ export const userAuthService = {
         }
     },
 
-    register: async (data: { name: string; email: string; password: string; password_confirmation: string; phone?: string; locale?: string }): Promise<{ success: boolean; user?: any; error?: string; errors?: any }> => {
+    register: async (data: { name: string; email: string; password: string; password_confirmation: string; phone?: string; locale?: string; 'cf-turnstile-response'?: string }): Promise<{ success: boolean; user?: any; error?: string; errors?: any }> => {
         try {
             await initializeCsrf();
             const response = await api.post('/user/register', data);
@@ -421,10 +421,10 @@ export const userAuthService = {
         }
     },
 
-    forgotPassword: async (email: string): Promise<{ success: boolean; otpCode?: string; error?: string }> => {
+    forgotPassword: async (email: string, turnstileToken?: string): Promise<{ success: boolean; otpCode?: string; error?: string }> => {
         try {
             await initializeCsrf();
-            const response = await api.post('/user/forgot-password', { email });
+            const response = await api.post('/user/forgot-password', { email, 'cf-turnstile-response': turnstileToken });
             return {
                 success: true,
                 otpCode: response.data?.data?.otp_code,
@@ -437,7 +437,7 @@ export const userAuthService = {
         }
     },
 
-    resetPassword: async (email: string, otpCode: string, password: string, passwordConfirmation: string): Promise<{ success: boolean; error?: string }> => {
+    resetPassword: async (email: string, otpCode: string, password: string, passwordConfirmation: string, turnstileToken?: string): Promise<{ success: boolean; error?: string }> => {
         try {
             await initializeCsrf();
             const response = await api.post('/user/reset-password', {
@@ -445,6 +445,7 @@ export const userAuthService = {
                 otp_code: otpCode,
                 password,
                 password_confirmation: passwordConfirmation,
+                'cf-turnstile-response': turnstileToken,
             });
             return { success: true };
         } catch (error: any) {

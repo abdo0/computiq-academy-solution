@@ -23,10 +23,10 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   const [isLangLoading, setIsLangLoading] = useState(false);
   const [activeCourseType, setActiveCourseType] = useState<string | null>(null);
-  
+
   const [dbCategories, setDbCategories] = useState<any[]>([]);
   const [dbCourses, setDbCourses] = useState<any[]>([]);
-  
+
   const [isScrolled, setIsScrolled] = useState(false);
   const { language, setLanguage } = useLanguage();
   const { __, t, prefetchLocale, applyFetchedLocale } = useTranslation();
@@ -109,11 +109,11 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
       // Fetch translations + preload page chunk/data in PARALLEL — no state changes yet
       const [prefetched] = await Promise.all([
         prefetchLocale(lang),
-        preloadPage(currentPath).catch(() => {}),
+        preloadPage(currentPath).catch(() => { }),
       ]);
 
       // Fire-and-forget: update backend session + persist for logged-in users
-      fetch(`/lang/${lang}`, { redirect: 'manual' }).catch(() => {});
+      fetch(`/lang/${lang}`, { redirect: 'manual' }).catch(() => { });
       if (user) {
         userAuthService.updateLocale(lang).catch(console.error);
       }
@@ -176,93 +176,93 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
             {/* Logo */}
             <div className="flex-shrink-0 flex items-center rtl:ml-4 ltr:mr-4">
               <button onClick={() => handleNavClick('/')} className="flex items-center outline-none group">
-                  <Logo 
-                    imageClassName="h-10 w-auto object-contain transition-transform group-hover:scale-105 mx-0.5"
-                    textClassName={`text-[22px] sm:text-[26px] font-black tracking-tight transition-colors duration-200 ${isScrolled ? 'text-gray-900 dark:text-white' : 'text-gray-900 dark:text-white'}`}
-                  />
+                <Logo
+                  imageClassName="h-10 w-auto object-contain transition-transform group-hover:scale-105 mx-0.5"
+                  textClassName={`text-[22px] sm:text-[26px] font-black tracking-tight transition-colors duration-200 ${isScrolled ? 'text-gray-900 dark:text-white' : 'text-gray-900 dark:text-white'}`}
+                />
               </button>
             </div>
 
             {/* Desktop Navigation */}
             <div className="hidden xl:flex items-center gap-8 h-full rtl:pr-4 ltr:pl-4 overflow-visible relative" ref={dropdownRef}>
-              
+
               {/* Courses with Mega Menu */}
-              <div 
+              <div
                 className="h-full flex items-center"
                 onMouseEnter={() => setIsCoursesDropdownOpen(true)}
                 onMouseLeave={() => setIsCoursesDropdownOpen(false)}
               >
-                 <button
-                    onClick={() => setIsCoursesDropdownOpen(!isCoursesDropdownOpen)}
-                    className="text-[15px] font-bold transition-colors duration-200 flex items-center gap-1.5 text-gray-700 dark:text-gray-200 hover:text-brand-600 dark:hover:text-brand-400 group h-full"
-                  >
-                    {__('Nav courses')}
-                    <ChevronDown size={14} className={`mt-0.5 transition-transform duration-200 opacity-80 ${isCoursesDropdownOpen ? 'rotate-180 text-brand-600' : ''}`} />
-                  </button>
+                <button
+                  onClick={() => setIsCoursesDropdownOpen(!isCoursesDropdownOpen)}
+                  className="text-[15px] font-bold transition-colors duration-200 flex items-center gap-1.5 text-gray-700 dark:text-gray-200 hover:text-brand-600 dark:hover:text-brand-400 group h-full"
+                >
+                  {__('Nav courses')}
+                  <ChevronDown size={14} className={`mt-0.5 transition-transform duration-200 opacity-80 ${isCoursesDropdownOpen ? 'rotate-180 text-brand-600' : ''}`} />
+                </button>
 
-                  {/* Mega Menu Dropdown */}
-                  {isCoursesDropdownOpen && (
-                    <div className="absolute top-full rtl:right-2 ltr:left-2 w-[550px] bg-white dark:bg-gray-800 rounded-md shadow-xl hover:shadow-2xl border border-brand-50 dark:border-gray-700 flex z-50 animate-fade-in-down overflow-hidden pointer-events-auto">
-                        
-                        {/* Right Column: Categories */}
-                        <div className="w-[40%] bg-white dark:bg-gray-800 p-4 border-l rtl:border-l rtl:border-r-0 ltr:border-r border-gray-100 dark:border-gray-700">
-                           <h3 className="font-bold text-base text-gray-900 dark:text-white mb-3 text-center">{__('Nav categories')}</h3>
-                           <div className="flex flex-col gap-1 max-h-[380px] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-                              {dbCategories.map(cat => (
-                                <button 
-                                  key={cat.id}
-                                  onMouseEnter={() => setActiveCourseType(cat.slug)}
-                                  className={`w-full text-start px-4 py-3 rounded-md text-sm font-bold flex items-center justify-between transition-colors ${activeCourseType === cat.slug ? 'bg-brand-50 text-brand-600 dark:bg-brand-900/40 dark:text-brand-400' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
-                                >
-                                  {t(cat.name)}
-                                  <ChevronLeft size={16} className={`transition-transform ${activeCourseType === cat.slug ? 'text-brand-600' : 'text-transparent'}`} />
-                                </button>
-                              ))}
-                              {dbCategories.length === 0 && (
-                                <div className="text-center py-4 text-xs text-gray-400">Loading...</div>
-                              )}
-                           </div>
-                        </div>
+                {/* Mega Menu Dropdown */}
+                {isCoursesDropdownOpen && (
+                  <div className="absolute top-full rtl:right-2 ltr:left-2 w-[550px] bg-white dark:bg-gray-800 rounded-md shadow-xl hover:shadow-2xl border border-brand-50 dark:border-gray-700 flex z-50 animate-fade-in-down overflow-hidden pointer-events-auto">
 
-                        {/* Left Column: Courses in Category */}
-                        <div className="w-[60%] bg-white dark:bg-gray-800 p-4 py-6">
-                           <div className="flex flex-col gap-3 max-h-[360px] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-                              {dbCourses.filter(c => c.category_slug === activeCourseType).slice(0, 5).map(course => {
-                                 const img = course.image?.startsWith('http') || course.image?.startsWith('/assets/') ? course.image : `/storage/${course.image}`;
-                                 return (
-                                 <button 
-                                    key={course.id}
-                                    onClick={() => handleNavClick(`/courses/${course.slug}`)}
-                                    className="w-full text-start p-2 rounded-md flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group/item"
-                                 >
-                                    <div className="w-12 h-12 rounded-md bg-gray-100 dark:bg-gray-800 overflow-hidden shrink-0">
-                                      {img && <img src={img} className="w-full h-full object-cover" alt="" />}
-                                    </div>
-                                    <div className="flex flex-col flex-1">
-                                      <span className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">{t(course.title)}</span>
-                                      <span className="text-xs text-brand-600 dark:text-brand-400 mt-0.5">{t(course.instructor_name)}</span>
-                                    </div>
-                                 </button>
-                                 );
-                              })}
-                              
-                              {activeCourseType && dbCourses.filter(c => c.category_slug === activeCourseType).length === 0 && (
-                                <div className="text-center py-10 text-gray-400 text-sm w-full">لا توجد دورات في هذا القسم حالياً</div>
-                              )}
-                              
-                              {activeCourseType && dbCourses.filter(c => c.category_slug === activeCourseType).length > 0 && (
-                                <button
-                                  onClick={() => handleNavClick(`/courses?category=${activeCourseType}`)}
-                                  className="mt-2 text-center text-sm font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
-                                >
-                                  عرض كل دورات القسم
-                                </button>
-                              )}
-                           </div>
-                        </div>
-
+                    {/* Right Column: Categories */}
+                    <div className="w-[40%] bg-white dark:bg-gray-800 p-4 border-l rtl:border-l rtl:border-r-0 ltr:border-r border-gray-100 dark:border-gray-700">
+                      <h3 className="font-bold text-base text-gray-900 dark:text-white mb-3 text-center">{__('Nav categories')}</h3>
+                      <div className="flex flex-col gap-1 max-h-[380px] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                        {dbCategories.map(cat => (
+                          <button
+                            key={cat.id}
+                            onMouseEnter={() => setActiveCourseType(cat.slug)}
+                            className={`w-full text-start px-4 py-3 rounded-md text-sm font-bold flex items-center justify-between transition-colors ${activeCourseType === cat.slug ? 'bg-brand-50 text-brand-600 dark:bg-brand-900/40 dark:text-brand-400' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                          >
+                            {t(cat.name)}
+                            <ChevronLeft size={16} className={`transition-transform ${activeCourseType === cat.slug ? 'text-brand-600' : 'text-transparent'}`} />
+                          </button>
+                        ))}
+                        {dbCategories.length === 0 && (
+                          <div className="text-center py-4 text-xs text-gray-400">Loading...</div>
+                        )}
+                      </div>
                     </div>
-                  )}
+
+                    {/* Left Column: Courses in Category */}
+                    <div className="w-[60%] bg-white dark:bg-gray-800 p-4 py-6">
+                      <div className="flex flex-col gap-3 max-h-[360px] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                        {dbCourses.filter(c => c.category_slug === activeCourseType).slice(0, 5).map(course => {
+                          const img = course.image?.startsWith('http') || course.image?.startsWith('/assets/') ? course.image : `/storage/${course.image}`;
+                          return (
+                            <button
+                              key={course.id}
+                              onClick={() => handleNavClick(`/courses/${course.slug}`)}
+                              className="w-full text-start p-2 rounded-md flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group/item"
+                            >
+                              <div className="w-12 h-12 rounded-md bg-gray-100 dark:bg-gray-800 overflow-hidden shrink-0">
+                                {img && <img src={img} className="w-full h-full object-cover" alt="" />}
+                              </div>
+                              <div className="flex flex-col flex-1">
+                                <span className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">{t(course.title)}</span>
+                                <span className="text-xs text-brand-600 dark:text-brand-400 mt-0.5">{t(course.instructor_name)}</span>
+                              </div>
+                            </button>
+                          );
+                        })}
+
+                        {activeCourseType && dbCourses.filter(c => c.category_slug === activeCourseType).length === 0 && (
+                          <div className="text-center py-10 text-gray-400 text-sm w-full">لا توجد دورات في هذا القسم حالياً</div>
+                        )}
+
+                        {activeCourseType && dbCourses.filter(c => c.category_slug === activeCourseType).length > 0 && (
+                          <button
+                            onClick={() => handleNavClick(`/courses?category=${activeCourseType}`)}
+                            className="mt-2 text-center text-sm font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
+                          >
+                            عرض كل دورات القسم
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                  </div>
+                )}
               </div>
 
               {/* Paths */}
@@ -278,10 +278,10 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
           {/* Middle: Custom Blue-Outlined Search Bar (Desktop) */}
           <div className="hidden lg:flex flex-1 max-w-[450px] items-center justify-center">
             <div className="relative w-full group">
-              <input 
-                type="text" 
-                className="w-full bg-white dark:bg-gray-900 border border-[#b4c8f0] dark:border-gray-700 focus:border-brand-500 dark:focus:border-brand-700 rounded-xl px-5 py-2.5 text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm placeholder-[#a3b1c6] dark:placeholder-gray-500 rtl:pl-10 ltr:pr-10" 
-                placeholder={__('Search placeholder')} 
+              <input
+                type="text"
+                className="w-full bg-white dark:bg-gray-900 border border-[#b4c8f0] dark:border-gray-700 focus:border-brand-500 dark:focus:border-brand-700 rounded-xl px-5 py-2.5 text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm placeholder-[#a3b1c6] dark:placeholder-gray-500 rtl:pl-10 ltr:pr-10"
+                placeholder={__('Search courses')}
               />
               <div className="absolute inset-y-0 rtl:left-0 ltr:right-0 flex items-center rtl:pl-4 ltr:pr-4 pointer-events-none text-[#93b0ef] group-focus-within:text-brand-500 transition-colors">
                 <Search size={18} />
@@ -294,8 +294,8 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
 
             {/* Cart Icon */}
             <button className="relative p-2 text-gray-400 hover:text-brand-600 dark:text-gray-500 transition-colors hidden sm:block">
-               <ShoppingCart size={20} />
-               <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border border-white dark:border-gray-900 rounded-full"></span>
+              <ShoppingCart size={20} />
+              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border border-white dark:border-gray-900 rounded-full"></span>
             </button>
 
             {/* Auth Buttons */}
@@ -369,11 +369,10 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
                           setIsLangDropdownOpen(false);
                           handleLanguageSelect(lang.code as Language);
                         }}
-                        className={`w-full text-start px-3.5 py-2.5 text-[13px] transition-all duration-150 flex items-center gap-3 group ${
-                          isSelected
+                        className={`w-full text-start px-3.5 py-2.5 text-[13px] transition-all duration-150 flex items-center gap-3 group ${isSelected
                             ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
                             : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/60'
-                        }`}
+                          }`}
                       >
                         <span className="text-lg leading-none shrink-0">{lang.flag}</span>
                         <div className="flex flex-col flex-1 min-w-0">
@@ -397,7 +396,7 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
               <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="p-2 rounded-full text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-               >
+              >
                 {isOpen ? <X size={22} /> : <Menu size={22} />}
               </button>
             </div>
@@ -408,37 +407,37 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
       {/* Mobile Menu Overlay */}
       {isOpen && (
         <div className="xl:hidden bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 absolute w-full shadow-2xl animate-fade-in-down max-h-[85vh] overflow-y-auto z-50">
-           <div className="p-4 flex flex-col gap-4">
-              <div className="relative w-full">
-                <input 
-                  type="text" 
-                  className="w-full bg-white border border-[#b4c8f0] focus:border-brand-500 rounded-xl px-5 py-3 text-sm focus:outline-none" 
-                  placeholder={__('Search placeholder')} 
-                />
+          <div className="p-4 flex flex-col gap-4">
+            <div className="relative w-full">
+              <input
+                type="text"
+                className="w-full bg-white border border-[#b4c8f0] focus:border-brand-500 rounded-xl px-5 py-3 text-sm focus:outline-none"
+                placeholder={__('Search courses')}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <button
+                className="w-full text-start block px-4 py-3 rounded-md text-base font-bold text-gray-700 dark:text-gray-200"
+              >
+                {__('Nav courses')}
+              </button>
+              <div className="pl-6 pr-6 py-2 grid grid-cols-1 gap-2">
+                {dbCategories.map((c) => (
+                  <button key={c.id} onClick={() => handleNavClick(`/courses?category=${c.slug}`)} className="text-start text-sm text-gray-500 hover:text-brand-600 py-1">{t(c.name)}</button>
+                ))}
               </div>
-              <div className="flex flex-col gap-2">
-                  <button
-                    className="w-full text-start block px-4 py-3 rounded-md text-base font-bold text-gray-700 dark:text-gray-200"
-                  >
-                    {__('Nav courses')}
-                  </button>
-                  <div className="pl-6 pr-6 py-2 grid grid-cols-1 gap-2">
-                     {dbCategories.map((c) => (
-                        <button key={c.id} onClick={() => handleNavClick(`/courses?category=${c.slug}`)} className="text-start text-sm text-gray-500 hover:text-brand-600 py-1">{t(c.name)}</button>
-                     ))}
-                  </div>
-                  <button
-                    onClick={() => handleNavClick('/paths')}
-                    className="w-full text-start block px-4 py-3 rounded-md text-base font-bold text-gray-700 dark:text-gray-200 hover:bg-brand-50"
-                  >
-                    {__('Nav paths')}
-                  </button>
-              </div>
-              <div className="grid grid-cols-2 gap-3 mt-4 border-t border-gray-100 pt-4">
-                 <button onClick={() => handleNavClick('/login')} className="bg-brand-50 text-brand-600 font-bold py-3 rounded-md text-sm">{__('Login')}</button>
-                 <button onClick={() => handleNavClick('/signup')} className="bg-brand-600 text-white font-bold py-3 rounded-md text-sm shadow-sm">{__('Sign up')}</button>
-              </div>
-           </div>
+              <button
+                onClick={() => handleNavClick('/paths')}
+                className="w-full text-start block px-4 py-3 rounded-md text-base font-bold text-gray-700 dark:text-gray-200 hover:bg-brand-50"
+              >
+                {__('Nav paths')}
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-4 border-t border-gray-100 pt-4">
+              <button onClick={() => handleNavClick('/login')} className="bg-brand-50 text-brand-600 font-bold py-3 rounded-md text-sm">{__('Login')}</button>
+              <button onClick={() => handleNavClick('/signup')} className="bg-brand-600 text-white font-bold py-3 rounded-md text-sm shadow-sm">{__('Sign up')}</button>
+            </div>
+          </div>
         </div>
       )}
     </nav>

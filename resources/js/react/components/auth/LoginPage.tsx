@@ -7,12 +7,14 @@ import AppLink from '../common/AppLink';
 import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { useTranslation } from '../../contexts/TranslationProvider';
 import AuthLayout from './AuthLayout';
+import Turnstile from '../common/Turnstile';
 
 const LoginPage: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [remember, setRemember] = useState(false);
     const [error, setError] = useState('');
+    const [turnstileToken, setTurnstileToken] = useState('');
 
     const { login, isLoading } = useAuth();
     const { __ } = useTranslation();
@@ -22,7 +24,7 @@ const LoginPage: React.FC = () => {
         e.preventDefault();
         setError('');
 
-        const success = await login(email, password, remember);
+        const success = await login(email, password, remember, turnstileToken);
         if (success) {
             navigate('/dashboard');
         }
@@ -34,8 +36,8 @@ const LoginPage: React.FC = () => {
 
     return (
         <AuthLayout 
-            title={__('Auth login title')} 
-            subtitle={__('Auth welcome back')}
+            title={__('Log in')} 
+            subtitle={__('Welcome back!')}
         >
             <form className="space-y-6" onSubmit={handleSubmit}>
                 {error && (
@@ -47,7 +49,7 @@ const LoginPage: React.FC = () => {
 
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{__('Form email')}</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{__('Email address')}</label>
                         <div className="relative">
                             <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none text-gray-400">
                                 <Mail size={18} />
@@ -64,7 +66,7 @@ const LoginPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{__('Form password')}</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{__('Password')}</label>
                         <div className="relative">
                             <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none text-gray-400">
                                 <Lock size={18} />
@@ -101,10 +103,12 @@ const LoginPage: React.FC = () => {
                             to={'/forgot-password'}
                             className="font-semibold text-brand-600 hover:text-brand-500 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
                         >
-                            {__('Auth forgot link')}
+                            {__('Forgot password?')}
                         </AppLink>
                     </div>
                 </div>
+
+                <Turnstile onVerify={setTurnstileToken} onExpire={() => setTurnstileToken('')} />
 
                 <button
                     type="submit"
@@ -114,17 +118,17 @@ const LoginPage: React.FC = () => {
                     {isLoading ? (
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
-                        __('Auth login btn')
+                        __('Log in')
                     )}
                 </button>
 
                 <div className="text-center text-sm text-gray-600 dark:text-gray-400 mt-6 pt-6 border-t border-gray-100 dark:border-gray-700/50">
-                    {__('Auth no account')} {' '}
+                    {__('Don\'t have an account?')} {' '}
                     <AppLink
                         to={'/signup'}
                         className="font-bold text-brand-600 hover:text-brand-500 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
                     >
-                        {__('Auth create account')}
+                        {__('Create an account')}
                     </AppLink>
                 </div>
             </form>

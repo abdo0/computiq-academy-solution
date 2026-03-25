@@ -12,6 +12,7 @@ import AuthModal from './components/auth/AuthModal';
 const Home = React.lazy(() => import('./components/Home'));
 const AboutPage = React.lazy(() => import('./components/AboutPage'));
 const LoginPage = React.lazy(() => import('./components/auth/LoginPage'));
+const SignupPage = React.lazy(() => import('./components/auth/SignupPage'));
 const ContactPage = React.lazy(() => import('./components/ContactPage'));
 const BlogPage = React.lazy(() => import('./components/BlogPage'));
 const BlogPostDetail = React.lazy(() => import('./components/BlogPostDetail'));
@@ -27,6 +28,7 @@ const CoursesPage = React.lazy(() => import('./components/CoursesPage'));
 const CourseDetailsPage = React.lazy(() => import('./components/CourseDetailsPage'));
 const InstructorProfilePage = React.lazy(() => import('./components/InstructorProfilePage'));
 const PathsPage = React.lazy(() => import('./components/PathsPage'));
+const DashboardPage = React.lazy(() => import('./components/dashboard/DashboardPage'));
 
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { TranslationProvider, useTranslation } from './contexts/TranslationProvider';
@@ -59,9 +61,10 @@ export const pageImportMap: Record<string, () => Promise<any>> = {
   '/courses': () => import('./components/CoursesPage'),
   '/paths': () => import('./components/PathsPage'),
   '/login': () => import('./components/auth/LoginPage'),
-  '/signup': () => import('./components/auth/LoginPage'),
+  '/signup': () => import('./components/auth/SignupPage'),
   '/forgot-password': () => import('./components/auth/ForgotPasswordPage'),
   '/reset-password': () => import('./components/auth/ResetPasswordPage'),
+  '/dashboard': () => import('./components/dashboard/DashboardPage'),
 };
 
 /**
@@ -236,10 +239,13 @@ const AppContent: React.FC = () => {
       
       {/* Auth Routes */}
       <Route path="login" element={<LoginPage />} />
-      <Route path="signup" element={<LoginPage />} />
+      <Route path="signup" element={<SignupPage />} />
       <Route path="forgot-password" element={<ForgotPasswordPage />} />
       <Route path="reset-password" element={<ResetPasswordPage />} />
       
+      {/* Dashboard (authenticated) */}
+      <Route path="dashboard" element={<DashboardPage />} />
+
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </>

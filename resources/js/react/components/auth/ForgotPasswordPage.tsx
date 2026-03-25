@@ -6,11 +6,13 @@ import { userAuthService } from '../../services/dataService';
 import { toast } from 'react-toastify';
 import { useTranslation } from '../../contexts/TranslationProvider';
 import AuthLayout from './AuthLayout';
+import Turnstile from '../common/Turnstile';
 
 const ForgotPasswordPage: React.FC = () => {
     const [email, setEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [turnstileToken, setTurnstileToken] = useState('');
     const { dir } = useLanguage();
     const { __ } = useTranslation();
     const navigate = useAppNavigate();
@@ -21,7 +23,7 @@ const ForgotPasswordPage: React.FC = () => {
         setIsLoading(true);
 
         try {
-            const result = await userAuthService.forgotPassword(email);
+            const result = await userAuthService.forgotPassword(email, turnstileToken);
 
             if (result.success) {
                 toast.success(__('Password reset otp sent') || 'Password reset code has been sent to your email');
@@ -47,8 +49,8 @@ const ForgotPasswordPage: React.FC = () => {
 
     return (
         <AuthLayout 
-            title={__('Auth forgot password')} 
-            subtitle={__('Auth forgot subtitle')}
+            title={__('Forgot password')} 
+            subtitle={__('Enter your email to receive a password reset code')}
         >
             <form className="space-y-6" onSubmit={handleSubmit}>
                 {error && (
@@ -59,7 +61,7 @@ const ForgotPasswordPage: React.FC = () => {
                 )}
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{__('Form email')}</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{__('Email address')}</label>
                     <div className="relative">
                         <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none text-gray-400">
                             <Mail size={18} />
@@ -75,6 +77,8 @@ const ForgotPasswordPage: React.FC = () => {
                     </div>
                 </div>
 
+                <Turnstile onVerify={setTurnstileToken} onExpire={() => setTurnstileToken('')} />
+
                 <button
                     type="submit"
                     disabled={isLoading}
@@ -83,7 +87,7 @@ const ForgotPasswordPage: React.FC = () => {
                     {isLoading ? (
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
-                        __('Auth send otp') || __('Send otp') || 'Send OTP'
+                        __('Send reset code')
                     )}
                 </button>
 
@@ -94,7 +98,7 @@ const ForgotPasswordPage: React.FC = () => {
                         className={`inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400 transition-colors ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}
                     >
                         {dir === 'rtl' ? <ArrowRight size={16} /> : <ArrowLeft size={16} />}
-                        {__('Auth login link')}
+                        {__('Back to login')}
                     </button>
                 </div>
             </form>

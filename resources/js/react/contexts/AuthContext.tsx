@@ -26,7 +26,7 @@ interface AuthContextType {
     verify2FA: (code: string) => Promise<boolean>;
     resend2FA: () => Promise<void>;
     
-    login: (email: string, password: string, remember?: boolean) => Promise<boolean>;
+    login: (email: string, password: string, remember?: boolean, turnstileToken?: string) => Promise<boolean>;
     register: (data: { name: string; email: string; password: string; password_confirmation: string; phone?: string }) => Promise<{ success: boolean; errors?: any }>;
     
     logout: () => Promise<void>;
@@ -108,11 +108,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
     }, []);
 
-    const login = async (email: string, password: string, remember: boolean = false) => {
+    const login = async (email: string, password: string, remember: boolean = false, turnstileToken?: string) => {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await userAuthService.login(email, password, remember);
+            const response = await userAuthService.login(email, password, remember, turnstileToken);
             if (response.success && response.user) {
                 setUser(response.user);
                 toast.success(__('Login successful'));

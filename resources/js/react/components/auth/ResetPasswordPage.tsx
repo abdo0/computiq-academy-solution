@@ -7,6 +7,7 @@ import { userAuthService } from '../../services/dataService';
 import { toast } from 'react-toastify';
 import { useTranslation } from '../../contexts/TranslationProvider';
 import AuthLayout from './AuthLayout';
+import Turnstile from '../common/Turnstile';
 
 const ResetPasswordPage: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -17,6 +18,7 @@ const ResetPasswordPage: React.FC = () => {
     const [passwordConfirmation, setPasswordConfirmation] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [turnstileToken, setTurnstileToken] = useState('');
     const [success, setSuccess] = useState(false);
     const { dir } = useLanguage();
     const { __ } = useTranslation();
@@ -40,7 +42,7 @@ const ResetPasswordPage: React.FC = () => {
         setIsLoading(true);
 
         try {
-            const result = await userAuthService.resetPassword(email, otpCode, password, passwordConfirmation);
+            const result = await userAuthService.resetPassword(email, otpCode, password, passwordConfirmation, turnstileToken);
 
             if (result.success) {
                 setSuccess(true);
@@ -82,8 +84,8 @@ const ResetPasswordPage: React.FC = () => {
 
     return (
         <AuthLayout 
-            title={__('Auth reset password title') || 'Reset Password'} 
-            subtitle={`${__('Auth reset password subtitle') || 'Enter the OTP code sent to your email and your new password'}`}
+            title={__('Reset Password')} 
+            subtitle={__('Enter the OTP code sent to your email and your new password')}
         >
             <div className="mb-6 text-center lg:text-start flex items-center justify-center lg:justify-start gap-2">
                 <span className="text-sm font-medium px-3 py-1 bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 rounded-full border border-brand-100 dark:border-brand-800/50">
@@ -101,7 +103,7 @@ const ResetPasswordPage: React.FC = () => {
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        {__('Otp code') || 'OTP Code'} <span className="text-red-500">*</span>
+                        {__('OTP code')} <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                         <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none text-gray-400">
@@ -118,14 +120,14 @@ const ResetPasswordPage: React.FC = () => {
                         />
                     </div>
                     <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
-                        {__('Otp sent to email') || 'OTP code has been sent to your email address'}
+                        {__('OTP code has been sent to your email address')}
                     </p>
                 </div>
 
                 <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700/50">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {__('New password') || 'New Password'} <span className="text-red-500">*</span>
+                            {__('New password')} <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
                             <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none text-gray-400">
@@ -136,7 +138,7 @@ const ResetPasswordPage: React.FC = () => {
                                 required
                                 minLength={8}
                                 className="block w-full ps-10 pe-3 py-3 border border-gray-200 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-700/50 text-gray-900 dark:text-white rounded-xl focus:ring-brand-500 focus:border-brand-500 focus:bg-white dark:focus:bg-gray-700 outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500"
-                                placeholder={__('Password min length') || 'Minimum 8 characters'}
+                                placeholder={__('Minimum 8 characters')}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
@@ -145,7 +147,7 @@ const ResetPasswordPage: React.FC = () => {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {__('Confirm password') || 'Confirm Password'} <span className="text-red-500">*</span>
+                            {__('Confirm password')} <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
                             <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none text-gray-400">
@@ -164,6 +166,8 @@ const ResetPasswordPage: React.FC = () => {
                     </div>
                 </div>
 
+                <Turnstile onVerify={setTurnstileToken} onExpire={() => setTurnstileToken('')} />
+
                 <button
                     type="submit"
                     disabled={isLoading}
@@ -172,7 +176,7 @@ const ResetPasswordPage: React.FC = () => {
                     {isLoading ? (
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
-                        __('Auth reset password btn') || 'Reset Password'
+                        __('Reset Password')
                     )}
                 </button>
 
@@ -183,7 +187,7 @@ const ResetPasswordPage: React.FC = () => {
                         className={`inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400 transition-colors ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}
                     >
                         {dir === 'rtl' ? <ArrowRight size={16} /> : <ArrowLeft size={16} />}
-                        {__('Auth login link')}
+                        {__('Back to login')}
                     </button>
                 </div>
             </form>

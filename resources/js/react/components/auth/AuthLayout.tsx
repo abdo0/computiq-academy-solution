@@ -98,14 +98,11 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle }) =>
                     </div>
                 </div>
 
-                {/* Footer Copy */}
-                <div className="relative z-10 p-10 text-gray-400 dark:text-gray-500 text-sm font-medium">
-                    &copy; {new Date().getFullYear()} Computiq Academy. {__('All rights reserved.')}
-                </div>
+
             </div>
 
             {/* Right Side: Form Content Panel */}
-            <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 sm:p-12 xl:p-24 relative">
+            <div className="w-full lg:w-1/2 flex flex-col justify-start items-center p-6 pt-24 sm:p-12 sm:pt-32 xl:p-12 lg:pt-40 relative">
                 {/* Mobile Logo Setup */}
                 <div className="lg:hidden absolute top-8 left-8 right-8 flex justify-between items-center">
                     <AppLink to="/">
@@ -113,7 +110,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle }) =>
                     </AppLink>
                 </div>
 
-                <div className="w-full max-w-md mx-auto relative z-10 animate-fade-in-up mt-12 lg:mt-0">
+                <div className="w-full max-w-xl mx-auto relative z-10 animate-fade-in-up mt-8 lg:mt-0">
                     {/* Header */}
                     <div className="mb-10 text-center lg:text-start">
                         <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-tight mb-2">

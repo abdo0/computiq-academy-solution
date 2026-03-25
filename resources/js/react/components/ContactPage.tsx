@@ -6,6 +6,7 @@ import CustomSelect from './CustomSelect';
 import { dataService } from '../services/dataService';
 import { toast } from 'react-toastify';
 import { useTranslation } from '../contexts/TranslationProvider';
+import Turnstile from './common/Turnstile';
 
 const ContactPageSkeleton: React.FC = () => (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen pb-20 animate-pulse">
@@ -54,6 +55,7 @@ const ContactPage: React.FC = () => {
     const { settings } = useSettings();
     const [pageData, setPageData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [turnstileToken, setTurnstileToken] = useState('');
 
     useEffect(() => {
         dataService.loadPageSeo('contact');
@@ -81,7 +83,7 @@ const ContactPage: React.FC = () => {
         setFormStatus('submitting');
 
         try {
-            await dataService.submitContactForm({ ...formData, subject });
+            await dataService.submitContactForm({ ...formData, subject, 'cf-turnstile-response': turnstileToken });
             setFormStatus('success');
             toast.success(__('Form success'));
             // Reset after 3 seconds
@@ -232,6 +234,8 @@ const ContactPage: React.FC = () => {
                                             className="w-full px-4 py-3 rounded-sm border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:bg-white dark:focus:bg-gray-600 transition-all outline-none"
                                         ></textarea>
                                     </div>
+
+                                    <Turnstile onVerify={setTurnstileToken} onExpire={() => setTurnstileToken('')} />
 
                                     <button
                                         type="submit"
