@@ -1,0 +1,124 @@
+.language-dropdown {
+    position: relative;
+    display: inline-block;
+    margin-left: 15px;
+}
+
+.language-btn {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 8px 15px;
+    font-size: 14px;
+    color: white;
+}
+
+.language-options {
+    display: none;
+    position: absolute;
+    background-color: #fff;
+    min-width: 120px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    right: 0;
+}
+
+.language-options a {
+    color: #333;
+    padding: 8px 15px;
+    text-decoration: none;
+    display: block;
+}
+
+.language-options img {
+    width: 20px;
+}
+
+.language-options a:hover {
+    background-color: #f1f1f1;
+}
+
+.language-dropdown:hover .language-options {
+    display: block;
+    z-index: 10;
+}
+
+.arrow {
+    font-size: 10px;
+    margin-left: 5px;
+}
+
+.news-block .inner-box .image-box .image img {
+    height: 350px;
+    object-fit: cover;
+}
+
+.sidebar__post .sidebar__post-list .sidebar__post-image > img {
+    height: 100px;
+    object-fit: cover;
+}
+
+.btn-login {
+    padding: 8px 16px;
+    border: 2px solid #e5a523;
+    color: white;
+    /* border-radius: 4px; */
+    text-decoration: none;
+    font-weight: bold;
+     /*margin-right: 10px;*/
+    transition: background-color 0.3s ease;
+}
+
+.btn-login:hover {
+    background-color: #e5a523;
+    color: white;
+}
+
+.btn-register {
+    padding: 8px 16px;
+    background-color: transparent;
+    color: #007BFF;
+    border: 2px solid #007BFF;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.btn-register:hover {
+    background-color: #007BFF;
+    color: white;
+}
+
+.form-control, .input-text {
+    border: 1px solid #a98352;
+    text-align: left;
+}
+
+.rooms-section-white {
+    position: relative;
+    padding: 120px 0;
+    background: #fff;
+}
+
+.header-style-one .main-box {
+    padding-bottom: 8px;
+    background: #00000033;
+}
+
+.banner-section .content-box .sub-title::before {
+    width: 50px;
+    height: 45px;
+    background-image: url(../images/resource/title-image.png);
+    background-repeat: round;
+}
+
+footer .logo img {
+    width: 90px;
+}
+
+.main-header .main-box .nav-outer {
+    margin-left: 60px;
+    margin-right: auto;
+}

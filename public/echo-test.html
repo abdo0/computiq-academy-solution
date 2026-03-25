@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laravel Echo Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .warning { background: #fff3cd; color: #856404; }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔌 Laravel Echo & Pusher Connection Test</h1>
+    
+    <div class="test-box">
+        <h2>Configuration Check</h2>
+        <div id="config-status"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>Connection Status</h2>
+        <div id="connection-status"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>Console Logs</h2>
+        <pre id="logs"></pre>
+    </div>
+
+    <script type="module">
+        const logs = [];
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        const originalConsoleWarn = console.warn;
+
+        function addLog(type, ...args) {
+            const timestamp = new Date().toLocaleTimeString();
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            logs.push(`[${timestamp}] ${type.toUpperCase()}: ${message}`);
+            document.getElementById('logs').textContent = logs.join('\n');
+        }
+
+        console.log = (...args) => { addLog('log', ...args); originalConsoleLog(...args); };
+        console.error = (...args) => { addLog('error', ...args); originalConsoleError(...args); };
+        console.warn = (...args) => { addLog('warn', ...args); originalConsoleWarn(...args); };
+
+        // Check configuration
+        const config = {
+            key: import.meta.env.VITE_PUSHER_APP_KEY,
+            cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER
+        };
+
+        const configDiv = document.getElementById('config-status');
+        if (config.key && config.cluster) {
+            configDiv.innerHTML = `
+                <div class="status success">
+                    ✅ Configuration found:<br>
+                    Key: ${config.key}<br>
+                    Cluster: ${config.cluster}
+                </div>
+            `;
+        } else {
+            configDiv.innerHTML = `
+                <div class="status error">
+                    ❌ Missing configuration:<br>
+                    Key: ${config.key || 'NOT SET'}<br>
+                    Cluster: ${config.cluster || 'NOT SET'}<br>
+                    <br>
+                    Make sure VITE_PUSHER_APP_KEY and VITE_PUSHER_APP_CLUSTER are set in .env
+                </div>
+            `;
+        }
+
+        // Try to load Echo
+        const statusDiv = document.getElementById('connection-status');
+        
+        try {
+            const { default: Echo } = await import('laravel-echo');
+            const Pusher = (await import('pusher-js')).default;
+            
+            console.log('✅ Laravel Echo and Pusher-JS loaded successfully');
+            
+            window.Pusher = Pusher;
+            window.Echo = new Echo({
+                broadcaster: 'pusher',
+                key: config.key,
+                cluster: config.cluster,
+                wsHost: `ws-${config.cluster}.pusher.com`,
+                wsPort: 80,
+                wssPort: 443,
+                forceTLS: true,
+                encrypted: true,
+                enabledTransports: ['ws', 'wss'],
+            });
+
+            window.Echo.connector.pusher.connection.bind('connecting', () => {
+                statusDiv.innerHTML = '<div class="status info">🔄 Connecting to Pusher...</div>';
+                console.log('🔄 Connecting to Pusher...');
+            });
+
+            window.Echo.connector.pusher.connection.bind('connected', () => {
+                statusDiv.innerHTML = '<div class="status success">✅ Connected to Pusher successfully!</div>';
+                console.log('✅ Connected to Pusher');
+            });
+
+            window.Echo.connector.pusher.connection.bind('disconnected', () => {
+                statusDiv.innerHTML = '<div class="status warning">⚠️ Disconnected from Pusher</div>';
+                console.log('⚠️ Disconnected from Pusher');
+            });
+
+            window.Echo.connector.pusher.connection.bind('error', (err) => {
+                statusDiv.innerHTML = `<div class="status error">❌ Connection error: ${JSON.stringify(err)}</div>`;
+                console.error('❌ Pusher connection error:', err);
+            });
+
+            window.Echo.connector.pusher.connection.bind('state_change', (states) => {
+                console.log('State changed:', states.previous, '→', states.current);
+            });
+
+        } catch (error) {
+            statusDiv.innerHTML = `<div class="status error">❌ Failed to load Echo: ${error.message}</div>`;
+            console.error('❌ Failed to load Echo:', error);
+        }
+    </script>
+</body>
+</html>

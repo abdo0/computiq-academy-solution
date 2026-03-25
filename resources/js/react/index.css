@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&display=swap');
+
+@import "tailwindcss";
+
+/* Dark mode by class */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: "Cairo", sans-serif;
+
+    /* brand colors — red palette */
+    --color-brand-50: #fef2f2;
+    --color-brand-100: #fee2e2;
+    --color-brand-200: #fecaca;
+    --color-brand-300: #fca5a5;
+    --color-brand-400: #f87171;
+    --color-brand-500: #ef4444;
+    --color-brand-600: #dc2626;
+    --color-brand-700: #b91c1c;
+    --color-brand-800: #991b1b;
+    --color-brand-900: #7f1d1d;
+    --color-brand-950: #450a0a;
+
+    /* accent */
+    --color-accent-500: #f59e0b;
+    --color-accent-600: #d97706;
+}
+
+button {
+    @apply cursor-pointer;
+}
+
+/* Toast notifications - use same font as website */
+.Toastify__toast {
+    font-family: "Cairo", sans-serif !important;
+}
+
+.Toastify__toast-body {
+    font-family: "Cairo", sans-serif !important;
+}
+
+.dir-ltr {
+    direction: ltr;
+}
+
+.dir-rtl {
+    direction: rtl;
+}

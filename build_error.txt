@@ -1,0 +1,31 @@
+
+> build
+> vite build
+
+[36mvite v7.1.7 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 105 modules transformed.
+[31m✗[39m Build failed in 10.37s
+[31merror during build:
+[31m[vite:esbuild] Transform failed with 1 error:
+D:/Ali/Web/www/abdullah/computiq-academy/resources/js/react/services/dataService.ts:19:7: ERROR: Expected "as" but found "{"[31m
+file: [36mD:/Ali/Web/www/abdullah/computiq-academy/resources/js/react/services/dataService.ts:19:7[31m
+[33m
+[33mExpected "as" but found "{"[33m
+17 |  } from '../types';
+18 |  import {
+19 |  import { useTranslation } from '../contexts/TranslationProvider';
+   |         ^
+20 |      DEFAULT_SETTINGS,
+21 |      DEFAULT_HERO_CONTENT
+[31m
+    at failureErrorWithLog (D:\Ali\Web\www\abdullah\computiq-academy\node_modules\esbuild\lib\main.js:1477:15)
+    at D:\Ali\Web\www\abdullah\computiq-academy\node_modules\esbuild\lib\main.js:756:50
+    at responseCallbacks.<computed> (D:\Ali\Web\www\abdullah\computiq-academy\node_modules\esbuild\lib\main.js:623:9)
+    at handleIncomingPacket (D:\Ali\Web\www\abdullah\computiq-academy\node_modules\esbuild\lib\main.js:678:12)
+    at Socket.readFromStdout (D:\Ali\Web\www\abdullah\computiq-academy\node_modules\esbuild\lib\main.js:601:7)
+    at Socket.emit (node:events:518:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)[39m

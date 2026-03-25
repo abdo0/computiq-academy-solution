@@ -1,0 +1,112 @@
+import { useAppNavigate } from '../../hooks/useAppNavigate';
+import React, { useState } from 'react';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { Mail, KeyRound, ArrowLeft, ArrowRight, AlertCircle, Building2 } from 'lucide-react';
+import { orgAuthService } from '../../services/dataService';
+import { toast } from 'react-toastify';
+import { useTranslation } from '../../contexts/TranslationProvider';
+
+const OrgForgotPasswordPage: React.FC = () => {
+    const [email, setEmail] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+    const { language, dir } = useLanguage();
+    const { __ } = useTranslation();
+    const navigate = useAppNavigate();
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setIsLoading(true);
+
+        try {
+            const result = await orgAuthService.forgotPassword(email);
+
+            if (result.success) {
+                toast.success(__('Password reset otp sent') || 'Password reset code has been sent to your email');
+                
+                // Show OTP in development
+                if (result.otpCode) {
+                    toast.info(`OTP Code (Development): ${result.otpCode}`, { autoClose: 10000 });
+                }
+
+                // Navigate to reset password page with email
+                navigate(`/org/reset-password?email=${encodeURIComponent(email)}`);
+            } else {
+                setError(result.error || __('Password reset failed') || 'Failed to send password reset code');
+                toast.error(result.error || __('Password reset failed') || 'Failed to send password reset code');
+            }
+        } catch (err: any) {
+            setError(__('Password reset failed') || 'Failed to send password reset code');
+            toast.error(__('Password reset failed') || 'Failed to send password reset code');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 p-8 rounded-sm shadow-xl border border-gray-100 dark:border-gray-700">
+                <div className="text-center">
+                    <div className="mx-auto h-12 w-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
+                        <KeyRound className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    </div>
+                    <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white">{__('Organization')} {__('Auth forgot title')}</h2>
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{__('Auth forgot subtitle')}</p>
+                </div>
+
+                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+                    {error && (
+                        <div className={`bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-sm text-sm flex items-center gap-2 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
+                            <AlertCircle size={16} />
+                            {error}
+                        </div>
+                    )}
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{__('Form email')}</label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none text-gray-400">
+                                <Mail size={18} />
+                            </div>
+                            <input
+                                type="email"
+                                required
+                                className="block w-full ps-10 pe-3 py-3 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white rounded-sm focus:ring-green-500 focus:border-green-500 focus:bg-white dark:focus:bg-gray-600 outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500"
+                                placeholder="org@example.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-sm shadow-sm text-sm font-bold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                        {isLoading ? (
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                            __('Auth send otp') || __('Send otp') || 'Send OTP'
+                        )}
+                    </button>
+
+                    <div className="text-center">
+                        <button
+                            type="button"
+                            onClick={() => navigate('/org/login')}
+                            className={`inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}
+                        >
+                            {dir === 'rtl' ? <ArrowRight size={16} /> : <ArrowLeft size={16} />}
+                            {__('Auth login link')}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+export default OrgForgotPasswordPage;
+

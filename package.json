@@ -1,0 +1,35 @@
+{
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite",
+        "deploy": "vite build && git add . && git commit -m 'updates' && git push",
+        "push": "git add . && git commit -m 'updates' && git push"
+    },
+    "devDependencies": {
+        "@tailwindcss/vite": "^4.1.13",
+        "@types/nprogress": "^0.2.3",
+        "axios": "^1.11.0",
+        "concurrently": "^9.0.1",
+        "laravel-vite-plugin": "^2.0.0",
+        "tailwindcss": "^4.1.13",
+        "vite": "^7.0.4"
+    },
+    "dependencies": {
+        "@google/genai": "^1.30.0",
+        "@vitejs/plugin-react": "^5.1.1",
+        "laravel-echo": "^2.2.4",
+        "lucide-react": "^0.554.0",
+        "nprogress": "^0.2.0",
+        "pusher-js": "^8.4.0",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
+        "react-helmet-async": "^2.0.5",
+        "react-phone-input-2": "^2.15.1",
+        "react-router-dom": "^7.9.6",
+        "react-select": "^5.10.2",
+        "react-toastify": "^11.0.5",
+        "swiper": "^12.1.3"
+    }
+}

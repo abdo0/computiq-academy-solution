@@ -1,0 +1,30 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+@source '../../../../resources/views/livewire/**/*';
+
+.fi-fo-tabs-tab.p-6 {
+    padding: 1rem !important;
+}
+
+.facility-icon svg {
+    height: 40px;
+    width: 40px;
+}
+
+/* table header sticky*/
+/* .fi-ta-table thead {
+    position: sticky !important;
+    top: 0;
+    background-color: #020b1c;
+}
+
+.fi-ta-content {
+    max-height: 800px;
+    position: relative;
+}
+
+.empty-stars {
+    display: none;
+} */

@@ -1,0 +1,37 @@
+body {
+    font-family: 'DejaVu Sans', sans-serif;
+    direction: rtl;
+    text-align: right;
+}
+
+.container {
+    padding: 20px;
+    border: 1px solid #ccc;
+    margin: 20px;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.content {
+    line-height: 1.8;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    border: 1px solid #ccc;
+    padding: 8px;
+}
+
+.footer {
+    text-align: center;
+    margin-top: 20px;
+}
+
