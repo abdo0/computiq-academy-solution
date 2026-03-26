@@ -1198,5 +1198,18 @@
     "Course added to cart successfully.": "تمت إضافة الدورة إلى سلة التسوق بنجاح.",
     "Course removed from cart.": "تمت إزالة الدورة من سلة التسوق.",
     "Item not found in your cart.": "العنصر غير موجود في سلة التسوق.",
-    "Your cart has been cleared.": "تم مسح سلة التسوق."
+    "Your cart has been cleared.": "تم مسح سلة التسوق.",
+    "Search Results": "نتائج البحث",
+    "Search results for": "نتائج البحث عن",
+    "results": "نتائج",
+    "Enter a search term": "أدخل كلمة للبحث",
+    "Search for courses, instructors, and more": "ابحث عن الدورات والمدربين وغيرها",
+    "No results found": "لم يتم العثور على نتائج",
+    "No results found for": "لم يتم العثور على نتائج لـ",
+    "Try a different search term.": "جرّب كلمة بحث مختلفة.",
+    "Instructors": "المدربون",
+    "Courses": "الدورات",
+    "Load More": "تحميل المزيد",
+    "Loading...": "جاري التحميل...",
+    "View Cart": "عرض السلة"
 }

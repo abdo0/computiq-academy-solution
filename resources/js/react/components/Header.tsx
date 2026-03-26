@@ -26,6 +26,7 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
   const [isLangLoading, setIsLangLoading] = useState(false);
   const [activeCourseType, setActiveCourseType] = useState<string | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [dbCategories, setDbCategories] = useState<any[]>([]);
   const [dbCourses, setDbCourses] = useState<any[]>([]);
@@ -84,6 +85,16 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
     setIsCoursesDropdownOpen(false);
     setIsLangDropdownOpen(false);
     navigate(path);
+  };
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const q = searchQuery.trim();
+      if (q.length >= 2) {
+        setIsOpen(false);
+        navigate(`/search?q=${encodeURIComponent(q)}`);
+      }
+    }
   };
 
   const handleLanguageSelect = async (lang: Language) => {
@@ -284,6 +295,9 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
             <div className="relative w-full group">
               <input
                 type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearch}
                 className="w-full bg-white dark:bg-gray-900 border border-[#b4c8f0] dark:border-gray-700 focus:border-brand-500 dark:focus:border-brand-700 rounded-xl px-5 py-2.5 text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm placeholder-[#a3b1c6] dark:placeholder-gray-500 rtl:pl-10 ltr:pr-10"
                 placeholder={__('Search courses')}
               />
@@ -419,6 +433,9 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
             <div className="relative w-full">
               <input
                 type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearch}
                 className="w-full bg-white border border-[#b4c8f0] focus:border-brand-500 rounded-xl px-5 py-3 text-sm focus:outline-none"
                 placeholder={__('Search courses')}
               />

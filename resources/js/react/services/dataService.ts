@@ -122,6 +122,19 @@ export const dataService = {
         }
     },
 
+    searchGlobal: async (q: string, page: number = 1): Promise<any> => {
+        const key = `/search?q=${encodeURIComponent(q)}&page=${page}`;
+        return fetchWithCache(key, async () => {
+            try {
+                const response = await api.get<any>('/search', { params: { q, page } });
+                return response.data.data;
+            } catch (error) {
+                console.error('API fetch failed for search.', error);
+                return { courses: { data: [], meta: { total: 0 } }, instructors: [], query: q };
+            }
+        });
+    },
+
     getCountries: async (): Promise<any[]> => {
         try {
             const response = await api.get<{ data: any[] }>('/countries');

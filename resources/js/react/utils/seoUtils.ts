@@ -53,6 +53,8 @@ export const determineSeoParams = (path: string): { type: string, slug?: string 
         type = 'dashboard';
     } else if (path.startsWith('/org/dashboard')) {
         type = 'org-dashboard';
+    } else if (path === '/search') {
+        type = 'search';
     }
 
     return { type, slug };

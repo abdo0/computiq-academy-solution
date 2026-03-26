@@ -1,104 +1,104 @@
 {
-  "_AuthLayout-DOzpQGw8.css": {
-    "file": "assets/AuthLayout-DOzpQGw8.css",
-    "src": "_AuthLayout-DOzpQGw8.css"
-  },
-  "_AuthLayout-EHpIB3u1.js": {
-    "file": "assets/AuthLayout-EHpIB3u1.js",
+  "_AuthLayout-Cn_OCt7k.js": {
+    "file": "assets/AuthLayout-Cn_OCt7k.js",
     "name": "AuthLayout",
     "imports": [
       "resources/js/react/index.tsx",
       "_vendor-BaUKcBIJ.js",
-      "_book-open-BYfRH0_9.js",
-      "_users-CjB_whFg.js"
+      "_book-open-CXU8IJ2c.js",
+      "_users-B_FrTEqR.js"
     ],
     "css": [
       "assets/AuthLayout-DOzpQGw8.css"
     ]
   },
-  "_CourseCard-D01g9XtX.js": {
-    "file": "assets/CourseCard-D01g9XtX.js",
+  "_AuthLayout-DOzpQGw8.css": {
+    "file": "assets/AuthLayout-DOzpQGw8.css",
+    "src": "_AuthLayout-DOzpQGw8.css"
+  },
+  "_CourseCard-CbADi-Bs.js": {
+    "file": "assets/CourseCard-CbADi-Bs.js",
     "name": "CourseCard",
     "imports": [
       "resources/js/react/index.tsx",
-      "_star-co1CmKK-.js",
-      "_clock-B78HhOZ2.js",
-      "_circle-check-big-CEccDBOh.js"
+      "_star-CGTOIc_l.js",
+      "_clock-oLnp85Eq.js",
+      "_circle-check-big-BWpmqOA9.js"
     ]
   },
-  "_Seo-Rs17WUWT.js": {
-    "file": "assets/Seo-Rs17WUWT.js",
+  "_Seo-DEHcWuS0.js": {
+    "file": "assets/Seo-DEHcWuS0.js",
     "name": "Seo",
     "imports": [
       "resources/js/react/index.tsx"
     ]
   },
-  "_Turnstile-BfZqlXKw.js": {
-    "file": "assets/Turnstile-BfZqlXKw.js",
+  "_Turnstile-ViR2jhRK.js": {
+    "file": "assets/Turnstile-ViR2jhRK.js",
     "name": "Turnstile",
     "imports": [
       "resources/js/react/index.tsx",
       "_vendor-BaUKcBIJ.js"
     ]
   },
-  "_award-_EHaQY9-.js": {
-    "file": "assets/award-_EHaQY9-.js",
+  "_award-C4e5IWor.js": {
+    "file": "assets/award-C4e5IWor.js",
     "name": "award",
     "imports": [
       "resources/js/react/index.tsx"
     ]
   },
-  "_book-open-BYfRH0_9.js": {
-    "file": "assets/book-open-BYfRH0_9.js",
+  "_book-open-CXU8IJ2c.js": {
+    "file": "assets/book-open-CXU8IJ2c.js",
     "name": "book-open",
     "imports": [
       "resources/js/react/index.tsx"
     ]
   },
-  "_calendar-CU86ZrqG.js": {
-    "file": "assets/calendar-CU86ZrqG.js",
+  "_calendar-fLFj4cA9.js": {
+    "file": "assets/calendar-fLFj4cA9.js",
     "name": "calendar",
     "imports": [
       "resources/js/react/index.tsx"
     ]
   },
-  "_chevron-right-BqvzBpsQ.js": {
-    "file": "assets/chevron-right-BqvzBpsQ.js",
+  "_chevron-right-ByajRhOp.js": {
+    "file": "assets/chevron-right-ByajRhOp.js",
     "name": "chevron-right",
     "imports": [
       "resources/js/react/index.tsx"
     ]
   },
-  "_chevron-up-DssX-sYn.js": {
-    "file": "assets/chevron-up-DssX-sYn.js",
+  "_chevron-up-CMYSNhLt.js": {
+    "file": "assets/chevron-up-CMYSNhLt.js",
     "name": "chevron-up",
     "imports": [
       "resources/js/react/index.tsx"
     ]
   },
-  "_circle-check-big-CEccDBOh.js": {
-    "file": "assets/circle-check-big-CEccDBOh.js",
+  "_circle-check-big-BWpmqOA9.js": {
+    "file": "assets/circle-check-big-BWpmqOA9.js",
     "name": "circle-check-big",
     "imports": [
       "resources/js/react/index.tsx"
     ]
   },
-  "_circle-play-CEZJ04bj.js": {
-    "file": "assets/circle-play-CEZJ04bj.js",
+  "_circle-play-B3nlUsx3.js": {
+    "file": "assets/circle-play-B3nlUsx3.js",
     "name": "circle-play",
     "imports": [
       "resources/js/react/index.tsx"
     ]
   },
-  "_clock-B78HhOZ2.js": {
-    "file": "assets/clock-B78HhOZ2.js",
+  "_clock-oLnp85Eq.js": {
+    "file": "assets/clock-oLnp85Eq.js",
     "name": "clock",
     "imports": [
       "resources/js/react/index.tsx"
     ]
   },
-  "_globe-BrnhRDUe.js": {
-    "file": "assets/globe-BrnhRDUe.js",
+  "_globe-CtegJ_RY.js": {
+    "file": "assets/globe-CtegJ_RY.js",
     "name": "globe",
     "imports": [
       "resources/js/react/index.tsx"
@@ -108,29 +108,29 @@
     "file": "assets/index-ngrFHoWO.js",
     "name": "index"
   },
-  "_map-pin-DhSsXwbG.js": {
-    "file": "assets/map-pin-DhSsXwbG.js",
+  "_map-pin-hHPvlE9h.js": {
+    "file": "assets/map-pin-hHPvlE9h.js",
     "name": "map-pin",
     "imports": [
       "resources/js/react/index.tsx"
     ]
   },
-  "_share-2-DkzZb72H.js": {
-    "file": "assets/share-2-DkzZb72H.js",
+  "_share-2-BsAe3xlx.js": {
+    "file": "assets/share-2-BsAe3xlx.js",
     "name": "share-2",
     "imports": [
       "resources/js/react/index.tsx"
     ]
   },
-  "_star-co1CmKK-.js": {
-    "file": "assets/star-co1CmKK-.js",
+  "_star-CGTOIc_l.js": {
+    "file": "assets/star-CGTOIc_l.js",
     "name": "star",
     "imports": [
       "resources/js/react/index.tsx"
     ]
   },
-  "_users-CjB_whFg.js": {
-    "file": "assets/users-CjB_whFg.js",
+  "_users-B_FrTEqR.js": {
+    "file": "assets/users-B_FrTEqR.js",
     "name": "users",
     "imports": [
       "resources/js/react/index.tsx"
@@ -167,7 +167,7 @@
     ]
   },
   "resources/js/react/components/AboutPage.tsx": {
-    "file": "assets/AboutPage-BEo6BNKY.js",
+    "file": "assets/AboutPage-RNe4xKnq.js",
     "name": "AboutPage",
     "src": "resources/js/react/components/AboutPage.tsx",
     "isDynamicEntry": true,
@@ -178,32 +178,32 @@
     ]
   },
   "resources/js/react/components/BlogPage.tsx": {
-    "file": "assets/BlogPage-Deefrxhm.js",
+    "file": "assets/BlogPage-CQrhK1xw.js",
     "name": "BlogPage",
     "src": "resources/js/react/components/BlogPage.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/react/index.tsx",
       "_vendor-BaUKcBIJ.js",
-      "_calendar-CU86ZrqG.js",
+      "_calendar-fLFj4cA9.js",
       "_index-ngrFHoWO.js"
     ]
   },
   "resources/js/react/components/BlogPostDetail.tsx": {
-    "file": "assets/BlogPostDetail-Bwj715D4.js",
+    "file": "assets/BlogPostDetail-DMdrv0uC.js",
     "name": "BlogPostDetail",
     "src": "resources/js/react/components/BlogPostDetail.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/react/index.tsx",
       "_vendor-BaUKcBIJ.js",
-      "_calendar-CU86ZrqG.js",
-      "_share-2-DkzZb72H.js",
+      "_calendar-fLFj4cA9.js",
+      "_share-2-BsAe3xlx.js",
       "_index-ngrFHoWO.js"
     ]
   },
   "resources/js/react/components/CmsPage.tsx": {
-    "file": "assets/CmsPage-CzFO9QXW.js",
+    "file": "assets/CmsPage-Cxut6xUK.js",
     "name": "CmsPage",
     "src": "resources/js/react/components/CmsPage.tsx",
     "isDynamicEntry": true,
@@ -214,69 +214,69 @@
     ]
   },
   "resources/js/react/components/ContactPage.tsx": {
-    "file": "assets/ContactPage-D1xdxg_o.js",
+    "file": "assets/ContactPage-B0h7wcaf.js",
     "name": "ContactPage",
     "src": "resources/js/react/components/ContactPage.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/react/index.tsx",
       "_vendor-BaUKcBIJ.js",
-      "_Turnstile-BfZqlXKw.js",
-      "_map-pin-DhSsXwbG.js",
-      "_circle-check-big-CEccDBOh.js",
+      "_Turnstile-ViR2jhRK.js",
+      "_map-pin-hHPvlE9h.js",
+      "_circle-check-big-BWpmqOA9.js",
       "_index-ngrFHoWO.js"
     ]
   },
   "resources/js/react/components/CourseDetailsPage.tsx": {
-    "file": "assets/CourseDetailsPage-ozP3jUYJ.js",
+    "file": "assets/CourseDetailsPage-DT3dPmDK.js",
     "name": "CourseDetailsPage",
     "src": "resources/js/react/components/CourseDetailsPage.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/react/index.tsx",
       "_vendor-BaUKcBIJ.js",
-      "_star-co1CmKK-.js",
-      "_users-CjB_whFg.js",
-      "_circle-play-CEZJ04bj.js",
-      "_award-_EHaQY9-.js",
-      "_clock-B78HhOZ2.js",
-      "_chevron-up-DssX-sYn.js",
-      "_globe-BrnhRDUe.js",
-      "_share-2-DkzZb72H.js",
+      "_star-CGTOIc_l.js",
+      "_users-B_FrTEqR.js",
+      "_circle-play-B3nlUsx3.js",
+      "_award-C4e5IWor.js",
+      "_clock-oLnp85Eq.js",
+      "_chevron-up-CMYSNhLt.js",
+      "_globe-CtegJ_RY.js",
+      "_share-2-BsAe3xlx.js",
       "_index-ngrFHoWO.js"
     ]
   },
   "resources/js/react/components/CoursesPage.tsx": {
-    "file": "assets/CoursesPage-MBbvBZGN.js",
+    "file": "assets/CoursesPage-DmD7fimF.js",
     "name": "CoursesPage",
     "src": "resources/js/react/components/CoursesPage.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/react/index.tsx",
       "_vendor-BaUKcBIJ.js",
-      "_CourseCard-D01g9XtX.js",
-      "_Seo-Rs17WUWT.js",
-      "_book-open-BYfRH0_9.js",
+      "_CourseCard-CbADi-Bs.js",
+      "_Seo-DEHcWuS0.js",
+      "_book-open-CXU8IJ2c.js",
       "_index-ngrFHoWO.js",
-      "_star-co1CmKK-.js",
-      "_clock-B78HhOZ2.js",
-      "_circle-check-big-CEccDBOh.js"
+      "_star-CGTOIc_l.js",
+      "_clock-oLnp85Eq.js",
+      "_circle-check-big-BWpmqOA9.js"
     ]
   },
   "resources/js/react/components/FaqPage.tsx": {
-    "file": "assets/FaqPage-sgPdbWFg.js",
+    "file": "assets/FaqPage-BIhy3IXO.js",
     "name": "FaqPage",
     "src": "resources/js/react/components/FaqPage.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/react/index.tsx",
       "_vendor-BaUKcBIJ.js",
-      "_chevron-up-DssX-sYn.js",
+      "_chevron-up-CMYSNhLt.js",
       "_index-ngrFHoWO.js"
     ]
   },
   "resources/js/react/components/GuidePage.tsx": {
-    "file": "assets/GuidePage-DLdPr0kF.js",
+    "file": "assets/GuidePage-Cu-sRJU5.js",
     "name": "GuidePage",
     "src": "resources/js/react/components/GuidePage.tsx",
     "isDynamicEntry": true,
@@ -287,68 +287,86 @@
     ]
   },
   "resources/js/react/components/Home.tsx": {
-    "file": "assets/Home-KzVhMvfO.js",
+    "file": "assets/Home-BGu1_sWZ.js",
     "name": "Home",
     "src": "resources/js/react/components/Home.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/react/index.tsx",
       "_vendor-BaUKcBIJ.js",
-      "_CourseCard-D01g9XtX.js",
-      "_chevron-right-BqvzBpsQ.js",
+      "_CourseCard-CbADi-Bs.js",
+      "_chevron-right-ByajRhOp.js",
       "_index-ngrFHoWO.js",
-      "_star-co1CmKK-.js",
-      "_clock-B78HhOZ2.js",
-      "_circle-check-big-CEccDBOh.js"
+      "_star-CGTOIc_l.js",
+      "_clock-oLnp85Eq.js",
+      "_circle-check-big-BWpmqOA9.js"
     ]
   },
   "resources/js/react/components/HowItWorksPage.tsx": {
-    "file": "assets/HowItWorksPage-Du1qLS_a.js",
+    "file": "assets/HowItWorksPage-K1jdITGa.js",
     "name": "HowItWorksPage",
     "src": "resources/js/react/components/HowItWorksPage.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/react/index.tsx",
-      "_globe-BrnhRDUe.js",
-      "_clock-B78HhOZ2.js",
+      "_globe-CtegJ_RY.js",
+      "_clock-oLnp85Eq.js",
       "_vendor-BaUKcBIJ.js",
       "_index-ngrFHoWO.js"
     ]
   },
   "resources/js/react/components/InstructorProfilePage.tsx": {
-    "file": "assets/InstructorProfilePage-BhXwbRsk.js",
+    "file": "assets/InstructorProfilePage-BIf0mh-Y.js",
     "name": "InstructorProfilePage",
     "src": "resources/js/react/components/InstructorProfilePage.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/react/index.tsx",
       "_vendor-BaUKcBIJ.js",
-      "_CourseCard-D01g9XtX.js",
-      "_globe-BrnhRDUe.js",
-      "_share-2-DkzZb72H.js",
-      "_users-CjB_whFg.js",
-      "_circle-play-CEZJ04bj.js",
-      "_star-co1CmKK-.js",
+      "_CourseCard-CbADi-Bs.js",
+      "_globe-CtegJ_RY.js",
+      "_share-2-BsAe3xlx.js",
+      "_users-B_FrTEqR.js",
+      "_circle-play-B3nlUsx3.js",
+      "_star-CGTOIc_l.js",
       "_index-ngrFHoWO.js",
-      "_clock-B78HhOZ2.js",
-      "_circle-check-big-CEccDBOh.js"
+      "_clock-oLnp85Eq.js",
+      "_circle-check-big-BWpmqOA9.js"
     ]
   },
   "resources/js/react/components/PathsPage.tsx": {
-    "file": "assets/PathsPage-D4MyH1LQ.js",
+    "file": "assets/PathsPage-6jCl1o7V.js",
     "name": "PathsPage",
     "src": "resources/js/react/components/PathsPage.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/react/index.tsx",
       "_vendor-BaUKcBIJ.js",
-      "_Seo-Rs17WUWT.js",
-      "_map-pin-DhSsXwbG.js",
+      "_Seo-DEHcWuS0.js",
+      "_map-pin-hHPvlE9h.js",
       "_index-ngrFHoWO.js"
     ]
   },
+  "resources/js/react/components/SearchPage.tsx": {
+    "file": "assets/SearchPage-DcgmNd4D.js",
+    "name": "SearchPage",
+    "src": "resources/js/react/components/SearchPage.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/react/index.tsx",
+      "_vendor-BaUKcBIJ.js",
+      "_CourseCard-CbADi-Bs.js",
+      "_Seo-DEHcWuS0.js",
+      "_book-open-CXU8IJ2c.js",
+      "_users-B_FrTEqR.js",
+      "_index-ngrFHoWO.js",
+      "_star-CGTOIc_l.js",
+      "_clock-oLnp85Eq.js",
+      "_circle-check-big-BWpmqOA9.js"
+    ]
+  },
   "resources/js/react/components/SuccessStoriesPage.tsx": {
-    "file": "assets/SuccessStoriesPage-DUc36A73.js",
+    "file": "assets/SuccessStoriesPage-SryUJCI3.js",
     "name": "SuccessStoriesPage",
     "src": "resources/js/react/components/SuccessStoriesPage.tsx",
     "isDynamicEntry": true,
@@ -359,68 +377,68 @@
     ]
   },
   "resources/js/react/components/auth/ForgotPasswordPage.tsx": {
-    "file": "assets/ForgotPasswordPage-QjuPUxKh.js",
+    "file": "assets/ForgotPasswordPage-BAD0IAKa.js",
     "name": "ForgotPasswordPage",
     "src": "resources/js/react/components/auth/ForgotPasswordPage.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/react/index.tsx",
       "_vendor-BaUKcBIJ.js",
-      "_AuthLayout-EHpIB3u1.js",
-      "_Turnstile-BfZqlXKw.js",
+      "_AuthLayout-Cn_OCt7k.js",
+      "_Turnstile-ViR2jhRK.js",
       "_index-ngrFHoWO.js",
-      "_book-open-BYfRH0_9.js",
-      "_users-CjB_whFg.js"
+      "_book-open-CXU8IJ2c.js",
+      "_users-B_FrTEqR.js"
     ]
   },
   "resources/js/react/components/auth/LoginPage.tsx": {
-    "file": "assets/LoginPage-CAnWN3AI.js",
+    "file": "assets/LoginPage-D0SZlzom.js",
     "name": "LoginPage",
     "src": "resources/js/react/components/auth/LoginPage.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/react/index.tsx",
       "_vendor-BaUKcBIJ.js",
-      "_AuthLayout-EHpIB3u1.js",
-      "_Turnstile-BfZqlXKw.js",
+      "_AuthLayout-Cn_OCt7k.js",
+      "_Turnstile-ViR2jhRK.js",
       "_index-ngrFHoWO.js",
-      "_book-open-BYfRH0_9.js",
-      "_users-CjB_whFg.js"
+      "_book-open-CXU8IJ2c.js",
+      "_users-B_FrTEqR.js"
     ]
   },
   "resources/js/react/components/auth/ResetPasswordPage.tsx": {
-    "file": "assets/ResetPasswordPage-EaO5mWsN.js",
+    "file": "assets/ResetPasswordPage-BaO-50Ui.js",
     "name": "ResetPasswordPage",
     "src": "resources/js/react/components/auth/ResetPasswordPage.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/react/index.tsx",
       "_vendor-BaUKcBIJ.js",
-      "_AuthLayout-EHpIB3u1.js",
-      "_Turnstile-BfZqlXKw.js",
-      "_circle-check-big-CEccDBOh.js",
+      "_AuthLayout-Cn_OCt7k.js",
+      "_Turnstile-ViR2jhRK.js",
+      "_circle-check-big-BWpmqOA9.js",
       "_index-ngrFHoWO.js",
-      "_book-open-BYfRH0_9.js",
-      "_users-CjB_whFg.js"
+      "_book-open-CXU8IJ2c.js",
+      "_users-B_FrTEqR.js"
     ]
   },
   "resources/js/react/components/auth/SignupPage.tsx": {
-    "file": "assets/SignupPage-M3nYTiVh.js",
+    "file": "assets/SignupPage-B_dfQYtX.js",
     "name": "SignupPage",
     "src": "resources/js/react/components/auth/SignupPage.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/react/index.tsx",
       "_vendor-BaUKcBIJ.js",
-      "_AuthLayout-EHpIB3u1.js",
-      "_Turnstile-BfZqlXKw.js",
+      "_AuthLayout-Cn_OCt7k.js",
+      "_Turnstile-ViR2jhRK.js",
       "_index-ngrFHoWO.js",
-      "_book-open-BYfRH0_9.js",
-      "_users-CjB_whFg.js"
+      "_book-open-CXU8IJ2c.js",
+      "_users-B_FrTEqR.js"
     ]
   },
   "resources/js/react/components/auth/VerifyEmailPage.tsx": {
-    "file": "assets/VerifyEmailPage-CFMs71ac.js",
+    "file": "assets/VerifyEmailPage-D2VOgLeu.js",
     "name": "VerifyEmailPage",
     "src": "resources/js/react/components/auth/VerifyEmailPage.tsx",
     "isDynamicEntry": true,
@@ -431,36 +449,36 @@
     ]
   },
   "resources/js/react/components/cart/CartPage.tsx": {
-    "file": "assets/CartPage-8UTC7Lpz.js",
+    "file": "assets/CartPage-DTm8nk9p.js",
     "name": "CartPage",
     "src": "resources/js/react/components/cart/CartPage.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/react/index.tsx",
-      "_book-open-BYfRH0_9.js",
-      "_clock-B78HhOZ2.js",
+      "_book-open-CXU8IJ2c.js",
+      "_clock-oLnp85Eq.js",
       "_vendor-BaUKcBIJ.js",
       "_index-ngrFHoWO.js"
     ]
   },
   "resources/js/react/components/dashboard/DashboardPage.tsx": {
-    "file": "assets/DashboardPage-D0OKEPGh.js",
+    "file": "assets/DashboardPage-DtrSOjX_.js",
     "name": "DashboardPage",
     "src": "resources/js/react/components/dashboard/DashboardPage.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/react/index.tsx",
       "_vendor-BaUKcBIJ.js",
-      "_chevron-right-BqvzBpsQ.js",
-      "_globe-BrnhRDUe.js",
-      "_book-open-BYfRH0_9.js",
-      "_award-_EHaQY9-.js",
-      "_clock-B78HhOZ2.js",
+      "_chevron-right-ByajRhOp.js",
+      "_globe-CtegJ_RY.js",
+      "_book-open-CXU8IJ2c.js",
+      "_award-C4e5IWor.js",
+      "_clock-oLnp85Eq.js",
       "_index-ngrFHoWO.js"
     ]
   },
   "resources/js/react/index.tsx": {
-    "file": "assets/index-ZUbZZPuZ.js",
+    "file": "assets/index-DUPN5j2i.js",
     "name": "index",
     "src": "resources/js/react/index.tsx",
     "isEntry": true,
@@ -490,6 +508,7 @@
       "resources/js/react/components/PathsPage.tsx",
       "resources/js/react/components/dashboard/DashboardPage.tsx",
       "resources/js/react/components/cart/CartPage.tsx",
+      "resources/js/react/components/SearchPage.tsx",
       "resources/js/react/components/Home.tsx",
       "resources/js/react/components/AboutPage.tsx",
       "resources/js/react/components/ContactPage.tsx",
@@ -506,12 +525,13 @@
       "resources/js/react/components/auth/ResetPasswordPage.tsx",
       "resources/js/react/components/dashboard/DashboardPage.tsx",
       "resources/js/react/components/cart/CartPage.tsx",
+      "resources/js/react/components/SearchPage.tsx",
       "resources/js/react/components/CourseDetailsPage.tsx",
       "resources/js/react/components/InstructorProfilePage.tsx",
       "resources/js/react/components/BlogPostDetail.tsx"
     ],
     "css": [
-      "assets/index-CNjR2gvh.css"
+      "assets/index-DXlwA1sX.css"
     ]
   }
 }

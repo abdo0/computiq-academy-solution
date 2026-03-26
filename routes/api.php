@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ContentController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\InstructorController;
 use App\Http\Controllers\Api\SeoController;
+use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\TranslationController;
 use Illuminate\Support\Facades\Route;
 
@@ -69,6 +70,9 @@ Route::prefix('v1')->group(function () {
     Route::prefix('seo')->group(function () {
         Route::get('/', [SeoController::class, 'getSeo'])->name('api.v1.seo.get');
     });
+
+    // Global Search
+    Route::get('/search', [SearchController::class, 'index'])->name('api.v1.search');
 
     // Contact Form (public)
     Route::post('/contact', [\App\Http\Controllers\Api\ContactController::class, 'store'])->name('api.v1.contact.store')->middleware('turnstile');

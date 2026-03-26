@@ -1197,5 +1197,18 @@
     "Course added to cart successfully.": "Course added to cart successfully.",
     "Course removed from cart.": "Course removed from cart.",
     "Item not found in your cart.": "Item not found in your cart.",
-    "Your cart has been cleared.": "Your cart has been cleared."
+    "Your cart has been cleared.": "Your cart has been cleared.",
+    "Search Results": "Search Results",
+    "Search results for": "Search results for",
+    "results": "results",
+    "Enter a search term": "Enter a search term",
+    "Search for courses, instructors, and more": "Search for courses, instructors, and more",
+    "No results found": "No results found",
+    "No results found for": "No results found for",
+    "Try a different search term.": "Try a different search term.",
+    "Instructors": "Instructors",
+    "Courses": "Courses",
+    "Load More": "Load More",
+    "Loading...": "Loading...",
+    "View Cart": "View Cart"
 }

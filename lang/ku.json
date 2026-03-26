@@ -1197,5 +1197,18 @@
     "Course added to cart successfully.": "خولەکە بە سەرکەوتوویی زیادکرا بۆ سەبەتە.",
     "Course removed from cart.": "خولەکە لە سەبەتە لابرا.",
     "Item not found in your cart.": "بابەت لە سەبەتەکەتدا نەدۆزرایەوە.",
-    "Your cart has been cleared.": "سەبەتەکەت بەتاڵ کرایەوە."
+    "Your cart has been cleared.": "سەبەتەکەت بەتاڵ کرایەوە.",
+    "Search Results": "ئەنجامەکانی گەڕان",
+    "Search results for": "ئەنجامەکانی گەڕان بۆ",
+    "results": "ئەنجام",
+    "Enter a search term": "وشەیەک بنووسە بۆ گەڕان",
+    "Search for courses, instructors, and more": "بگەڕێ بۆ خولەکان و مامۆستاکان و زیاتر",
+    "No results found": "هیچ ئەنجامێک نەدۆزرایەوە",
+    "No results found for": "هیچ ئەنجامێک نەدۆزرایەوە بۆ",
+    "Try a different search term.": "وشەیەکی تری گەڕان تاقی بکەرەوە.",
+    "Instructors": "مامۆستاکان",
+    "Courses": "خولەکان",
+    "Load More": "زیاتر ببینە",
+    "Loading...": "چاوەڕوان بە...",
+    "View Cart": "بینینی سەبەتە"
 }

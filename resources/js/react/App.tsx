@@ -30,6 +30,7 @@ const InstructorProfilePage = React.lazy(() => import('./components/InstructorPr
 const PathsPage = React.lazy(() => import('./components/PathsPage'));
 const DashboardPage = React.lazy(() => import('./components/dashboard/DashboardPage'));
 const CartPage = React.lazy(() => import('./components/cart/CartPage'));
+const SearchPage = React.lazy(() => import('./components/SearchPage'));
 
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { TranslationProvider, useTranslation } from './contexts/TranslationProvider';
@@ -68,6 +69,7 @@ export const pageImportMap: Record<string, () => Promise<any>> = {
   '/reset-password': () => import('./components/auth/ResetPasswordPage'),
   '/dashboard': () => import('./components/dashboard/DashboardPage'),
   '/cart': () => import('./components/cart/CartPage'),
+  '/search': () => import('./components/SearchPage'),
 };
 
 /**
@@ -126,6 +128,10 @@ export const preloadPage = (path: string): Promise<any> => {
           dataPromises.push(dataService.getDynamicPage('faq').catch(() => null));
       } else if (['/about', '/contact', '/guide', '/how-it-works', '/success-stories'].includes(normalized)) {
           dataPromises.push(dataService.getDynamicPage(normalized.substring(1)).catch(() => null));
+      } else if (normalized === '/search') {
+          const params = new URLSearchParams(window.location.search);
+          const q = params.get('q');
+          if (q) dataPromises.push(dataService.searchGlobal(q).catch(() => null));
       }
       return Promise.all(dataPromises);
   }).catch(() => {});
@@ -249,6 +255,7 @@ const AppContent: React.FC = () => {
       {/* Dashboard (authenticated) */}
       <Route path="dashboard" element={<DashboardPage />} />
       <Route path="cart" element={<CartPage />} />
+      <Route path="search" element={<SearchPage />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
