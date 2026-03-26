@@ -241,6 +241,7 @@ const CoursesPage: React.FC = () => {
                                             price={course.price}
                                             oldPrice={course.old_price}
                                             link={`/courses/${course.slug}`}
+                                            courseId={course.id}
                                         />
                                     ))}
                                 </div>

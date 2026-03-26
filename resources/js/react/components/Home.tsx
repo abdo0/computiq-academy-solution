@@ -84,6 +84,7 @@ const Home: React.FC = () => {
     price: String(c.price),
     oldPrice: c.old_price ? String(c.old_price) : undefined,
     link: `/courses/${c.slug}`,
+    courseId: c.id,
     categorySlug: c.category_slug,
   });
 

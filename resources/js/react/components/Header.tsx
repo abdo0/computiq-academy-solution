@@ -12,6 +12,8 @@ import Logo from './Logo';
 import AppLink from './common/AppLink';
 import NProgress from 'nprogress';
 import { preloadPage } from '../App';
+import { useCart } from '../contexts/CartContext';
+import CartSlideOver from './cart/CartSlideOver';
 
 interface HeaderProps {
   onLoginClick: () => void;
@@ -23,6 +25,7 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   const [isLangLoading, setIsLangLoading] = useState(false);
   const [activeCourseType, setActiveCourseType] = useState<string | null>(null);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   const [dbCategories, setDbCategories] = useState<any[]>([]);
   const [dbCourses, setDbCourses] = useState<any[]>([]);
@@ -31,6 +34,7 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
   const { language, setLanguage } = useLanguage();
   const { __, t, prefetchLocale, applyFetchedLocale } = useTranslation();
   const { user } = useAuth();
+  const { cartCount } = useCart();
   const { settings } = useSettings();
   const { theme, toggleTheme } = useTheme();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -293,9 +297,13 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
           <div className="flex items-center gap-4 shrink-0 justify-end flex-1 lg:flex-none">
 
             {/* Cart Icon */}
-            <button className="relative p-2 text-gray-400 hover:text-brand-600 dark:text-gray-500 transition-colors hidden sm:block">
+            <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-gray-400 hover:text-brand-600 dark:text-gray-500 transition-colors hidden sm:block">
               <ShoppingCart size={20} />
-              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border border-white dark:border-gray-900 rounded-full"></span>
+              {cartCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full border-2 border-white dark:border-gray-900 px-1">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
             </button>
 
             {/* Auth Buttons */}
@@ -440,6 +448,8 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
           </div>
         </div>
       )}
+
+      <CartSlideOver isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </nav>
   );
 };

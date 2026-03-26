@@ -8,6 +8,7 @@ import {
     Globe, Share2, ShoppingCart, CheckCircle2, ChevronDown, ChevronUp, User, ChevronLeft, ChevronRight, Loader2
 } from 'lucide-react';
 import AppLink from './common/AppLink';
+import { useCart } from '../contexts/CartContext';
 
 const CourseDetailsPage: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
@@ -15,6 +16,7 @@ const CourseDetailsPage: React.FC = () => {
     const { language } = useLanguage();
     const { __, t } = useTranslation();
     const isRTL = language === 'ar' || language === 'ku';
+    const { addToCart, isInCart } = useCart();
 
     const [course, setCourse] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -356,7 +358,14 @@ const CourseDetailsPage: React.FC = () => {
                                     <button className="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 px-4 rounded-md text-base transition-colors shadow-lg shadow-brand-600/20 active:scale-95">
                                         {isRTL ? 'سجّل الآن' : 'Enroll Now'}
                                     </button>
-                                    <button className="w-14 h-[52px] shrink-0 border-2 border-brand-100 dark:border-gray-700 flex items-center justify-center rounded-md text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-gray-800 transition-colors active:scale-95">
+                                    <button
+                                        onClick={() => addToCart(course.id)}
+                                        className={`w-14 h-[52px] shrink-0 border-2 flex items-center justify-center rounded-md transition-colors active:scale-95 ${
+                                            isInCart(course.id)
+                                                ? 'border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
+                                                : 'border-brand-100 dark:border-gray-700 text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-gray-800'
+                                        }`}
+                                    >
                                         <ShoppingCart className="w-5 h-5" />
                                     </button>
                                 </div>

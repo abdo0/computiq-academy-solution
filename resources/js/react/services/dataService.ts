@@ -593,6 +593,43 @@ export const userAuthService = {
             };
         }
     },
+
+    // ── Cart ──
+
+    getCart: async (): Promise<any> => {
+        const response = await api.get('/user/cart');
+        return response.data.data;
+    },
+
+    addToCart: async (courseId: number): Promise<{ success: boolean; count?: number; already_exists?: boolean; message?: string; error?: string }> => {
+        try {
+            const response = await api.post('/user/cart', { course_id: courseId });
+            return { success: true, count: response.data.data?.count, message: response.data.message };
+        } catch (error: any) {
+            if (error.response?.status === 409) {
+                return { success: false, already_exists: true, error: error.response?.data?.message };
+            }
+            return { success: false, error: error.response?.data?.message || 'Failed to add to cart' };
+        }
+    },
+
+    removeFromCart: async (courseId: number): Promise<{ success: boolean; count?: number; message?: string; error?: string }> => {
+        try {
+            const response = await api.delete(`/user/cart/${courseId}`);
+            return { success: true, count: response.data.data?.count, message: response.data.message };
+        } catch (error: any) {
+            return { success: false, error: error.response?.data?.message || 'Failed to remove from cart' };
+        }
+    },
+
+    clearCart: async (): Promise<{ success: boolean; message?: string; error?: string }> => {
+        try {
+            const response = await api.delete('/user/cart');
+            return { success: true, message: response.data.message };
+        } catch (error: any) {
+            return { success: false, error: error.response?.data?.message || 'Failed to clear cart' };
+        }
+    },
 };
 
 // Auth Service for Organization

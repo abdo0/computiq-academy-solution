@@ -1,7 +1,8 @@
 import React from 'react';
-import { Star, Clock, User, ShoppingCart } from 'lucide-react';
+import { Star, Clock, User, ShoppingCart, CheckCircle } from 'lucide-react';
 import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { useTranslation } from '../../contexts/TranslationProvider';
+import { useCart } from '../../contexts/CartContext';
 import AppLink from '../common/AppLink';
 
 interface CourseCardProps {
@@ -19,6 +20,7 @@ interface CourseCardProps {
   price: string;
   oldPrice?: string;
   link: string;
+  courseId?: number;
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({
@@ -35,9 +37,12 @@ const CourseCard: React.FC<CourseCardProps> = ({
   price,
   oldPrice,
   link,
+  courseId,
 }) => {
   const navigate = useAppNavigate();
   const { __ } = useTranslation();
+  const { addToCart, isInCart } = useCart();
+  const inCart = courseId ? isInCart(courseId) : false;
 
   return (
     <div className="group bg-white dark:bg-slate-900 rounded-md overflow-hidden border border-gray-100 dark:border-slate-800/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] dark:hover:shadow-[0_20px_40px_rgb(0,0,0,0.2)] hover:-translate-y-1 transition-all duration-500 flex flex-col h-full relative">
@@ -130,11 +135,15 @@ const CourseCard: React.FC<CourseCardProps> = ({
           {/* Action Buttons */}
           <div className="flex items-center gap-2 relative z-20">
             <button 
-              onClick={(e) => e.stopPropagation()}
-              className="p-2.5 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-slate-800 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-[14px] transition-all active:scale-95"
-              aria-label="Add to cart"
+              onClick={(e) => { e.stopPropagation(); if (courseId && !inCart) addToCart(courseId); }}
+              className={`p-2.5 rounded-[14px] transition-all active:scale-95 ${
+                inCart
+                  ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30'
+                  : 'text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-slate-800 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/30'
+              }`}
+              aria-label={inCart ? __('In Cart') : __('Add to Cart')}
             >
-              <ShoppingCart className="w-[18px] h-[18px]" />
+              {inCart ? <CheckCircle className="w-[18px] h-[18px]" /> : <ShoppingCart className="w-[18px] h-[18px]" />}
             </button>
             <AppLink
               to={link}

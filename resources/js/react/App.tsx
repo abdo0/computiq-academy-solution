@@ -29,12 +29,14 @@ const CourseDetailsPage = React.lazy(() => import('./components/CourseDetailsPag
 const InstructorProfilePage = React.lazy(() => import('./components/InstructorProfilePage'));
 const PathsPage = React.lazy(() => import('./components/PathsPage'));
 const DashboardPage = React.lazy(() => import('./components/dashboard/DashboardPage'));
+const CartPage = React.lazy(() => import('./components/cart/CartPage'));
 
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { TranslationProvider, useTranslation } from './contexts/TranslationProvider';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { WhitelistProvider } from './contexts/WhitelistContext';
+import { CartProvider } from './contexts/CartContext';
 import { ToastContainer } from 'react-toastify';
 import { HelmetProvider } from 'react-helmet-async';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
@@ -65,6 +67,7 @@ export const pageImportMap: Record<string, () => Promise<any>> = {
   '/forgot-password': () => import('./components/auth/ForgotPasswordPage'),
   '/reset-password': () => import('./components/auth/ResetPasswordPage'),
   '/dashboard': () => import('./components/dashboard/DashboardPage'),
+  '/cart': () => import('./components/cart/CartPage'),
 };
 
 /**
@@ -245,6 +248,7 @@ const AppContent: React.FC = () => {
       
       {/* Dashboard (authenticated) */}
       <Route path="dashboard" element={<DashboardPage />} />
+      <Route path="cart" element={<CartPage />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -312,7 +316,9 @@ function App() {
               <SettingsProvider>
                 <AuthProvider>
                   <WhitelistProvider>
-                    <AppContent />
+                    <CartProvider>
+                      <AppContent />
+                    </CartProvider>
                     <TwoFactorModal
                       isOpen={false}
                       onClose={() => { }}

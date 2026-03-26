@@ -96,6 +96,12 @@ Route::prefix('v1')->group(function () {
             Route::post('/profile/password', [\App\Http\Controllers\Api\UserAuthController::class, 'updatePassword'])->name('api.v1.user.profile.password');
             Route::post('/locale', [\App\Http\Controllers\Api\UserAuthController::class, 'updateLocale'])->name('api.v1.user.locale');
             Route::get('/dashboard/stats', [\App\Http\Controllers\Api\UserAuthController::class, 'dashboardStats'])->name('api.v1.user.dashboard.stats');
+
+            // Cart routes
+            Route::get('/cart', [\App\Http\Controllers\Api\CartController::class, 'index'])->name('api.v1.user.cart.index');
+            Route::post('/cart', [\App\Http\Controllers\Api\CartController::class, 'store'])->name('api.v1.user.cart.store');
+            Route::delete('/cart/{courseId}', [\App\Http\Controllers\Api\CartController::class, 'destroy'])->name('api.v1.user.cart.destroy');
+            Route::delete('/cart', [\App\Http\Controllers\Api\CartController::class, 'clear'])->name('api.v1.user.cart.clear');
         });
     });
 

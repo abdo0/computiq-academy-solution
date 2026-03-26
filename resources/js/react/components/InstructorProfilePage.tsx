@@ -190,6 +190,7 @@ const InstructorProfilePage: React.FC = () => {
                                     badge={course.is_best_seller ? (isRTL ? 'الأكثر مبيعاً' : 'Best Seller') : course.is_live ? (isRTL ? 'مباشر' : 'LIVE') : undefined}
                                     badgeColor={course.is_live ? 'bg-red-500' : undefined}
                                     link={`/courses/${course.slug}`}
+                                    courseId={course.id}
                                 />
                             ))}
                         </div>
