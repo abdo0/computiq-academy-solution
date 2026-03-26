@@ -155,7 +155,7 @@ const CourseGrid: React.FC<CourseGridProps> = ({
       {/* Background Decorative Blur */}
       <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 rounded-full bg-brand-500/5 blur-3xl pointer-events-none"></div>
       
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row items-baseline justify-between mb-10 gap-4">

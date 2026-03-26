@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useTranslation } from '../../contexts/TranslationProvider';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Trash2, ShoppingCart, BookOpen, ArrowRight, ArrowLeft, Clock } from 'lucide-react';
+import { Trash2, ShoppingCart, BookOpen, ArrowRight, ArrowLeft, Clock, Loader2 } from 'lucide-react';
 import AppLink from '../common/AppLink';
 
 const CartPage: React.FC = () => {
@@ -12,6 +12,13 @@ const CartPage: React.FC = () => {
     const { cartItems, cartCount, cartTotal, removeFromCart, clearCart } = useCart();
     const { __, t } = useTranslation();
     const { dir } = useLanguage();
+    const [removingItems, setRemovingItems] = useState<number[]>([]);
+
+    const handleRemove = async (courseId: number) => {
+        setRemovingItems(prev => [...prev, courseId]);
+        await removeFromCart(courseId);
+        setRemovingItems(prev => prev.filter(id => id !== courseId));
+    };
 
     if (!user) {
         return <Navigate to="/login" replace />;
@@ -103,11 +110,20 @@ const CartPage: React.FC = () => {
                                                 </p>
                                             </div>
                                             <button
-                                                onClick={() => removeFromCart(item.course_id)}
-                                                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                onClick={() => handleRemove(item.course_id)}
+                                                disabled={removingItems.includes(item.course_id)}
+                                                className={`p-2 rounded-lg transition-colors ${
+                                                    removingItems.includes(item.course_id)
+                                                        ? 'text-red-300 cursor-not-allowed'
+                                                        : 'text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
+                                                }`}
                                                 title={__('Remove')}
                                             >
-                                                <Trash2 className="w-4.5 h-4.5" />
+                                                {removingItems.includes(item.course_id) ? (
+                                                    <Loader2 className="w-4.5 h-4.5 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="w-4.5 h-4.5" />
+                                                )}
                                             </button>
                                         </div>
                                     </div>

@@ -26,7 +26,7 @@ const AcademicPartners: React.FC<AcademicPartnersProps> = ({ isLoading = false, 
   if (isLoading) {
     return (
       <section className="py-12 bg-white dark:bg-gray-900 border-y border-gray-100 dark:border-gray-800">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="h-5 w-40 bg-gray-200 dark:bg-gray-700 rounded mx-auto mb-8 animate-pulse"></div>
           <div className="flex items-center justify-center gap-12 flex-wrap">
             {[1,2,3,4,5,6].map(i => (
@@ -43,7 +43,7 @@ const AcademicPartners: React.FC<AcademicPartnersProps> = ({ isLoading = false, 
 
   return (
     <section className="py-12 lg:py-16 bg-white dark:bg-gray-900 border-y border-gray-100 dark:border-gray-800">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <h3 className="text-center text-lg font-bold text-gray-900 dark:text-white mb-10">
           {title}
         </h3>

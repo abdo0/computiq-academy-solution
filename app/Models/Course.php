@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Translatable\HasTranslations;
 
@@ -68,5 +69,12 @@ class Course extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(CourseReview::class)->latest();
+    }
+
+    public function learningPaths(): BelongsToMany
+    {
+        return $this->belongsToMany(LearningPath::class, 'learning_path_course')
+            ->withPivot('sort_order')
+            ->orderByPivot('sort_order');
     }
 }

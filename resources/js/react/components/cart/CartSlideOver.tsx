@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from '../../contexts/TranslationProvider';
 import { useCart } from '../../contexts/CartContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { X, Trash2, ShoppingCart, ArrowRight, ArrowLeft } from 'lucide-react';
+import { X, Trash2, ShoppingCart, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import AppLink from '../common/AppLink';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -15,8 +16,15 @@ const CartSlideOver: React.FC<CartSlideOverProps> = ({ isOpen, onClose }) => {
     const { __, t } = useTranslation();
     const { cartItems, cartCount, cartTotal, removeFromCart } = useCart();
     const { dir } = useLanguage();
+    const [removingItems, setRemovingItems] = useState<number[]>([]);
 
     const ArrowIcon = dir === 'rtl' ? ArrowLeft : ArrowRight;
+
+    const handleRemove = async (courseId: number) => {
+        setRemovingItems(prev => [...prev, courseId]);
+        await removeFromCart(courseId);
+        setRemovingItems(prev => prev.filter(id => id !== courseId));
+    };
 
     // Prevent body scroll when open
     useEffect(() => {
@@ -31,14 +39,14 @@ const CartSlideOver: React.FC<CartSlideOverProps> = ({ isOpen, onClose }) => {
     }, [isOpen]);
 
     // Slide animation parameters based on RTL/LTR
-    // LTR: slides from right (100% to 0)
-    // RTL: slides from left (-100% to 0)
+    // LTR (English): slides from right (100% to 0)
+    // RTL (Arabic): slides from left (-100% to 0)
     const slideDirection = dir === 'rtl' ? -100 : 100;
 
-    return (
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[100] flex justify-end">
+                <div className="fixed inset-0 z-[100]">
                     {/* Backdrop */}
                     <motion.div 
                         initial={{ opacity: 0 }}
@@ -49,13 +57,13 @@ const CartSlideOver: React.FC<CartSlideOverProps> = ({ isOpen, onClose }) => {
                         onClick={onClose}
                     />
 
-                    {/* Slide-over panel */}
+                    {/* Slide-over panel ALWAYS ON THE LEFT in Arabic, RIGHT in English */}
                     <motion.div 
                         initial={{ x: `${slideDirection}%` }}
                         animate={{ x: 0 }}
                         exit={{ x: `${slideDirection}%` }}
                         transition={{ duration: 0.3, ease: 'easeInOut' }}
-                        className="relative w-full max-w-md h-full bg-white dark:bg-gray-800 shadow-2xl flex flex-col"
+                        className="absolute top-0 bottom-0 ltr:right-0 rtl:left-0 w-full max-w-md bg-white dark:bg-gray-800 shadow-2xl flex flex-col"
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
@@ -119,10 +127,19 @@ const CartSlideOver: React.FC<CartSlideOverProps> = ({ isOpen, onClose }) => {
                                                             {t(item.course?.title)}
                                                         </AppLink>
                                                         <button 
-                                                            onClick={() => removeFromCart(item.course_id)}
-                                                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors shrink-0"
+                                                            onClick={(e) => { e.preventDefault(); handleRemove(item.course_id); }}
+                                                            disabled={removingItems.includes(item.course_id)}
+                                                            className={`p-1.5 rounded-md transition-colors shrink-0 ${
+                                                                removingItems.includes(item.course_id)
+                                                                    ? 'text-red-300 cursor-not-allowed'
+                                                                    : 'text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
+                                                            }`}
                                                         >
-                                                            <Trash2 className="w-4 h-4" />
+                                                            {removingItems.includes(item.course_id) ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                            ) : (
+                                                                <Trash2 className="w-4 h-4" />
+                                                            )}
                                                         </button>
                                                     </div>
                                                     <div className="mt-2 flex items-end justify-between">
@@ -168,7 +185,8 @@ const CartSlideOver: React.FC<CartSlideOverProps> = ({ isOpen, onClose }) => {
                     </motion.div>
                 </div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
 

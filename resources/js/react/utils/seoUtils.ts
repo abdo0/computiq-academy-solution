@@ -9,6 +9,11 @@ export const determineSeoParams = (path: string): { type: string, slug?: string 
         type = slug ? 'course' : 'courses';
     } else if (path === '/courses') {
         type = 'courses';
+    } else if (path.startsWith('/paths/')) {
+        slug = path.replace('/paths/', '');
+        type = slug ? 'path-detail' : 'paths';
+    } else if (path === '/paths') {
+        type = 'paths';
     } else if (path.startsWith('/blog/')) {
         slug = path.replace('/blog/', '');
         type = slug ? 'article' : 'blog';

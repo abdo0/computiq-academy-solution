@@ -378,6 +378,31 @@ export const dataService = {
             };
         }
     },
+
+    // ── Learning Paths ── //
+
+    getPaths: async (params?: any): Promise<any> => {
+        try {
+            const response = await api.get('/paths', { params });
+            return response.data.data;
+        } catch (error) {
+            console.error('Error fetching paths:', error);
+            throw error;
+        }
+    },
+
+    getPathBySlug: async (slug: string): Promise<any> => {
+        try {
+            const response = await api.get(`/paths/${slug}`);
+            return response.data.data;
+        } catch (error: any) {
+            if (error.response?.status === 404) {
+                return null;
+            }
+            console.error(`Error fetching path with slug ${slug}:`, error);
+            throw error;
+        }
+    },
 };
 
 // Auth Service for User
@@ -606,6 +631,8 @@ export const userAuthService = {
             };
         }
     },
+
+
 
     // ── Cart ──
 

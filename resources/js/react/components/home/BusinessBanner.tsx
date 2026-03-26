@@ -18,7 +18,7 @@ const BusinessBanner: React.FC<BusinessBannerProps> = ({ sectionData }) => {
 
   return (
     <section className="py-16 lg:py-20 bg-white dark:bg-slate-950">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Banner Card */}
         <div className="bg-[#eef2ff] dark:bg-gray-800 rounded-md p-8 lg:p-14 relative overflow-hidden flex flex-col lg:flex-row items-center gap-10">

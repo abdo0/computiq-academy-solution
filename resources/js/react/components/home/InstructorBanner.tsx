@@ -29,7 +29,7 @@ const InstructorBanner: React.FC<InstructorBannerProps> = ({ sectionData }) => {
           <div className="absolute top-0 end-1/4 w-[500px] h-[500px] bg-brand-900/20 rounded-full blur-[100px]"></div>
         </div>
 
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative grid grid-cols-1 lg:grid-cols-2 lg:gap-10 pb-0">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 relative grid grid-cols-1 lg:grid-cols-2 lg:gap-10 pb-0">
           
           {/* Text Content */}
           <div className="text-center lg:text-start pt-16 lg:py-24 z-10 flex flex-col justify-center">

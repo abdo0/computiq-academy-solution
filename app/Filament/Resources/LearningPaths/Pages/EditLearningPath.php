@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Filament\Resources\LearningPaths\Pages;
+
+use App\Filament\Resources\LearningPaths\LearningPathResource;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreAction;
+use Filament\Resources\Pages\EditRecord;
+
+class EditLearningPath extends EditRecord
+{
+    protected static string $resource = LearningPathResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            DeleteAction::make(),
+            ForceDeleteAction::make(),
+            RestoreAction::make(),
+        ];
+    }
+}

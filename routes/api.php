@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\ArticleController;
 use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\ContentController;
 use App\Http\Controllers\Api\CourseController;
+use App\Http\Controllers\Api\LearningPathController;
 use App\Http\Controllers\Api\InstructorController;
 use App\Http\Controllers\Api\SeoController;
 use App\Http\Controllers\Api\SearchController;
@@ -54,6 +55,11 @@ Route::prefix('v1')->group(function () {
     Route::get('/content/footer-pages', [ContentController::class, 'footerPages'])->name('api.v1.content.footer-pages');
     Route::get('/content/other-pages', [ContentController::class, 'otherPages'])->name('api.v1.content.other-pages');
     Route::get('/categories', [ContentController::class, 'categories'])->name('api.v1.categories');
+
+    // Learning Paths
+    Route::get('/paths', [LearningPathController::class, 'index'])->name('api.v1.paths.index');
+    Route::get('/paths/{slug}', [LearningPathController::class, 'show'])->name('api.v1.paths.show');
+
     Route::get('/countries', [ContentController::class, 'countries'])->name('api.v1.countries');
     Route::get('/countries/{country}/states', [ContentController::class, 'states'])->name('api.v1.states');
     Route::get('/content/home-sections', [ContentController::class, 'homeSections'])->name('api.v1.content.home-sections');

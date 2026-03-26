@@ -24,7 +24,7 @@ const Hero: React.FC<HeroProps> = ({ sectionData, isLoading = false }) => {
 
   if (isLoading || isSettingsLoading) {
     return (
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-pulse">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-pulse">
         <div className="w-full h-[400px] md:h-[500px] bg-gray-200 dark:bg-gray-800 rounded-md"></div>
       </div>
     );
@@ -36,7 +36,7 @@ const Hero: React.FC<HeroProps> = ({ sectionData, isLoading = false }) => {
 
   return (
     <section className="bg-white dark:bg-gray-900 pt-8 pb-12">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Inset Banner Container */}
         <div 

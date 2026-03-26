@@ -28,6 +28,7 @@ const CoursesPage = React.lazy(() => import('./components/CoursesPage'));
 const CourseDetailsPage = React.lazy(() => import('./components/CourseDetailsPage'));
 const InstructorProfilePage = React.lazy(() => import('./components/InstructorProfilePage'));
 const PathsPage = React.lazy(() => import('./components/PathsPage'));
+const PathDetailPage = React.lazy(() => import('./components/PathDetailPage'));
 const DashboardPage = React.lazy(() => import('./components/dashboard/DashboardPage'));
 const CartPage = React.lazy(() => import('./components/cart/CartPage'));
 const SearchPage = React.lazy(() => import('./components/SearchPage'));
@@ -63,6 +64,7 @@ export const pageImportMap: Record<string, () => Promise<any>> = {
   '/success-stories': () => import('./components/SuccessStoriesPage'),
   '/courses': () => import('./components/CoursesPage'),
   '/paths': () => import('./components/PathsPage'),
+  '/paths/:slug': () => import('./components/PathDetailPage'),
   '/login': () => import('./components/auth/LoginPage'),
   '/signup': () => import('./components/auth/SignupPage'),
   '/forgot-password': () => import('./components/auth/ForgotPasswordPage'),
@@ -88,6 +90,7 @@ export const preloadPage = (path: string): Promise<any> => {
       if (normalized.startsWith('/courses/')) importFn = () => import('./components/CourseDetailsPage');
       else if (normalized.startsWith('/instructors/')) importFn = () => import('./components/InstructorProfilePage');
       else if (normalized.startsWith('/blog/')) importFn = () => import('./components/BlogPostDetail');
+      else if (normalized.startsWith('/paths/')) importFn = () => import('./components/PathDetailPage');
   }
 
   if (importFn) {
@@ -126,6 +129,10 @@ export const preloadPage = (path: string): Promise<any> => {
       } else if (normalized === '/faq') {
           dataPromises.push(dataService.getFaqs().catch(() => null));
           dataPromises.push(dataService.getDynamicPage('faq').catch(() => null));
+      } else if (normalized.startsWith('/paths/')) {
+          const slug = normalized.replace('/paths/', '');
+          // @ts-ignore
+          dataPromises.push(dataService.getPathBySlug(slug).catch(() => null));
       } else if (['/about', '/contact', '/guide', '/how-it-works', '/success-stories'].includes(normalized)) {
           dataPromises.push(dataService.getDynamicPage(normalized.substring(1)).catch(() => null));
       } else if (normalized === '/search') {
@@ -210,10 +217,10 @@ const CustomCloseButton = ({ closeToast }: { closeToast?: (e: React.MouseEvent<H
   <button
     type="button"
     onClick={closeToast}
-    className="ml-4 flex-shrink-0 text-gray-500 hover:text-gray-700 bg-transparent rounded-md p-1 pointer-events-auto cursor-pointer flex items-center justify-center self-start mt-1"
+    className="ml-3 rtl:mr-3 rtl:ml-0 flex-shrink-0 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-gray-50/50 hover:bg-gray-100 dark:bg-gray-800/50 dark:hover:bg-gray-700 rounded-lg p-1.5 transition-colors pointer-events-auto cursor-pointer flex items-center justify-center self-start"
     aria-label="Close"
   >
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
     </svg>
   </button>
@@ -222,6 +229,7 @@ const CustomCloseButton = ({ closeToast }: { closeToast?: (e: React.MouseEvent<H
 const AppContent: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const { dir } = useLanguage();
+  const { theme } = useTheme();
   const { user, show2FAModal, setShow2FAModal, verify2FA, resend2FA, isLoading, dev2FACode, refreshUser } = useAuth();
 
   const handleAuthSuccess = async () => {
@@ -239,6 +247,7 @@ const AppContent: React.FC = () => {
       <Route path="courses" element={<CoursesPage />} />
       <Route path="courses/:slug" element={<CourseDetailsPage />} />
       <Route path="paths" element={<PathsPage />} />
+      <Route path="paths/:slug" element={<PathDetailPage />} />
       <Route path="instructors/:slug" element={<InstructorProfilePage />} />
       <Route path="page/:slug" element={<CmsPage />} />
       <Route path="contact" element={<ContactPage />} />
@@ -304,8 +313,8 @@ const AppContent: React.FC = () => {
         closeOnClick
         pauseOnHover
         draggable
-        theme="colored"
-        toastClassName="!rounded-sm !shadow-xl !font-medium flex items-start"
+        theme={theme === 'dark' ? 'dark' : 'light'}
+        toastClassName="!rounded-2xl !shadow-2xl dark:!shadow-gray-900/50 !font-medium !p-4 !border !border-gray-100 dark:!border-gray-800 !bg-white/95 dark:!bg-gray-900/95 !backdrop-blur-md flex justify-between items-start !font-sans"
         progressClassName="!rounded-b-2xl"
       />
     </>

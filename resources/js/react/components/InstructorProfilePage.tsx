@@ -160,7 +160,7 @@ const InstructorProfilePage: React.FC = () => {
             </div>
 
             {/* Tab Content */}
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mt-12">
+            <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
                 
                 {activeTab === 'courses' && (
                     <div className="animate-fade-in-up">

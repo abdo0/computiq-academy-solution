@@ -53,7 +53,7 @@ const FeaturesBand: React.FC<CategoryCardsProps> = ({ sectionData, isLoading = f
     if (isLoading) {
         return (
         <section className="py-16 bg-white dark:bg-slate-950">
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex flex-col sm:flex-row items-baseline justify-between mb-10 gap-4">
                     <div>
                         <div className="w-[45px] h-[8px] bg-brand-600 rounded-full mb-4 animate-pulse"></div>
@@ -72,7 +72,7 @@ const FeaturesBand: React.FC<CategoryCardsProps> = ({ sectionData, isLoading = f
 
     return (
         <section className="py-16 lg:py-20 bg-white dark:bg-slate-950">
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
                 
                 {/* Header Row */}
                 <div className="flex flex-col sm:flex-row items-baseline justify-between mb-10 gap-4">

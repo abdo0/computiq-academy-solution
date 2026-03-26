@@ -30,13 +30,33 @@ button {
     @apply cursor-pointer;
 }
 
-/* Toast notifications - use same font as website */
-.Toastify__toast {
-    font-family: "Cairo", sans-serif !important;
+/* Toast notifications - root variables for complete theming */
+:root {
+    --toastify-font-family: "Cairo", sans-serif;
+    --toastify-toast-bd-radius: 1rem;
+    --toastify-color-light: #ffffff;
+    --toastify-color-dark: #111827; /* gray-900 */
+    --toastify-text-color-light: #1f2937; /* gray-800 */
+    --toastify-text-color-dark: #f9fafb; /* gray-50 */
+    
+    /* Brand-aligned semantic colors */
+    --toastify-color-success: #10b981; /* emerald-500 */
+    --toastify-color-error: #ef4444; /* red-500 (matches brand-500) */
+    --toastify-color-warning: #f59e0b; /* amber-500 */
+    --toastify-color-info: #3b82f6; /* blue-500 */
+}
+
+/* Ensure font is strictly enforced just in case */
+.Toastify__toast, .Toastify__toast-body {
+    font-family: var(--toastify-font-family) !important;
 }
 
 .Toastify__toast-body {
-    font-family: "Cairo", sans-serif !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 0.875rem !important;
+    flex: 1 1 0% !important;
+    line-height: 1.625 !important;
 }
 
 .dir-ltr {

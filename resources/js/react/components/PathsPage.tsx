@@ -1,19 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTranslation } from '../contexts/TranslationProvider';
-import { Search, Compass, MapPin } from 'lucide-react';
+import { Search, Compass, MapPin, Loader2, ArrowRight, ArrowLeft, Clock, BookOpen } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import Seo from './Seo';
+import AppLink from './common/AppLink';
+import { dataService } from '../services/dataService';
+import { motion } from 'framer-motion';
 
 const PathsPage: React.FC = () => {
     const { dir } = useLanguage();
     const { __ } = useTranslation();
     
     const [searchQuery, setSearchQuery] = useState('');
+    const [paths, setPaths] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const handleSearchSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        // Future logic
-    };
+    useEffect(() => {
+        const fetchPaths = async () => {
+            try {
+                // Fetch paths from API
+                const data = await dataService.getPaths();
+                setPaths(data?.data || []);
+            } catch (error) {
+                console.error("Failed to fetch learning paths", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchPaths();
+    }, []);
+
+    const filteredPaths = paths.filter(path => {
+        const title = (path.title?.[dir === 'rtl' ? 'ar' : 'en'] || path.title?.en || '').toLowerCase();
+        const desc = (path.description?.[dir === 'rtl' ? 'ar' : 'en'] || path.description?.en || '').toLowerCase();
+        const query = searchQuery.toLowerCase();
+        return title.includes(query) || desc.includes(query);
+    });
 
     return (
         <div className="bg-[#fcfdfd] dark:bg-slate-950 min-h-screen py-10 pb-24">
@@ -22,7 +46,7 @@ const PathsPage: React.FC = () => {
                 description={__('Paths description')}
             />
 
-            <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
                 
                 {/* Header Section */}
                 <div className="mb-12 text-center flex flex-col items-center justify-center gap-6">
@@ -40,7 +64,7 @@ const PathsPage: React.FC = () => {
                     </div>
 
                     {/* Search Bar */}
-                    <form onSubmit={handleSearchSubmit} className="relative w-full max-w-lg group">
+                    <div className="relative w-full max-w-lg group">
                         <div className="absolute inset-y-0 ltr:left-0 rtl:right-0 flex items-center ltr:pl-4 rtl:pr-4 pointer-events-none">
                             <Search className="w-5 h-5 text-gray-400 group-focus-within:text-brand-500 transition-colors" />
                         </div>
@@ -51,23 +75,107 @@ const PathsPage: React.FC = () => {
                             className="block w-full ltr:pl-11 ltr:pr-4 rtl:pr-11 rtl:pl-4 py-3.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl leading-5 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-shadow shadow-sm"
                             placeholder={__('Search paths')}
                         />
-                        <button type="submit" className="hidden"></button>
-                    </form>
-                </div>
-
-                {/* Empty State / Coming Soon */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 text-center border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center min-h-[400px]">
-                    <div className="w-20 h-20 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6">
-                        <MapPin className="w-10 h-10 text-gray-400" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                        {__('Paths coming soon')}
-                    </h3>
-                    <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                        {__('Paths coming soon desc')}
-                    </p>
                 </div>
 
+                {/* Content Section */}
+                {isLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[1, 2, 3, 4, 5, 6].map(i => (
+                            <div key={i} className="bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800 p-6 flex flex-col h-[320px] animate-pulse">
+                                <div className="w-12 h-12 bg-gray-200 dark:bg-slate-800 rounded-xl mb-6"></div>
+                                <div className="h-6 bg-gray-200 dark:bg-slate-800 rounded-md w-3/4 mb-4"></div>
+                                <div className="h-4 bg-gray-200 dark:bg-slate-800 rounded-md w-full mb-2"></div>
+                                <div className="h-4 bg-gray-200 dark:bg-slate-800 rounded-md w-5/6 mb-6"></div>
+                                
+                                <div className="mt-auto pt-4 border-t border-gray-50 dark:border-slate-800/50 flex items-center gap-4 mb-4">
+                                    <div className="h-4 bg-gray-200 dark:bg-slate-800 rounded w-20"></div>
+                                    <div className="h-4 bg-gray-200 dark:bg-slate-800 rounded w-20"></div>
+                                </div>
+                                <div className="pt-4 border-t border-gray-50 dark:border-slate-800/50 flex justify-between">
+                                    <div className="h-4 bg-gray-200 dark:bg-slate-800 rounded w-24"></div>
+                                    <div className="h-4 bg-gray-200 dark:bg-slate-800 rounded w-4"></div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : filteredPaths.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredPaths.map((path, index) => {
+                            const IconComponent = (path.icon && (LucideIcons as any)[path.icon]) 
+                                ? (LucideIcons as any)[path.icon] 
+                                : Compass;
+                                
+                            const themeColor = path.color || '#3b82f6';
+                            const title = path.title?.[dir === 'rtl' ? 'ar' : 'en'] || path.title?.en || '';
+                            const description = path.description?.[dir === 'rtl' ? 'ar' : 'en'] || path.description?.en || '';
+                            
+                            return (
+                                <motion.div
+                                    key={path.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                                >
+                                    <AppLink
+                                        to={`/paths/${path.slug}`}
+                                        className="group block h-full bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-brand-100 dark:hover:border-brand-800/50 transition-all duration-300 overflow-hidden flex flex-col"
+                                    >
+                                        <div className="p-6 flex-1 flex flex-col">
+                                            {/* Icon & Color Badge */}
+                                            <div 
+                                                className="w-12 h-12 rounded-xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 duration-300"
+                                                style={{ backgroundColor: `${themeColor}15`, color: themeColor }}
+                                            >
+                                                <IconComponent className="w-6 h-6" />
+                                            </div>
+
+                                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors line-clamp-2">
+                                                {title}
+                                            </h3>
+                                            
+                                            <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-6 line-clamp-3 flex-1">
+                                                {description}
+                                            </p>
+
+                                            {/* Stats Row */}
+                                            <div className="flex items-center gap-4 py-4 mt-auto border-t border-gray-50 dark:border-slate-800/50">
+                                                <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
+                                                    <BookOpen className="w-4 h-4 text-gray-400" />
+                                                    <span className="font-medium">{path.courses_count || 0} {__('Courses')}</span>
+                                                </div>
+                                                {path.estimated_hours > 0 && (
+                                                    <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
+                                                        <Clock className="w-4 h-4 text-gray-400" />
+                                                        <span className="font-medium">{path.estimated_hours} {__('Hours')}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            {/* Action Button */}
+                                            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between text-brand-600 dark:text-brand-500 font-bold text-sm">
+                                                <span>{__('View Path')}</span>
+                                                {dir === 'rtl' ? <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" /> : <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />}
+                                            </div>
+                                        </div>
+                                    </AppLink>
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 text-center border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center min-h-[400px]">
+                        <div className="w-20 h-20 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6">
+                            <MapPin className="w-10 h-10 text-gray-400" />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                            {searchQuery ? __('No paths found for your search') : __('Paths coming soon')}
+                        </h3>
+                        <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                            {searchQuery ? __('Try different keywords') : __('Paths coming soon desc')}
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
     );

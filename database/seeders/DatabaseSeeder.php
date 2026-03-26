@@ -48,6 +48,7 @@ class DatabaseSeeder extends Seeder
             CourseSeeder::class,
             CourseModuleSeeder::class,
             CourseReviewSeeder::class,
+            LearningPathSeeder::class,
         ]);
     }
 }

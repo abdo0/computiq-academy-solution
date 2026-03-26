@@ -22,6 +22,17 @@ const CourseDetailsPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState(1);
     const [openModules, setOpenModules] = useState<number[]>([0, 1]);
+    const [isAdding, setIsAdding] = useState(false);
+
+    const handleAddToCart = async () => {
+        if (course?.id && !isInCart(course.id) && !isAdding) {
+            setIsAdding(true);
+            await addToCart(course.id);
+            setIsAdding(false);
+        } else if (course?.id && isInCart(course.id)) {
+            navigate('/cart');
+        }
+    };
 
 
 
@@ -91,7 +102,7 @@ const CourseDetailsPage: React.FC = () => {
             {/* Header / Hero Section */}
             <div className="bg-[#0b1021] dark:bg-slate-900 text-white min-h-[300px] md:min-h-[360px] relative mt-1 lg:mt-6 max-w-screen-2xl mx-auto rounded-none lg:rounded-md overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-brand-900/40 to-transparent pointer-events-none"></div>
-                <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 py-12 md:py-16 h-full flex items-center relative z-10">
+                <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 py-12 md:py-16 h-full flex items-center relative z-10">
                     <div className="w-full lg:w-[60%]">
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-black mb-4 leading-tight">
                             {t(course.title)}
@@ -359,14 +370,17 @@ const CourseDetailsPage: React.FC = () => {
                                         {isRTL ? 'سجّل الآن' : 'Enroll Now'}
                                     </button>
                                     <button
-                                        onClick={() => addToCart(course.id)}
+                                        onClick={handleAddToCart}
+                                        disabled={isAdding}
                                         className={`w-14 h-[52px] shrink-0 border-2 flex items-center justify-center rounded-md transition-colors active:scale-95 ${
                                             isInCart(course.id)
                                                 ? 'border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
                                                 : 'border-brand-100 dark:border-gray-700 text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-gray-800'
-                                        }`}
+                                        } ${isAdding ? 'opacity-75 cursor-not-allowed' : ''}`}
+                                        aria-label={isInCart(course.id) ? __('In Cart') : __('Add to Cart')}
                                     >
-                                        <ShoppingCart className="w-5 h-5" />
+                                        {isAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : 
+                                         isInCart(course.id) ? <CheckCircle2 className="w-5 h-5" /> : <ShoppingCart className="w-5 h-5" />}
                                     </button>
                                 </div>
 
