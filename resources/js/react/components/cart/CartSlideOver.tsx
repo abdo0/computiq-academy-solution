@@ -46,7 +46,7 @@ const CartSlideOver: React.FC<CartSlideOverProps> = ({ isOpen, onClose }) => {
     return createPortal(
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[100]">
+                <div className="fixed inset-0 z-[100]" dir={dir}>
                     {/* Backdrop */}
                     <motion.div 
                         initial={{ opacity: 0 }}
@@ -63,7 +63,7 @@ const CartSlideOver: React.FC<CartSlideOverProps> = ({ isOpen, onClose }) => {
                         animate={{ x: 0 }}
                         exit={{ x: `${slideDirection}%` }}
                         transition={{ duration: 0.3, ease: 'easeInOut' }}
-                        className="absolute top-0 bottom-0 ltr:right-0 rtl:left-0 w-full max-w-md bg-white dark:bg-gray-800 shadow-2xl flex flex-col"
+                        className={`absolute top-0 bottom-0 ${dir === 'rtl' ? 'left-0' : 'right-0'} w-full max-w-md bg-white dark:bg-gray-800 shadow-2xl flex flex-col`}
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
@@ -143,7 +143,7 @@ const CartSlideOver: React.FC<CartSlideOverProps> = ({ isOpen, onClose }) => {
                                                         </button>
                                                     </div>
                                                     <div className="mt-2 flex items-end justify-between">
-                                                        <span className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 flex-1 rtl:pl-2 ltr:pr-2">
+                                                        <span className={`text-xs text-gray-500 dark:text-gray-400 line-clamp-1 flex-1 ${dir === 'rtl' ? 'pl-2' : 'pr-2'}`}>
                                                             {item.course?.instructor_name}
                                                         </span>
                                                         <span className="text-sm font-bold text-brand-600 dark:text-brand-400 shrink-0">
