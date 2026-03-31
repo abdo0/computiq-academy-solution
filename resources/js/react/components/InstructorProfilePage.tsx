@@ -5,14 +5,16 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { dataService } from '../services/dataService';
 import CourseCard from './home/CourseCard';
 import AppLink from './common/AppLink';
+import { useCurrentRouteBootstrap } from '../contexts/RouteBootstrapContext';
 
 const InstructorProfilePage: React.FC = () => {
     const { slug } = useParams();
     const { language } = useLanguage();
     const isRTL = language === 'ar' || language === 'ku';
+    const initialBootstrap = useCurrentRouteBootstrap<any>();
     
-    const [instructor, setInstructor] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const [instructor, setInstructor] = useState<any>(() => initialBootstrap?.instructor ?? null);
+    const [loading, setLoading] = useState(() => !initialBootstrap?.instructor);
     const [activeTab, setActiveTab] = useState<'about' | 'courses'>('courses');
 
     const t = (obj: any) => {
@@ -23,12 +25,19 @@ const InstructorProfilePage: React.FC = () => {
 
     useEffect(() => {
         if (!slug) return;
+
+        if (initialBootstrap?.instructor) {
+            setInstructor(initialBootstrap.instructor);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         dataService.getInstructorBySlug(slug).then((data) => {
             setInstructor(data);
             setLoading(false);
         });
-    }, [slug]);
+    }, [initialBootstrap, slug]);
 
     if (loading) {
         return (

@@ -7,6 +7,7 @@ import { dataService } from '../services/dataService';
 import { toast } from 'react-toastify';
 import { useTranslation } from '../contexts/TranslationProvider';
 import Turnstile from './common/Turnstile';
+import { useCurrentRouteBootstrap } from '../contexts/RouteBootstrapContext';
 
 const ContactPageSkeleton: React.FC = () => (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen pb-20 animate-pulse">
@@ -53,14 +54,18 @@ const ContactPage: React.FC = () => {
     const { language } = useLanguage();
     const { __ } = useTranslation();
     const { settings } = useSettings();
-    const [pageData, setPageData] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const initialBootstrap = useCurrentRouteBootstrap<any>();
+    const [pageData, setPageData] = useState<any>(() => initialBootstrap?.pageInfo || null);
+    const [loading, setLoading] = useState(() => !initialBootstrap?.pageInfo);
     const [turnstileToken, setTurnstileToken] = useState('');
 
     useEffect(() => {
-        dataService.loadPageSeo('contact');
+        if (initialBootstrap?.pageInfo) {
+            return;
+        }
+
         fetchPageData();
-    }, []);
+    }, [initialBootstrap]);
 
     const fetchPageData = async () => {
         setLoading(true);

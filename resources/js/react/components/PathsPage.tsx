@@ -7,16 +7,23 @@ import Seo from './Seo';
 import AppLink from './common/AppLink';
 import { dataService } from '../services/dataService';
 import { motion } from 'framer-motion';
+import { useCurrentRouteBootstrap } from '../contexts/RouteBootstrapContext';
 
 const PathsPage: React.FC = () => {
     const { dir } = useLanguage();
     const { __ } = useTranslation();
+    const initialBootstrap = useCurrentRouteBootstrap<any>();
+    const initialPaths = initialBootstrap?.paths?.data || [];
     
     const [searchQuery, setSearchQuery] = useState('');
-    const [paths, setPaths] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [paths, setPaths] = useState<any[]>(() => initialPaths);
+    const [isLoading, setIsLoading] = useState(() => initialPaths.length === 0);
 
     useEffect(() => {
+        if (initialPaths.length > 0) {
+            return;
+        }
+
         const fetchPaths = async () => {
             try {
                 // Fetch paths from API
@@ -30,7 +37,7 @@ const PathsPage: React.FC = () => {
         };
 
         fetchPaths();
-    }, []);
+    }, [initialPaths.length]);
 
     const filteredPaths = paths.filter(path => {
         const title = (path.title?.[dir === 'rtl' ? 'ar' : 'en'] || path.title?.en || '').toLowerCase();

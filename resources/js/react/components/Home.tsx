@@ -9,19 +9,26 @@ import { Stat } from '../types';
 import { dataService } from '../services/dataService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTranslation } from '../contexts/TranslationProvider';
+import { useCurrentRouteBootstrap } from '../contexts/RouteBootstrapContext';
 
 const Home: React.FC = () => {
   const { language } = useLanguage();
   const { __, t } = useTranslation();
+  const initialBootstrap = useCurrentRouteBootstrap<any>();
+  const initialHomeData = initialBootstrap?.homeData;
 
-  const [stats, setStats] = useState<Stat[]>([]);
-  const [sections, setSections] = useState<Record<string, any>>({});
-  const [courses, setCourses] = useState<any[]>([]);
-  const [courseCategories, setCourseCategories] = useState<any[]>([]);
-  const [sponsors, setSponsors] = useState<{ partners: any[], employment: any[] }>({ partners: [], employment: [] });
-  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<Stat[]>(() => initialHomeData?.stats || []);
+  const [sections, setSections] = useState<Record<string, any>>(() => initialHomeData?.sections || {});
+  const [courses, setCourses] = useState<any[]>(() => initialHomeData?.courses || []);
+  const [courseCategories, setCourseCategories] = useState<any[]>(() => initialHomeData?.course_categories || []);
+  const [sponsors, setSponsors] = useState<{ partners: any[], employment: any[] }>(() => initialHomeData?.sponsors || { partners: [], employment: [] });
+  const [isLoading, setIsLoading] = useState(() => !initialHomeData);
 
   useEffect(() => {
+    if (initialHomeData) {
+      return;
+    }
+
     const fetchData = async () => {
       setIsLoading(true);
       try {
@@ -60,7 +67,7 @@ const Home: React.FC = () => {
       }
     };
     fetchData();
-  }, [language]);
+  }, [initialHomeData, language]);
 
   // Helper: filter courses by category slug
   const getCoursesByCategory = (slug: string) =>

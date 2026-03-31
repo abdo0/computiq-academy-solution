@@ -37,121 +37,20 @@ const SearchPage = React.lazy(() => import('./components/SearchPage'));
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { TranslationProvider, useTranslation } from './contexts/TranslationProvider';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { SettingsProvider } from './contexts/SettingsContext';
+import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { WhitelistProvider } from './contexts/WhitelistContext';
-import { CartProvider } from './contexts/CartContext';
+import { CartProvider, useCart } from './contexts/CartContext';
+import { RouteBootstrapProvider, useRouteBootstrap } from './contexts/RouteBootstrapContext';
 import { ToastContainer } from 'react-toastify';
 import { HelmetProvider } from 'react-helmet-async';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { normalizeRouteTarget } from './routing/routeRegistry';
 
 // Common Components for new architecture
 import SeoWrapper from './components/common/SeoWrapper';
 import LocaleSync from './components/common/LocaleSync';
 import ProgressBar from './components/common/ProgressBar';
-import { determineSeoParams } from './utils/seoUtils';
-
-/**
- * Preload map: lets Header.tsx preload the JS chunk BEFORE navigating.
- * This is the core of the Inertia.js-like behavior.
- */
-export const pageImportMap: Record<string, () => Promise<any>> = {
-  '/': () => import('./components/Home'),
-  '/about': () => import('./components/AboutPage'),
-  '/contact': () => import('./components/ContactPage'),
-  '/blog': () => import('./components/BlogPage'),
-  '/faq': () => import('./components/FaqPage'),
-  '/how-it-works': () => import('./components/HowItWorksPage'),
-  '/guide': () => import('./components/GuidePage'),
-  '/success-stories': () => import('./components/SuccessStoriesPage'),
-  '/courses': () => import('./components/CoursesPage'),
-  '/paths': () => import('./components/PathsPage'),
-  '/paths/:slug': () => import('./components/PathDetailPage'),
-  '/login': () => import('./components/auth/LoginPage'),
-  '/signup': () => import('./components/auth/SignupPage'),
-  '/forgot-password': () => import('./components/auth/ForgotPasswordPage'),
-  '/reset-password': () => import('./components/auth/ResetPasswordPage'),
-  '/dashboard': () => import('./components/dashboard/DashboardPage'),
-  '/cart': () => import('./components/cart/CartPage'),
-  '/checkout': () => import('./components/cart/CheckoutPage'),
-  '/search': () => import('./components/SearchPage'),
-};
-
-/**
- * Preload a page's JS chunk by its path (strips locale prefix automatically),
- * and ALSO preload its required API data to mimic Inertia.js route blocking.
- */
-export const preloadPage = (path: string): Promise<any> => {
-  // Strip locale prefix like /en/about -> /about
-  const normalized = path.replace(/^\/[a-z]{2}(\/|$)/, '/$1').replace(/\/+$/, '') || '/';
-  
-  const promises: Promise<any>[] = [];
-
-  // 1. Preload JS Component Chunk
-  let importFn = pageImportMap[normalized];
-  if (!importFn) {
-      if (normalized.startsWith('/courses/')) importFn = () => import('./components/CourseDetailsPage');
-      else if (normalized.startsWith('/instructors/')) importFn = () => import('./components/InstructorProfilePage');
-      else if (normalized.startsWith('/blog/')) importFn = () => import('./components/BlogPostDetail');
-      else if (normalized.startsWith('/paths/')) importFn = () => import('./components/PathDetailPage');
-  }
-
-  if (importFn) {
-      promises.push(importFn());
-  }
-  
-  // 2. Preload API Data (using dataService's built-in fetchWithCache deduplication)
-  // We push the dynamic import's promise into the array so Promise.all waits for the data fetches.
-  const dataPromise = import('./services/dataService').then(({ dataService }) => {
-      const dataPromises = [];
-      
-      // Fetch SEO metadata concurrently during page preload for smooth SPA transition
-      const { type, slug } = determineSeoParams(normalized);
-      dataPromises.push(dataService.fetchSeo(type, slug).catch(() => null));
-      
-      if (normalized === '/') {
-          dataPromises.push(dataService.getHomeData().catch(() => null));
-      } else if (normalized === '/courses') {
-          dataPromises.push(dataService.getCourses().catch(() => null));
-          dataPromises.push(dataService.getCategories().catch(() => null));
-      } else if (normalized.startsWith('/courses/')) {
-          const slug = normalized.replace('/courses/', '');
-          // @ts-ignore
-          dataPromises.push(dataService.getCourseBySlug(slug).catch(() => null));
-      } else if (normalized.startsWith('/instructors/')) {
-          const slug = normalized.replace('/instructors/', '');
-          // @ts-ignore
-          dataPromises.push(dataService.getInstructorBySlug(slug).catch(() => null));
-      } else if (normalized.startsWith('/blog/')) {
-          const slug = normalized.replace('/blog/', '');
-          // @ts-ignore
-          dataPromises.push(dataService.getBlogPostBySlug(slug).catch(() => null));
-      } else if (normalized === '/blog') {
-          dataPromises.push(dataService.getBlogPosts().catch(() => null));
-          dataPromises.push(dataService.getDynamicPage('blog').catch(() => null));
-      } else if (normalized === '/faq') {
-          dataPromises.push(dataService.getFaqs().catch(() => null));
-          dataPromises.push(dataService.getDynamicPage('faq').catch(() => null));
-      } else if (normalized.startsWith('/paths/')) {
-          const slug = normalized.replace('/paths/', '');
-          // @ts-ignore
-          dataPromises.push(dataService.getPathBySlug(slug).catch(() => null));
-      } else if (['/about', '/contact', '/guide', '/how-it-works', '/success-stories'].includes(normalized)) {
-          dataPromises.push(dataService.getDynamicPage(normalized.substring(1)).catch(() => null));
-      } else if (normalized === '/search') {
-          const params = new URLSearchParams(window.location.search);
-          const q = params.get('q');
-          if (q) dataPromises.push(dataService.searchGlobal(q).catch(() => null));
-      } else if (normalized === '/checkout') {
-          dataPromises.push(dataService.getCheckoutBootstrap().catch(() => null));
-      }
-      return Promise.all(dataPromises);
-  }).catch(() => {});
-  
-  promises.push(dataPromise);
-  
-  // Return when EVERYTHING (chunk + data) is ready
-  return Promise.all(promises);
-};
+import FullScreenLoader from './components/common/FullScreenLoader';
 
 /**
  * GlobalPageLoader:
@@ -159,48 +58,18 @@ export const preloadPage = (path: string): Promise<any> => {
  * the target page chunk. It directly links the chunk download time to NProgress.
  */
 const GlobalPageLoader: React.FC = () => {
-  return (
-    <div className="flex justify-center items-center min-h-[60vh] animate-fade-in">
-      <div className="relative">
-        <div className="absolute inset-0 rounded-full border-t-2 border-brand-200 animate-pulse"></div>
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-600"></div>
-      </div>
-    </div>
-  );
+  const { __ } = useTranslation();
+
+  return <FullScreenLoader progress={85} label={__('Loading page...')} />;
 };
 
 
 
 const LayoutWrapper: React.FC<{ onLoginClick: () => void }> = ({ onLoginClick }) => {
-  const { dir, language } = useLanguage();
-  const { theme } = useTheme();
-  const { isLoading: isTranslationsLoading } = useTranslation();
+  const { dir } = useLanguage();
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 dark:text-white font-sans text-gray-900 flex flex-col transition-all duration-300" dir={dir}>
-      
-      {/* Full-page loading overlay while translations fetch */}
-      {isTranslationsLoading && (
-        <div className="fixed inset-0 z-[9999] flex flex-col justify-center items-center bg-white dark:bg-gray-900 overflow-hidden">
-          <div className="flex flex-col items-center gap-8 animate-fade-in">
-            <img 
-               src={
-                 language === 'ar'
-                   ? theme === 'dark' ? '/images/PNG/image_1124.png' : '/images/PNG/2T.png'
-                   : theme === 'dark' ? '/images/SVG/MainLogo_01_PNG.svg' : '/images/SVG/MainLogo_03_PNG.svg'
-               } 
-               alt="Computiq Academy" 
-               className="h-12 sm:h-16 w-auto object-contain animate-pulse" 
-            />
-            {/* Loading progress spinner under the logo */}
-            <div className="relative">
-              <div className="absolute inset-0 rounded-full border-t-2 border-brand-200 animate-pulse"></div>
-              <div className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-t-2 border-b-2 border-brand-600"></div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <LocaleSync />
       <SeoWrapper>
         <Header onLoginClick={onLoginClick} />
@@ -230,16 +99,141 @@ const CustomCloseButton = ({ closeToast }: { closeToast?: (e: React.MouseEvent<H
   </button>
 );
 
+const isProtectedRoute = (pathname: string): boolean => {
+  const normalized = normalizeRouteTarget(pathname.replace(/\/+$/, '') || '/').pathname;
+
+  return normalized === '/dashboard'
+    || normalized === '/cart'
+    || normalized === '/checkout';
+};
+
 const AppContent: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const location = useLocation();
   const { dir } = useLanguage();
   const { theme } = useTheme();
-  const { user, show2FAModal, setShow2FAModal, verify2FA, resend2FA, isLoading, dev2FACode, refreshUser } = useAuth();
+  const { __, isLoading: isTranslationsLoading } = useTranslation();
+  const { isLoading: isSettingsLoading } = useSettings();
+  const { user, isInitialized: isAuthInitialized, show2FAModal, setShow2FAModal, verify2FA, resend2FA, isLoading, dev2FACode, refreshUser } = useAuth();
+  const { isInitialized: isCartInitialized } = useCart();
+  const { state: routeBootstrapState, prepareRoute, getPayloadForPath } = useRouteBootstrap();
+  const [isRouteReady, setIsRouteReady] = useState(false);
 
   const handleAuthSuccess = async () => {
     await refreshUser();
     setIsAuthModalOpen(false);
   };
+
+  useEffect(() => {
+    let isMounted = true;
+    const currentTarget = `${location.pathname}${location.search}`;
+    const requiresAuth = isProtectedRoute(location.pathname);
+
+    const bootstrapRoute = async () => {
+      if (isTranslationsLoading || isSettingsLoading || !isAuthInitialized) {
+        if (isMounted) {
+          setIsRouteReady(false);
+        }
+        return;
+      }
+
+      if (requiresAuth && !user) {
+        if (isMounted) {
+          setIsRouteReady(true);
+        }
+        return;
+      }
+
+      if (getPayloadForPath(currentTarget)) {
+        if (isMounted) {
+          setIsRouteReady(true);
+        }
+        return;
+      }
+
+      if (isMounted) {
+        setIsRouteReady(false);
+      }
+
+      try {
+        await prepareRoute(currentTarget);
+      } catch (error) {
+        console.error('Initial route bootstrap failed:', error);
+      } finally {
+        if (isMounted) {
+          setIsRouteReady(true);
+        }
+      }
+    };
+
+    void bootstrapRoute();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [getPayloadForPath, isAuthInitialized, isSettingsLoading, isTranslationsLoading, location.pathname, location.search, prepareRoute, user]);
+
+  const currentTarget = `${location.pathname}${location.search}`;
+  const currentBootstrapPath = normalizeRouteTarget(currentTarget).fullPath;
+  const shouldWaitForCart = Boolean(user);
+
+  const loaderSteps = [
+    {
+      key: 'translations',
+      label: __('Loading translations...'),
+      done: !isTranslationsLoading,
+      active: isTranslationsLoading,
+    },
+    {
+      key: 'settings',
+      label: __('Loading settings...'),
+      done: !isSettingsLoading,
+      active: !isTranslationsLoading && isSettingsLoading,
+    },
+    {
+      key: 'auth',
+      label: __('Checking account...'),
+      done: isAuthInitialized,
+      active: !isTranslationsLoading && !isSettingsLoading && !isAuthInitialized,
+    },
+    {
+      key: 'cart',
+      label: __('Loading cart...'),
+      done: !shouldWaitForCart || isCartInitialized,
+      active: !isTranslationsLoading && !isSettingsLoading && isAuthInitialized && shouldWaitForCart && !isCartInitialized,
+    },
+    {
+      key: 'route-module',
+      label: __('Preparing page...'),
+      done: routeBootstrapState.path === currentBootstrapPath && routeBootstrapState.moduleStatus === 'ready',
+      active: routeBootstrapState.path === currentBootstrapPath && routeBootstrapState.moduleStatus === 'loading',
+    },
+    {
+      key: 'route-data',
+      label: __('Loading page data...'),
+      done: routeBootstrapState.path === currentBootstrapPath && routeBootstrapState.dataStatus === 'ready',
+      active: routeBootstrapState.path === currentBootstrapPath && routeBootstrapState.dataStatus === 'loading',
+    },
+  ];
+
+  const completedSteps = loaderSteps.filter((step) => step.done).length;
+  const loaderProgress = Math.round((completedSteps / loaderSteps.length) * 100);
+  const activeStep = loaderSteps.find((step) => !step.done);
+  const loaderLabel = activeStep?.label || __('Almost ready...');
+
+  if (isTranslationsLoading || isSettingsLoading || !isAuthInitialized || (shouldWaitForCart && !isCartInitialized) || !isRouteReady) {
+    return (
+      <FullScreenLoader
+        progress={loaderProgress}
+        label={loaderLabel}
+        steps={loaderSteps.map((step) => ({
+          key: step.key,
+          label: step.label,
+          status: step.done ? 'done' : step.active ? 'active' : 'pending',
+        }))}
+      />
+    );
+  }
 
   const commonRoutes = (
     <>
@@ -335,21 +329,23 @@ function App() {
           <LanguageProvider>
             <TranslationProvider>
               <SettingsProvider>
-                <AuthProvider>
-                  <WhitelistProvider>
-                    <CartProvider>
-                      <AppContent />
-                    </CartProvider>
-                    <TwoFactorModal
-                      isOpen={false}
-                      onClose={() => { }}
-                      onVerify={async () => true}
-                      onResend={async () => { }}
-                      isLoading={false}
-                      devCode={null}
-                    />
-                  </WhitelistProvider>
-                </AuthProvider>
+                <RouteBootstrapProvider>
+                  <AuthProvider>
+                    <WhitelistProvider>
+                      <CartProvider>
+                        <AppContent />
+                      </CartProvider>
+                      <TwoFactorModal
+                        isOpen={false}
+                        onClose={() => { }}
+                        onVerify={async () => true}
+                        onResend={async () => { }}
+                        isLoading={false}
+                        devCode={null}
+                      />
+                    </WhitelistProvider>
+                  </AuthProvider>
+                </RouteBootstrapProvider>
               </SettingsProvider>
             </TranslationProvider>
           </LanguageProvider>

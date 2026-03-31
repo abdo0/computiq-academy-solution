@@ -11,6 +11,7 @@ import AppLink from './common/AppLink';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useCurrency } from '../utils/currency';
+import { useCurrentRouteBootstrap } from '../contexts/RouteBootstrapContext';
 
 const CourseDetailsPage: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
@@ -21,9 +22,10 @@ const CourseDetailsPage: React.FC = () => {
     const { addToCart, isInCart } = useCart();
     const { user } = useAuth();
     const { formatAmount } = useCurrency();
+    const initialBootstrap = useCurrentRouteBootstrap<any>();
 
-    const [course, setCourse] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const [course, setCourse] = useState<any>(() => initialBootstrap?.course ?? null);
+    const [loading, setLoading] = useState(() => !initialBootstrap?.course);
     const [activeTab, setActiveTab] = useState(1);
     const [openModules, setOpenModules] = useState<number[]>([0, 1]);
     const [isAdding, setIsAdding] = useState(false);
@@ -42,12 +44,19 @@ const CourseDetailsPage: React.FC = () => {
 
     useEffect(() => {
         if (!slug) return;
+
+        if (initialBootstrap?.course) {
+            setCourse(initialBootstrap.course);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         dataService.getCourseBySlug(slug).then((data) => {
             setCourse(data);
             setLoading(false);
         });
-    }, [slug]);
+    }, [initialBootstrap, slug]);
 
     const toggleModule = (index: number) => {
         setOpenModules(prev => 

@@ -7,8 +7,11 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { dataService } from '../../services/dataService';
 import { toast } from 'react-toastify';
 import AppLink from '../common/AppLink';
+import FullScreenLoader from '../common/FullScreenLoader';
 import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock, CreditCard, Loader2, ShieldCheck, ShoppingCart, TicketPercent, Trash2, XCircle } from 'lucide-react';
 import { formatCurrencyAmount, useCurrency } from '../../utils/currency';
+import { useCurrentRouteBootstrap } from '../../contexts/RouteBootstrapContext';
+import { buildCheckoutBootstrap } from '../../services/routeBootstrap';
 
 const CheckoutPage: React.FC = () => {
     const { user, refreshUser } = useAuth();
@@ -18,7 +21,8 @@ const CheckoutPage: React.FC = () => {
     const { currency, formatAmount } = useCurrency();
     const location = useLocation();
     const navigate = useNavigate();
-    const initialCheckoutBootstrap = user ? dataService.getCachedCheckoutBootstrap() : undefined;
+    const routeBootstrap = useCurrentRouteBootstrap<any>();
+    const initialCheckoutBootstrap = user ? routeBootstrap?.checkout : undefined;
     const bootstrapCart = initialCheckoutBootstrap?.cart;
 
     const [removingItems, setRemovingItems] = useState<number[]>([]);
@@ -42,11 +46,20 @@ const CheckoutPage: React.FC = () => {
         let isMounted = true;
 
         const loadCheckoutBootstrap = async () => {
+            if (initialCheckoutBootstrap) {
+                setGateways(initialCheckoutBootstrap.gateways || []);
+                setSelectedGatewayId((current) => current ?? initialCheckoutBootstrap.selectedGatewayId ?? null);
+                setQuote((current) => current ?? initialCheckoutBootstrap.quote ?? null);
+                setLoadingGateways(false);
+                setLoadingQuote(false);
+                return;
+            }
+
             if (!initialCheckoutBootstrap) {
                 setLoadingGateways(true);
             }
 
-            const bootstrap = await dataService.getCheckoutBootstrap();
+            const bootstrap = await buildCheckoutBootstrap();
 
             if (!isMounted) {
                 return;
@@ -241,14 +254,7 @@ const CheckoutPage: React.FC = () => {
     const formatQuoteAmount = (amount: number | string | null | undefined) => formatCurrencyAmount(amount, activeCurrency, language);
 
     if ((loadingGateways || loadingQuote) && effectiveCartCount === 0 && !bootstrapCart) {
-        return (
-            <div className="min-h-[60vh] flex items-center justify-center py-16">
-                <div className="flex flex-col items-center gap-4 text-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{__('Loading checkout...')}</p>
-                </div>
-            </div>
-        );
+        return <FullScreenLoader label={__('Loading checkout...')} />;
     }
 
     if (effectiveCartCount === 0) {

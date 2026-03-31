@@ -4,19 +4,23 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { FaqItem } from '../types';
 import { useTranslation } from '../contexts/TranslationProvider';
+import { useCurrentRouteBootstrap } from '../contexts/RouteBootstrapContext';
 
 const FaqPage: React.FC = () => {
     const { language } = useLanguage();
     const { __ } = useTranslation();
+    const initialBootstrap = useCurrentRouteBootstrap<any>();
     const [openId, setOpenId] = useState<string | null>(null);
-    const [faqs, setFaqs] = useState<FaqItem[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [faqs, setFaqs] = useState<FaqItem[]>(() => initialBootstrap?.faqs || []);
+    const [isLoading, setIsLoading] = useState(() => !initialBootstrap?.faqs);
 
     useEffect(() => {
+        if (initialBootstrap?.faqs) {
+            return;
+        }
+
         const loadFaqs = async () => {
             try {
-                // Load SEO first (faqs endpoint already includes SEO)
-                await dataService.loadPageSeo('faq');
                 const data = await dataService.getFaqs();
                 setFaqs(data);
             } catch (error) {
@@ -26,7 +30,7 @@ const FaqPage: React.FC = () => {
             }
         };
         loadFaqs();
-    }, []);
+    }, [initialBootstrap]);
 
     const toggle = (id: string) => setOpenId(openId === id ? null : id);
 

@@ -7,6 +7,7 @@ import CourseCard from './home/CourseCard';
 import { Search, BookOpen, GraduationCap, Users } from 'lucide-react';
 import AppLink from './common/AppLink';
 import Seo from './Seo';
+import { useCurrentRouteBootstrap } from '../contexts/RouteBootstrapContext';
 
 const CourseCardSkeleton = () => (
     <div className="bg-white dark:bg-slate-900 rounded-md overflow-hidden border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col h-full animate-pulse">
@@ -44,13 +45,15 @@ const SearchPage: React.FC = () => {
     const query = searchParams.get('q') || '';
     const { language, dir } = useLanguage();
     const { __, t } = useTranslation();
+    const initialBootstrap = useCurrentRouteBootstrap<any>();
+    const initialResults = initialBootstrap?.results;
 
-    const [courses, setCourses] = useState<any[]>([]);
-    const [instructors, setInstructors] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [coursesTotal, setCoursesTotal] = useState(0);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [hasMore, setHasMore] = useState(false);
+    const [courses, setCourses] = useState<any[]>(() => initialResults?.courses?.data || []);
+    const [instructors, setInstructors] = useState<any[]>(() => initialResults?.instructors || []);
+    const [isLoading, setIsLoading] = useState(() => query.length >= 2 && !initialResults);
+    const [coursesTotal, setCoursesTotal] = useState(() => initialResults?.courses?.meta?.total || 0);
+    const [currentPage, setCurrentPage] = useState(() => initialResults?.courses?.meta?.current_page || 1);
+    const [hasMore, setHasMore] = useState(() => (initialResults?.courses?.meta?.current_page || 1) < (initialResults?.courses?.meta?.last_page || 1));
     const [isLoadingMore, setIsLoadingMore] = useState(false);
 
     useEffect(() => {
@@ -58,6 +61,17 @@ const SearchPage: React.FC = () => {
             setCourses([]);
             setInstructors([]);
             setCoursesTotal(0);
+            setIsLoading(false);
+            return;
+        }
+
+        if (initialBootstrap?.results) {
+            const bootstrappedResults = initialBootstrap.results;
+            setCourses(bootstrappedResults.courses?.data || []);
+            setInstructors(bootstrappedResults.instructors || []);
+            setCoursesTotal(bootstrappedResults.courses?.meta?.total || 0);
+            setCurrentPage(bootstrappedResults.courses?.meta?.current_page || 1);
+            setHasMore((bootstrappedResults.courses?.meta?.current_page || 1) < (bootstrappedResults.courses?.meta?.last_page || 1));
             setIsLoading(false);
             return;
         }
@@ -71,7 +85,7 @@ const SearchPage: React.FC = () => {
             setCoursesTotal(data.courses?.meta?.total || 0);
             setHasMore((data.courses?.meta?.current_page || 1) < (data.courses?.meta?.last_page || 1));
         }).finally(() => setIsLoading(false));
-    }, [query]);
+    }, [initialBootstrap, query]);
 
     const loadMore = async () => {
         if (isLoadingMore || !hasMore) return;

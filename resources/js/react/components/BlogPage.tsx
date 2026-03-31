@@ -4,15 +4,23 @@ import { dataService } from '../services/dataService';
 import { BlogPost } from '../types';
 import BlogCard, { BlogCardSkeleton } from './BlogCard';
 import { useTranslation } from '../contexts/TranslationProvider';
+import { useCurrentRouteBootstrap } from '../contexts/RouteBootstrapContext';
 
 const BlogPage: React.FC = () => {
     const { language } = useLanguage();
     const { __ } = useTranslation();
-    const [posts, setPosts] = useState<BlogPost[]>([]);
-    const [pageData, setPageData] = useState<any>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const initialBootstrap = useCurrentRouteBootstrap<any>();
+    const initialPosts = initialBootstrap?.posts || [];
+    const initialPageData = initialBootstrap?.pageInfo || null;
+    const [posts, setPosts] = useState<BlogPost[]>(() => initialPosts);
+    const [pageData, setPageData] = useState<any>(() => initialPageData);
+    const [isLoading, setIsLoading] = useState(() => initialPosts.length === 0 && !initialPageData);
 
     useEffect(() => {
+        if (initialPosts.length > 0 || initialPageData) {
+            return;
+        }
+
         const loadData = async () => {
             try {
                 const [postsData, pageInfo] = await Promise.all([
@@ -28,7 +36,7 @@ const BlogPage: React.FC = () => {
             }
         };
         loadData();
-    }, [language]);
+    }, [initialPageData, initialPosts.length, language]);
 
 
 

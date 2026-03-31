@@ -1,7 +1,8 @@
 import { useNavigate as useReactRouterNavigate, NavigateOptions } from 'react-router-dom';
 import NProgress from 'nprogress';
-import { preloadPage } from '../App';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useRouteBootstrap } from '../contexts/RouteBootstrapContext';
+import { localizeAppPath } from '../routing/routeRegistry';
 
 /**
  * A custom navigation hook that mimics Inertia.js behavior.
@@ -11,6 +12,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 export const useAppNavigate = () => {
     const navigate = useReactRouterNavigate();
     const { language } = useLanguage();
+    const { prepareRoute } = useRouteBootstrap();
 
     return async (to: string | number, options?: NavigateOptions) => {
         // Handle go back/forward
@@ -20,19 +22,14 @@ export const useAppNavigate = () => {
         }
 
         // Build target path with locale prefix if needed
-        let targetPath = to;
-        if (language !== 'ar') {
-            if (to.startsWith('/') && !to.startsWith(`/${language}`)) {
-                targetPath = `/${language}${to === '/' ? '' : to}`;
-            }
-        }
+        const targetPath = localizeAppPath(to, language);
 
         // 1. Start progress bar (URL remains unchanged)
         NProgress.start();
 
         try {
-            // 2. Preload chunk & data 
-            await preloadPage(to);
+            // 2. Preload chunk & route bootstrap payload
+            await prepareRoute(to);
         } catch (error) {
             console.error('Failed to preload page:', error);
         }

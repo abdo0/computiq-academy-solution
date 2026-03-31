@@ -3,6 +3,7 @@ import { Target, Eye, Heart, ShieldCheck } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { dataService } from '../services/dataService';
 import { useTranslation } from '../contexts/TranslationProvider';
+import { useCurrentRouteBootstrap } from '../contexts/RouteBootstrapContext';
 
 const AboutPageSkeleton: React.FC = () => (
     <div className="bg-white dark:bg-gray-900 min-h-screen pb-20 animate-pulse">
@@ -31,13 +32,17 @@ const AboutPageSkeleton: React.FC = () => (
 const AboutPage: React.FC = () => {
     const { language } = useLanguage();
     const { __ } = useTranslation();
-    const [pageData, setPageData] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const initialBootstrap = useCurrentRouteBootstrap<any>();
+    const [pageData, setPageData] = useState<any>(() => initialBootstrap?.pageInfo || null);
+    const [loading, setLoading] = useState(() => !initialBootstrap?.pageInfo);
 
     useEffect(() => {
-        dataService.loadPageSeo('about');
+        if (initialBootstrap?.pageInfo) {
+            return;
+        }
+
         fetchPageData();
-    }, []);
+    }, [initialBootstrap]);
 
     const fetchPageData = async () => {
         setLoading(true);

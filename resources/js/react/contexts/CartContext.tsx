@@ -26,6 +26,7 @@ interface CartContextType {
     cartCount: number;
     cartTotal: string;
     isLoading: boolean;
+    isInitialized: boolean;
     addToCart: (courseId: number) => Promise<boolean>;
     removeFromCart: (courseId: number) => Promise<void>;
     clearCart: () => Promise<void>;
@@ -40,29 +41,75 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [cartCount, setCartCount] = useState(0);
     const [cartTotal, setCartTotal] = useState('0.00');
     const [isLoading, setIsLoading] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false);
     const { user } = useAuth();
     const { __ } = useTranslation();
 
+    const applyCartState = useCallback((data?: { items?: CartItemData[]; count?: number; total?: string } | null) => {
+        setCartItems(data?.items || []);
+        setCartCount(data?.count || 0);
+        setCartTotal(data?.total || '0.00');
+    }, []);
+
     const refreshCart = useCallback(async () => {
         if (!user) {
-            setCartItems([]);
-            setCartCount(0);
-            setCartTotal('0.00');
+            applyCartState(null);
+            setIsInitialized(true);
             return;
         }
         try {
+            setIsLoading(true);
             const data = await userAuthService.getCart();
-            setCartItems(data.items || []);
-            setCartCount(data.count || 0);
-            setCartTotal(data.total || '0.00');
+            applyCartState(data);
         } catch {
             // Silently fail — user may not be authenticated
+        } finally {
+            setIsLoading(false);
+            setIsInitialized(true);
         }
-    }, [user]);
+    }, [applyCartState, user]);
 
     useEffect(() => {
-        refreshCart();
-    }, [refreshCart]);
+        let isMounted = true;
+
+        const initializeCart = async () => {
+            if (!user) {
+                applyCartState(null);
+                if (isMounted) {
+                    setIsInitialized(true);
+                    setIsLoading(false);
+                }
+                return;
+            }
+
+            if (isMounted) {
+                setIsLoading(true);
+            }
+
+            try {
+                const data = await userAuthService.getCart();
+                if (isMounted) {
+                    applyCartState(data);
+                }
+            } catch {
+                if (isMounted) {
+                    applyCartState(null);
+                }
+            } finally {
+                if (isMounted) {
+                    setIsInitialized(true);
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        setIsInitialized(false);
+        void initializeCart();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [applyCartState, user]);
 
     const addToCart = useCallback(async (courseId: number): Promise<boolean> => {
         if (!user) {
@@ -110,7 +157,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     return (
         <CartContext.Provider value={{
-            cartItems, cartCount, cartTotal, isLoading,
+            cartItems, cartCount, cartTotal, isLoading, isInitialized,
             addToCart, removeFromCart, clearCart, isInCart, refreshCart,
         }}>
             {children}

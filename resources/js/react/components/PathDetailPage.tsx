@@ -8,19 +8,32 @@ import AppLink from './common/AppLink';
 import { Compass, ArrowRight, ArrowLeft, BookOpen, Clock, Users, PlayCircle, CheckCircle2, Trophy, Briefcase, GraduationCap, Star, Zap, Target, Award, ShieldCheck } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useCurrentRouteBootstrap } from '../contexts/RouteBootstrapContext';
 
 const PathDetailPage: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
     const { __ } = useTranslation();
     const { dir } = useLanguage();
+    const initialBootstrap = useCurrentRouteBootstrap<any>();
+    const initialPath = initialBootstrap?.path;
+    const initialSuggestedPaths = (initialBootstrap?.allPaths?.data || []).filter((p: any) => p.slug !== slug).slice(0, 3);
     
-    const [path, setPath] = useState<any>(null);
-    const [suggestedPaths, setSuggestedPaths] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [path, setPath] = useState<any>(() => initialPath ?? null);
+    const [suggestedPaths, setSuggestedPaths] = useState<any[]>(() => initialSuggestedPaths);
+    const [isLoading, setIsLoading] = useState(() => !initialPath);
 
     useEffect(() => {
         const fetchPath = async () => {
             if (!slug) return;
+
+            if (initialBootstrap?.path) {
+                setPath(initialBootstrap.path);
+                const bootstrappedPathsList = initialBootstrap.allPaths?.data || [];
+                setSuggestedPaths(bootstrappedPathsList.filter((p: any) => p.slug !== slug).slice(0, 3));
+                setIsLoading(false);
+                return;
+            }
+
             try {
                 setIsLoading(true);
                 window.scrollTo(0, 0);
@@ -41,7 +54,7 @@ const PathDetailPage: React.FC = () => {
         };
 
         fetchPath();
-    }, [slug]);
+    }, [initialBootstrap, slug]);
 
     // ─── Skeleton Loading State ────────────────────────────────────
     if (isLoading) {

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { dataService } from '../services/dataService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTranslation } from '../contexts/TranslationProvider';
+import { useCurrentRouteBootstrap } from '../contexts/RouteBootstrapContext';
 
 interface CmsPageData {
   slug: string;
@@ -17,8 +18,9 @@ const CmsPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { language } = useLanguage();
   const { __ } = useTranslation();
-  const [page, setPage] = useState<CmsPageData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const initialBootstrap = useCurrentRouteBootstrap<any>();
+  const [page, setPage] = useState<CmsPageData | null>(() => initialBootstrap?.page ?? null);
+  const [loading, setLoading] = useState(() => !initialBootstrap?.page);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,6 +33,12 @@ const CmsPage: React.FC = () => {
     let isMounted = true;
 
     const load = async () => {
+      if (initialBootstrap?.page) {
+        setPage(initialBootstrap.page);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError(null);
       const result = await dataService.getPage(slug);
@@ -49,7 +57,7 @@ const CmsPage: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [slug]);
+  }, [initialBootstrap, slug]);
 
   if (loading) {
     return (

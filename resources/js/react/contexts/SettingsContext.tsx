@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AppSettings, HeroContent } from '../types';
 import { dataService } from '../services/dataService';
-import { useTranslation } from '../contexts/TranslationProvider';
 
 interface SettingsContextType {
     settings: AppSettings;

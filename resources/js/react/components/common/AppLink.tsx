@@ -19,7 +19,7 @@ const AppLink: React.FC<AppLinkProps> = ({ to, children, className, onClick, ...
         // Prevent default browser navigation
         e.preventDefault();
         
-        // Let the custom hook handle the progress bar, cache deduplication, and routing
+        // Let the custom hook handle the progress bar, route bootstrap, and routing
         navigate(to);
         
         if (onClick) {

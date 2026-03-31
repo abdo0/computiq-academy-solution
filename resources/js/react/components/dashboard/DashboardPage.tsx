@@ -5,6 +5,7 @@ import { useTranslation } from '../../contexts/TranslationProvider';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { userAuthService } from '../../services/dataService';
+import { useCurrentRouteBootstrap } from '../../contexts/RouteBootstrapContext';
 import { toast } from 'react-toastify';
 import {
     User, Settings, Shield, LayoutDashboard, BookOpen, Award, Clock,
@@ -18,6 +19,7 @@ const DashboardPage: React.FC = () => {
     const { __ } = useTranslation();
     const { language, dir, setLanguage } = useLanguage();
     const { theme, toggleTheme } = useTheme();
+    const initialBootstrap = useCurrentRouteBootstrap<any>();
     const [activeTab, setActiveTab] = useState<TabKey>('overview');
 
     // Profile form
@@ -41,17 +43,22 @@ const DashboardPage: React.FC = () => {
     const [emailSaving, setEmailSaving] = useState(false);
 
     // Stats
-    const [stats, setStats] = useState({ courses_enrolled: 0, courses_completed: 0, certificates: 0 });
+    const [stats, setStats] = useState(() => initialBootstrap?.dashboardStats || { courses_enrolled: 0, courses_completed: 0, certificates: 0 });
 
     useEffect(() => {
         if (user) {
             setProfileName(user.name || '');
             setProfilePhone((user as any).phone || '');
+            if (initialBootstrap?.dashboardStats) {
+                setStats(initialBootstrap.dashboardStats);
+                return;
+            }
+
             userAuthService.getDashboardStats()
                 .then(data => setStats(data || { courses_enrolled: 0, courses_completed: 0, certificates: 0 }))
                 .catch(() => {});
         }
-    }, [user]);
+    }, [initialBootstrap, user]);
 
     if (!user) {
         return <Navigate to="/login" replace />;

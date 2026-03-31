@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTranslation } from '../contexts/TranslationProvider';
 import { dataService } from '../services/dataService';
@@ -6,6 +6,7 @@ import CourseCard from './home/CourseCard';
 import { Search, Filter, BookOpen } from 'lucide-react';
 import Seo from './Seo';
 import AppLink from './common/AppLink';
+import { useCurrentRouteBootstrap } from '../contexts/RouteBootstrapContext';
 
 const CourseCardSkeleton = () => (
     <div className="bg-white dark:bg-slate-900 rounded-md overflow-hidden border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col h-full animate-pulse">
@@ -33,23 +34,33 @@ const CourseCardSkeleton = () => (
 const CoursesPage: React.FC = () => {
     const { language, dir } = useLanguage();
     const { __ } = useTranslation();
+    const initialBootstrap = useCurrentRouteBootstrap<any>();
+    const initialCoursesResponse = initialBootstrap?.courses;
+    const initialCourses = initialCoursesResponse?.data || [];
+    const initialMeta = initialCoursesResponse?.meta || { current_page: 1, last_page: 1 };
+    const initialCategories = initialBootstrap?.categories || [];
+    const skipInitialListingFetch = useRef(initialCourses.length > 0);
     
-    const [courses, setCourses] = useState<any[]>([]);
-    const [categories, setCategories] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [courses, setCourses] = useState<any[]>(() => initialCourses);
+    const [categories, setCategories] = useState<any[]>(() => initialCategories);
+    const [isLoading, setIsLoading] = useState(() => initialCourses.length === 0);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     
     // Pagination and Filters State
-    const [currentPage, setCurrentPage] = useState(1);
-    const [hasMore, setHasMore] = useState(false);
+    const [currentPage, setCurrentPage] = useState(initialMeta.current_page || 1);
+    const [hasMore, setHasMore] = useState((initialMeta.current_page || 1) < (initialMeta.last_page || 1));
     const [searchQuery, setSearchQuery] = useState('');
     const [activeCategory, setActiveCategory] = useState<string>('all');
     const [sort, setSort] = useState('newest');
 
     useEffect(() => {
+        if (initialCategories.length > 0) {
+            return;
+        }
+
         // Load categories on mount
         dataService.getCategories().then(cats => setCategories(cats || []));
-    }, []);
+    }, [initialCategories.length]);
 
     const fetchCourses = async (page: number, append = false) => {
         try {
@@ -86,6 +97,11 @@ const CoursesPage: React.FC = () => {
 
     // Refetch when filters change
     useEffect(() => {
+        if (skipInitialListingFetch.current) {
+            skipInitialListingFetch.current = false;
+            return;
+        }
+
         fetchCourses(1, false);
     }, [activeCategory, sort, language]);
 

@@ -5,8 +5,6 @@ import {
     Stat,
     BlogPost,
     FaqItem,
-    User,
-    ApiResponse,
     SeoConfig,
     Category,
     Testimonial
@@ -14,70 +12,6 @@ import {
 
 // Helper to delay response for simulation if needed when using mock data
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Short-lived cache for preloading route data seamlessly without double fetches
-type CacheEntry<T = any> = {
-    promise: Promise<T>;
-    time: number;
-    value?: T;
-};
-
-const cache = new Map<string, CacheEntry>();
-const CACHE_TTL = 3000; // 3 seconds is enough to span a route transition
-const CHECKOUT_BOOTSTRAP_CACHE_KEY = '/checkout/bootstrap';
-
-const getCachedValue = <T>(key: string): T | undefined => {
-    const cached = cache.get(key);
-
-    if (!cached || Date.now() - cached.time >= CACHE_TTL) {
-        return undefined;
-    }
-
-    return cached.value as T | undefined;
-};
-
-const invalidateCache = (predicate: (key: string) => boolean) => {
-    for (const key of cache.keys()) {
-        if (predicate(key)) {
-            cache.delete(key);
-        }
-    }
-};
-
-const invalidateCheckoutCache = () => {
-    invalidateCache((key) =>
-        key === '/user/cart'
-        || key === '/payment-gateways'
-        || key === CHECKOUT_BOOTSTRAP_CACHE_KEY
-        || key.startsWith('/checkout/quote?')
-    );
-};
-
-const fetchWithCache = <T>(key: string, fetchFn: () => Promise<T>): Promise<T> => {
-    const cached = cache.get(key) as CacheEntry<T> | undefined;
-    if (cached && Date.now() - cached.time < CACHE_TTL) {
-        return cached.promise;
-    }
-
-    const entry: CacheEntry<T> = {
-        time: Date.now(),
-        promise: Promise.resolve(undefined as T),
-    };
-
-    entry.promise = fetchFn()
-        .then((value) => {
-            entry.value = value;
-            return value;
-        })
-        .catch((error) => {
-            cache.delete(key);
-            throw error;
-        });
-
-    cache.set(key, entry);
-
-    return entry.promise;
-};
 
 export const dataService = {
     getSettings: async (): Promise<AppSettings> => {
@@ -102,61 +36,52 @@ export const dataService = {
     },
 
     getHomeData: async (): Promise<{ stats: Stat[], sections: Record<string, any>, testimonials: any[], sponsors: { partners: any[], employment: any[] }, courses: any[], course_categories: any[] }> => {
-        return fetchWithCache('/home', async () => {
-            try {
-                const response = await api.get<{ data: { stats: Stat[], sections: Record<string, any>, testimonials: any[], sponsors?: { partners: any[], employment: any[] }, courses?: any[], course_categories?: any[] } }>('/home');
-                const data = response.data.data;
+        try {
+            const response = await api.get<{ data: { stats: Stat[], sections: Record<string, any>, testimonials: any[], sponsors?: { partners: any[], employment: any[] }, courses?: any[], course_categories?: any[] } }>('/home');
+            const data = response.data.data;
 
-                return {
-                    stats: data.stats || [],
-                    sections: data.sections || {},
-                    testimonials: data.testimonials || [],
-                    sponsors: data.sponsors || { partners: [], employment: [] },
-                    courses: data.courses || [],
-                    course_categories: data.course_categories || []
-                };
-            } catch (error) {
-                console.error('API fetch failed for home data.', error);
-                return { stats: [], sections: {}, testimonials: [], sponsors: { partners: [], employment: [] }, courses: [], course_categories: [] };
-            }
-        });
+            return {
+                stats: data.stats || [],
+                sections: data.sections || {},
+                testimonials: data.testimonials || [],
+                sponsors: data.sponsors || { partners: [], employment: [] },
+                courses: data.courses || [],
+                course_categories: data.course_categories || [],
+            };
+        } catch (error) {
+            console.error('API fetch failed for home data.', error);
+            return { stats: [], sections: {}, testimonials: [], sponsors: { partners: [], employment: [] }, courses: [], course_categories: [] };
+        }
     },
 
     getCourses: async (params?: { category?: string; search?: string; sort?: string; page?: number; per_page?: number }): Promise<any> => {
-        const key = `/courses?${new URLSearchParams(params as any || {}).toString()}`;
-        return fetchWithCache(key, async () => {
-            try {
-                const response = await api.get<any>('/courses', { params });
-                return response.data.data;
-            } catch (error) {
-                console.error('API fetch failed for courses list.', error);
-                return { data: [], meta: { current_page: 1, last_page: 1, total: 0 } };
-            }
-        });
+        try {
+            const response = await api.get<any>('/courses', { params });
+            return response.data.data;
+        } catch (error) {
+            console.error('API fetch failed for courses list.', error);
+            return { data: [], meta: { current_page: 1, last_page: 1, total: 0 } };
+        }
     },
 
     getCourseBySlug: async (slug: string): Promise<any> => {
-        return fetchWithCache(`/courses/${slug}`, async () => {
-            try {
-                const response = await api.get<{ data: any }>(`/courses/${slug}`);
-                return response.data.data;
-            } catch (error) {
-                console.error('API fetch failed for course details.', error);
-                return null;
-            }
-        });
+        try {
+            const response = await api.get<{ data: any }>(`/courses/${slug}`);
+            return response.data.data;
+        } catch (error) {
+            console.error('API fetch failed for course details.', error);
+            return null;
+        }
     },
 
     getInstructorBySlug: async (slug: string): Promise<any> => {
-        return fetchWithCache(`/instructors/${slug}`, async () => {
-            try {
-                const response = await api.get<{ data: any }>(`/instructors/${slug}`);
-                return response.data.data;
-            } catch (error) {
-                console.error('API fetch failed for instructor profile.', error);
-                return null;
-            }
-        });
+        try {
+            const response = await api.get<{ data: any }>(`/instructors/${slug}`);
+            return response.data.data;
+        } catch (error) {
+            console.error('API fetch failed for instructor profile.', error);
+            return null;
+        }
     },
 
     getCategories: async (): Promise<Category[]> => {
@@ -170,16 +95,13 @@ export const dataService = {
     },
 
     searchGlobal: async (q: string, page: number = 1): Promise<any> => {
-        const key = `/search?q=${encodeURIComponent(q)}&page=${page}`;
-        return fetchWithCache(key, async () => {
-            try {
-                const response = await api.get<any>('/search', { params: { q, page } });
-                return response.data.data;
-            } catch (error) {
-                console.error('API fetch failed for search.', error);
-                return { courses: { data: [], meta: { total: 0 } }, instructors: [], query: q };
-            }
-        });
+        try {
+            const response = await api.get<any>('/search', { params: { q, page } });
+            return response.data.data;
+        } catch (error) {
+            console.error('API fetch failed for search.', error);
+            return { courses: { data: [], meta: { total: 0 } }, instructors: [], query: q };
+        }
     },
 
     getCountries: async (): Promise<any[]> => {
@@ -213,29 +135,23 @@ export const dataService = {
     },
 
     getBlogPosts: async (params?: { category?: string; search?: string; per_page?: number }): Promise<BlogPost[]> => {
-        const key = `/articles?${new URLSearchParams(params as any || {}).toString()}`;
-        return fetchWithCache(key, async () => {
-            try {
-                const response = await api.get<any>('/articles', { params });
-                // Handle Laravel Resource Collection response (paginated or not)
-                // Response structure: { data: [...], links: {...}, meta: {...} }
-                // Or if wrapped: { success: true, data: { data: [...], ... } }
-                const articles = Array.isArray(response.data.data)
-                    ? response.data.data
-                    : (response.data.data?.data || []);
-                // Map to include legacy fields for backward compatibility
-                return articles.map((article: BlogPost) => ({
-                    ...article,
-                    imageUrl: article.featuredImageUrl || article.imageUrl || 'https://picsum.photos/seed/article/1200/630',
-                    contentImageUrl: article.contentImageUrl || 'https://picsum.photos/seed/article-content/800/600',
-                    date: article.publishedAt || article.createdAt || article.date,
-                    author: article.authorName || article.author,
-                }));
-            } catch (error) {
-                console.warn('API fetch failed for blog posts.', error);
-                return [];
-            }
-        });
+        try {
+            const response = await api.get<any>('/articles', { params });
+            const articles = Array.isArray(response.data.data)
+                ? response.data.data
+                : (response.data.data?.data || []);
+
+            return articles.map((article: BlogPost) => ({
+                ...article,
+                imageUrl: article.featuredImageUrl || article.imageUrl || 'https://picsum.photos/seed/article/1200/630',
+                contentImageUrl: article.contentImageUrl || 'https://picsum.photos/seed/article-content/800/600',
+                date: article.publishedAt || article.createdAt || article.date,
+                author: article.authorName || article.author,
+            }));
+        } catch (error) {
+            console.warn('API fetch failed for blog posts.', error);
+            return [];
+        }
     },
 
     getBlogPost: async (id: string): Promise<BlogPost | undefined> => {
@@ -283,15 +199,13 @@ export const dataService = {
     },
 
     getFaqs: async (): Promise<FaqItem[]> => {
-        return fetchWithCache('/faqs', async () => {
-            try {
-                const response = await api.get<{ data: FaqItem[] }>('/faqs');
-                return response.data.data;
-            } catch (error) {
-                console.warn('API fetch failed for FAQs.', error);
-                return [];
-            }
-        });
+        try {
+            const response = await api.get<{ data: FaqItem[] }>('/faqs');
+            return response.data.data;
+        } catch (error) {
+            console.warn('API fetch failed for FAQs.', error);
+            return [];
+        }
     },
 
     getTestimonials: async (): Promise<Testimonial[]> => {
@@ -336,31 +250,26 @@ export const dataService = {
     },
 
     getDynamicPage: async (slug: string): Promise<any> => {
-        return fetchWithCache(`/page/${slug}`, async () => {
-            try {
-                const response = await api.get<{ data: any }>(`/content/page/${slug}`);
-                return response.data.data;
-            } catch (error) {
-                console.error(`API fetch failed for page ${slug}.`, error);
-                return null;
-            }
-        });
+        try {
+            const response = await api.get<{ data: any }>(`/content/page/${slug}`);
+            return response.data.data;
+        } catch (error) {
+            console.error(`API fetch failed for page ${slug}.`, error);
+            return null;
+        }
     },
 
     // Page SEO endpoints
     fetchSeo: async (type: string, slug?: string): Promise<any> => {
-        const key = `/seo?type=${type}${slug ? '&slug=' + slug : ''}`;
-        return fetchWithCache(key, async () => {
-            try {
-                const params: any = { type };
-                if (slug) params.slug = slug;
-                const response = await api.get('/seo', { params });
-                return response.data?.data || null;
-            } catch (error) {
-                console.warn(`Failed to load SEO for type: ${type}`, error);
-                return null;
-            }
-        });
+        try {
+            const params: any = { type };
+            if (slug) params.slug = slug;
+            const response = await api.get('/seo', { params });
+            return response.data?.data || null;
+        } catch (error) {
+            console.warn(`Failed to load SEO for type: ${type}`, error);
+            return null;
+        }
     },
 
     loadPageSeo: async (page: 'home' | 'about' | 'contact' | 'volunteer' | 'faq' | 'zakat'): Promise<void> => {
@@ -382,42 +291,34 @@ export const dataService = {
     },
 
     getPaymentGateways: async (): Promise<any[]> => {
-        return fetchWithCache('/payment-gateways', async () => {
-            try {
-                // Locale is now sent automatically via Accept-Language header in api.ts
-                const response = await api.get<{ data: any[] }>('/payment-gateways');
-                return response.data.data;
-            } catch (error) {
-                console.warn('API fetch failed for payment gateways.', error);
-                return [];
-            }
-        });
+        try {
+            const response = await api.get<{ data: any[] }>('/payment-gateways');
+            return response.data.data;
+        } catch (error) {
+            console.warn('API fetch failed for payment gateways.', error);
+            return [];
+        }
     },
 
     getCheckoutQuote: async (data: { payment_gateway_id?: number; promo_code?: string }): Promise<{ success: boolean; quote?: any; error?: string }> => {
-        const key = `/checkout/quote?gateway=${data.payment_gateway_id ?? 'none'}&promo=${(data.promo_code || '').trim().toUpperCase()}`;
+        try {
+            const response = await api.post('/checkout/quote', data);
 
-        return fetchWithCache(key, async () => {
-            try {
-                const response = await api.post('/checkout/quote', data);
-
-                return {
-                    success: true,
-                    quote: response.data?.data,
-                };
-            } catch (error: any) {
-                return {
-                    success: false,
-                    error: error.response?.data?.message || 'Checkout quote failed',
-                };
-            }
-        });
+            return {
+                success: true,
+                quote: response.data?.data,
+            };
+        } catch (error: any) {
+            return {
+                success: false,
+                error: error.response?.data?.message || 'Checkout quote failed',
+            };
+        }
     },
 
     initiateCheckout: async (data: { payment_gateway_id: number; promo_code?: string; notes?: string }): Promise<{ success: boolean; paymentUrl?: string; transaction?: any; order?: any; promo?: any; totals?: any; error?: string }> => {
         try {
             const response = await api.post('/checkout/initiate', data);
-            invalidateCheckoutCache();
 
             return {
                 success: true,
@@ -438,7 +339,6 @@ export const dataService = {
     verifyPayment: async (transactionId: number): Promise<{ success: boolean; transaction?: any; status?: string; message?: string; error?: string }> => {
         try {
             const response = await api.get(`/payments/verify/${transactionId}`);
-            invalidateCheckoutCache();
             return {
                 success: true,
                 transaction: response.data?.data?.transaction,
@@ -452,39 +352,6 @@ export const dataService = {
                 error: error.response?.data?.message || 'Payment verification failed',
             };
         }
-    },
-
-    getCheckoutBootstrap: async (): Promise<{ cart: any; gateways: any[]; selectedGatewayId: number | null; quote: any | null }> => {
-        return fetchWithCache(CHECKOUT_BOOTSTRAP_CACHE_KEY, async () => {
-            const [cart, gateways] = await Promise.all([
-                userAuthService.getCart({ useCache: true }).catch(() => null),
-                dataService.getPaymentGateways().catch(() => []),
-            ]);
-
-            const selectedGatewayId = gateways.length > 0 ? Number(gateways[0].id) : null;
-            let quote: any | null = null;
-
-            if (selectedGatewayId) {
-                const quoteResult = await dataService.getCheckoutQuote({
-                    payment_gateway_id: selectedGatewayId,
-                }).catch(() => ({ success: false }));
-
-                if (quoteResult?.success) {
-                    quote = quoteResult.quote ?? null;
-                }
-            }
-
-            return {
-                cart,
-                gateways,
-                selectedGatewayId,
-                quote,
-            };
-        });
-    },
-
-    getCachedCheckoutBootstrap: (): { cart: any; gateways: any[]; selectedGatewayId: number | null; quote: any | null } | undefined => {
-        return getCachedValue(CHECKOUT_BOOTSTRAP_CACHE_KEY);
     },
 
     // Forms Submissions
@@ -770,23 +637,14 @@ export const userAuthService = {
 
     // ── Cart ──
 
-    getCart: async (options?: { useCache?: boolean }): Promise<any> => {
-        const fetchCart = async () => {
-            const response = await api.get('/user/cart');
-            return response.data.data;
-        };
-
-        if (options?.useCache) {
-            return fetchWithCache('/user/cart', fetchCart);
-        }
-
-        return fetchCart();
+    getCart: async (): Promise<any> => {
+        const response = await api.get('/user/cart');
+        return response.data.data;
     },
 
     addToCart: async (courseId: number): Promise<{ success: boolean; count?: number; already_exists?: boolean; message?: string; error?: string }> => {
         try {
             const response = await api.post('/user/cart', { course_id: courseId });
-            invalidateCheckoutCache();
             return { success: true, count: response.data.data?.count, message: response.data.message };
         } catch (error: any) {
             if (error.response?.status === 409) {
@@ -799,7 +657,6 @@ export const userAuthService = {
     removeFromCart: async (courseId: number): Promise<{ success: boolean; count?: number; message?: string; error?: string }> => {
         try {
             const response = await api.delete(`/user/cart/${courseId}`);
-            invalidateCheckoutCache();
             return { success: true, count: response.data.data?.count, message: response.data.message };
         } catch (error: any) {
             return { success: false, error: error.response?.data?.message || 'Failed to remove from cart' };
@@ -809,7 +666,6 @@ export const userAuthService = {
     clearCart: async (): Promise<{ success: boolean; message?: string; error?: string }> => {
         try {
             const response = await api.delete('/user/cart');
-            invalidateCheckoutCache();
             return { success: true, message: response.data.message };
         } catch (error: any) {
             return { success: false, error: error.response?.data?.message || 'Failed to clear cart' };

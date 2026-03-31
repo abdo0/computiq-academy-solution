@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { dataService } from '../services/dataService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTranslation } from '../contexts/TranslationProvider';
+import { useCurrentRouteBootstrap } from '../contexts/RouteBootstrapContext';
 
 interface CmsPagePayload {
   slug: string;
@@ -14,14 +15,21 @@ interface CmsPagePayload {
 const GuidePage: React.FC = () => {
   const { language } = useLanguage();
   const { __ } = useTranslation();
-  const [page, setPage] = useState<CmsPagePayload | null>(null);
-  const [loading, setLoading] = useState(true);
+  const initialBootstrap = useCurrentRouteBootstrap<any>();
+  const [page, setPage] = useState<CmsPagePayload | null>(() => initialBootstrap?.page ?? null);
+  const [loading, setLoading] = useState(() => !initialBootstrap?.page);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
 
     const load = async () => {
+      if (initialBootstrap?.page) {
+        setPage(initialBootstrap.page);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError(null);
 
@@ -44,7 +52,7 @@ const GuidePage: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [initialBootstrap]);
 
   const resolveLocalized = (value: CmsPagePayload['title']): string => {
     if (!value) return '';

@@ -7,18 +7,30 @@ import { Calendar, User, ArrowLeft, ArrowRight, Share2 } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { BlogPost } from '../types';
 import { useTranslation } from '../contexts/TranslationProvider';
+import { useCurrentRouteBootstrap } from '../contexts/RouteBootstrapContext';
 
 const BlogPostDetail: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
     const navigate = useAppNavigate();
     const { language } = useLanguage();
     const { __ } = useTranslation();
-    const [post, setPost] = useState<BlogPost | undefined>(undefined);
-    const [recentPosts, setRecentPosts] = useState<BlogPost[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const initialBootstrap = useCurrentRouteBootstrap<any>();
+    const initialPost = initialBootstrap?.post?.data;
+    const initialRecentPosts = (initialBootstrap?.recentPosts || []).filter((p: BlogPost) => p.slug !== slug).slice(0, 3);
+    const [post, setPost] = useState<BlogPost | undefined>(() => initialPost);
+    const [recentPosts, setRecentPosts] = useState<BlogPost[]>(() => initialRecentPosts);
+    const [isLoading, setIsLoading] = useState(() => !initialPost);
 
     useEffect(() => {
         if (!slug) return;
+
+        if (initialBootstrap?.post?.data) {
+            setPost(initialBootstrap.post.data);
+            setRecentPosts((initialBootstrap.recentPosts || []).filter((p: BlogPost) => p.slug !== slug).slice(0, 3));
+            setIsLoading(false);
+            return;
+        }
+
         const loadPost = async () => {
             try {
                 const [result, recentResult] = await Promise.all([
@@ -39,7 +51,7 @@ const BlogPostDetail: React.FC = () => {
             }
         };
         loadPost();
-    }, [slug]);
+    }, [initialBootstrap, slug]);
 
     const SkeletonDetail = () => (
         <div className="bg-white dark:bg-gray-900 min-h-screen pb-20 animate-pulse">
