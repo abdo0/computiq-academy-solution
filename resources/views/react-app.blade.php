@@ -87,21 +87,7 @@
         $logoUrl = settings('company_logo') ?: settings('logo_url') ?: settings('logo') ?: null;
         
         // Format settings to match AppSettings structure
-        // Get currency info
-        $currencyCode = 'USD';
-        $currencySymbol = '$';
-        try {
-            if (Schema::hasTable('currencies')) {
-                $defaultCurrency = \App\Models\Currency::getDefault();
-                if ($defaultCurrency) {
-                    $currencyCode = $defaultCurrency->code;
-                    $currencySymbol = $defaultCurrency->symbol;
-                }
-            }
-        } catch (\Exception $e) {
-            // Fallback to settings
-            $currencyCode = settings('currency', 'USD');
-        }
+        $currency = \App\Models\Currency::getDefaultCurrencyData();
         
         // Preload footer pages (for React footer)
         $footerPages = [];
@@ -140,10 +126,7 @@
         $formattedSettings = [
             'logoUrl'      => $logoUrl,
             'siteName'     => $allSettings['site_name_'.$locale] ?? $allSettings['site_name_ar'] ?? null,
-            'currency' => [
-                'code'   => $currencyCode,
-                'symbol' => $currencySymbol,
-            ],
+            'currency' => $currency,
             'contactEmail'  => $allSettings['contact_email'] ?? null,
             'contactPhone'  => array_filter([
                 $allSettings['contact_phone_1'] ?? $allSettings['contact_phone'] ?? null,
@@ -174,22 +157,21 @@
             ]),
         ];
         
-        // Load organization with verification relationship if authenticated
-        $organization = null;
-        if (Auth::guard('organization')->check()) {
-            $org = Auth::guard('organization')->user();
-            $org->loadMissing('verification');
-            $organization = (new \App\Http\Resources\OrganizationResource($org))->toArray(request());
-        }
-        
         // homeData is no longer pre-fetched to allow skeletons to show
         $homeData = null;
 
         $initialData = [
-            'donor' => Auth::guard('donor')->check() 
-                ? (new \App\Http\Resources\DonorResource(Auth::guard('donor')->user()))->toArray(request()) 
+            'user' => Auth::guard('student')->check()
+                ? [
+                    'id' => (string) Auth::guard('student')->user()->id,
+                    'name' => Auth::guard('student')->user()->name,
+                    'email' => Auth::guard('student')->user()->email,
+                    'phone' => Auth::guard('student')->user()->phone,
+                    'locale' => Auth::guard('student')->user()->locale,
+                    'isVerified' => ! is_null(Auth::guard('student')->user()->email_verified_at),
+                    'purchasedCourseIds' => \App\Models\CourseEnrollment::where('user_id', Auth::guard('student')->id())->pluck('course_id')->all(),
+                ]
                 : null,
-            'organization' => $organization,
             'settings' => $formattedSettings,
             // 'homeData' is purposely omitted or left null to force API fetch
         ];

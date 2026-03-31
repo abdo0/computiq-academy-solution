@@ -16,20 +16,67 @@ import {
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Short-lived cache for preloading route data seamlessly without double fetches
-const cache = new Map<string, { promise: Promise<any>, time: number }>();
+type CacheEntry<T = any> = {
+    promise: Promise<T>;
+    time: number;
+    value?: T;
+};
+
+const cache = new Map<string, CacheEntry>();
 const CACHE_TTL = 3000; // 3 seconds is enough to span a route transition
+const CHECKOUT_BOOTSTRAP_CACHE_KEY = '/checkout/bootstrap';
+
+const getCachedValue = <T>(key: string): T | undefined => {
+    const cached = cache.get(key);
+
+    if (!cached || Date.now() - cached.time >= CACHE_TTL) {
+        return undefined;
+    }
+
+    return cached.value as T | undefined;
+};
+
+const invalidateCache = (predicate: (key: string) => boolean) => {
+    for (const key of cache.keys()) {
+        if (predicate(key)) {
+            cache.delete(key);
+        }
+    }
+};
+
+const invalidateCheckoutCache = () => {
+    invalidateCache((key) =>
+        key === '/user/cart'
+        || key === '/payment-gateways'
+        || key === CHECKOUT_BOOTSTRAP_CACHE_KEY
+        || key.startsWith('/checkout/quote?')
+    );
+};
 
 const fetchWithCache = <T>(key: string, fetchFn: () => Promise<T>): Promise<T> => {
-    const cached = cache.get(key);
+    const cached = cache.get(key) as CacheEntry<T> | undefined;
     if (cached && Date.now() - cached.time < CACHE_TTL) {
         return cached.promise;
     }
-    const promise = fetchFn();
-    cache.set(key, { promise, time: Date.now() });
-    
-    // Clean up rejected promises so they aren't cached
-    promise.catch(() => cache.delete(key));
-    return promise;
+
+    const entry: CacheEntry<T> = {
+        time: Date.now(),
+        promise: Promise.resolve(undefined as T),
+    };
+
+    entry.promise = fetchFn()
+        .then((value) => {
+            entry.value = value;
+            return value;
+        })
+        .catch((error) => {
+            cache.delete(key);
+            throw error;
+        });
+
+    cache.set(key, entry);
+
+    return entry.promise;
 };
 
 export const dataService = {
@@ -335,14 +382,109 @@ export const dataService = {
     },
 
     getPaymentGateways: async (): Promise<any[]> => {
+        return fetchWithCache('/payment-gateways', async () => {
+            try {
+                // Locale is now sent automatically via Accept-Language header in api.ts
+                const response = await api.get<{ data: any[] }>('/payment-gateways');
+                return response.data.data;
+            } catch (error) {
+                console.warn('API fetch failed for payment gateways.', error);
+                return [];
+            }
+        });
+    },
+
+    getCheckoutQuote: async (data: { payment_gateway_id?: number; promo_code?: string }): Promise<{ success: boolean; quote?: any; error?: string }> => {
+        const key = `/checkout/quote?gateway=${data.payment_gateway_id ?? 'none'}&promo=${(data.promo_code || '').trim().toUpperCase()}`;
+
+        return fetchWithCache(key, async () => {
+            try {
+                const response = await api.post('/checkout/quote', data);
+
+                return {
+                    success: true,
+                    quote: response.data?.data,
+                };
+            } catch (error: any) {
+                return {
+                    success: false,
+                    error: error.response?.data?.message || 'Checkout quote failed',
+                };
+            }
+        });
+    },
+
+    initiateCheckout: async (data: { payment_gateway_id: number; promo_code?: string; notes?: string }): Promise<{ success: boolean; paymentUrl?: string; transaction?: any; order?: any; promo?: any; totals?: any; error?: string }> => {
         try {
-            // Locale is now sent automatically via Accept-Language header in api.ts
-            const response = await api.get<{ data: any[] }>('/payment-gateways');
-            return response.data.data;
-        } catch (error) {
-            console.warn('API fetch failed for payment gateways.', error);
-            return [];
+            const response = await api.post('/checkout/initiate', data);
+            invalidateCheckoutCache();
+
+            return {
+                success: true,
+                paymentUrl: response.data?.data?.payment_url,
+                transaction: response.data?.data?.transaction,
+                order: response.data?.data?.order,
+                promo: response.data?.data?.promo,
+                totals: response.data?.data?.totals,
+            };
+        } catch (error: any) {
+            return {
+                success: false,
+                error: error.response?.data?.message || 'Checkout initiation failed',
+            };
         }
+    },
+
+    verifyPayment: async (transactionId: number): Promise<{ success: boolean; transaction?: any; status?: string; message?: string; error?: string }> => {
+        try {
+            const response = await api.get(`/payments/verify/${transactionId}`);
+            invalidateCheckoutCache();
+            return {
+                success: true,
+                transaction: response.data?.data?.transaction,
+                status: response.data?.data?.status,
+                message: response.data?.message,
+            };
+        } catch (error: any) {
+            return {
+                success: false,
+                status: error.response?.data?.data?.status,
+                error: error.response?.data?.message || 'Payment verification failed',
+            };
+        }
+    },
+
+    getCheckoutBootstrap: async (): Promise<{ cart: any; gateways: any[]; selectedGatewayId: number | null; quote: any | null }> => {
+        return fetchWithCache(CHECKOUT_BOOTSTRAP_CACHE_KEY, async () => {
+            const [cart, gateways] = await Promise.all([
+                userAuthService.getCart({ useCache: true }).catch(() => null),
+                dataService.getPaymentGateways().catch(() => []),
+            ]);
+
+            const selectedGatewayId = gateways.length > 0 ? Number(gateways[0].id) : null;
+            let quote: any | null = null;
+
+            if (selectedGatewayId) {
+                const quoteResult = await dataService.getCheckoutQuote({
+                    payment_gateway_id: selectedGatewayId,
+                }).catch(() => ({ success: false }));
+
+                if (quoteResult?.success) {
+                    quote = quoteResult.quote ?? null;
+                }
+            }
+
+            return {
+                cart,
+                gateways,
+                selectedGatewayId,
+                quote,
+            };
+        });
+    },
+
+    getCachedCheckoutBootstrap: (): { cart: any; gateways: any[]; selectedGatewayId: number | null; quote: any | null } | undefined => {
+        return getCachedValue(CHECKOUT_BOOTSTRAP_CACHE_KEY);
     },
 
     // Forms Submissions
@@ -499,6 +641,11 @@ export const userAuthService = {
         return response.data.data;
     },
 
+    getEnrollments: async (): Promise<number[]> => {
+        const response = await api.get('/user/enrollments');
+        return response.data?.data?.course_ids || [];
+    },
+
     getDonationHistory: async (params?: { page?: number; status?: string }): Promise<any> => {
         const response = await api.get('/user/dashboard/history', { params });
         return response.data;
@@ -517,20 +664,7 @@ export const userAuthService = {
     },
 
     verifyPayment: async (transactionId: number): Promise<{ success: boolean; transaction?: any; status?: string; message?: string; error?: string }> => {
-        try {
-            const response = await api.post(`/user/dashboard/transactions/${transactionId}/verify`);
-            return {
-                success: true,
-                transaction: response.data?.data?.transaction,
-                status: response.data?.data?.status,
-                message: response.data?.message,
-            };
-        } catch (error: any) {
-            return {
-                success: false,
-                error: error.response?.data?.message || 'Payment verification failed',
-            };
-        }
+        return dataService.verifyPayment(transactionId);
     },
 
     getVerificationStatus: async (): Promise<any> => {
@@ -636,14 +770,23 @@ export const userAuthService = {
 
     // ── Cart ──
 
-    getCart: async (): Promise<any> => {
-        const response = await api.get('/user/cart');
-        return response.data.data;
+    getCart: async (options?: { useCache?: boolean }): Promise<any> => {
+        const fetchCart = async () => {
+            const response = await api.get('/user/cart');
+            return response.data.data;
+        };
+
+        if (options?.useCache) {
+            return fetchWithCache('/user/cart', fetchCart);
+        }
+
+        return fetchCart();
     },
 
     addToCart: async (courseId: number): Promise<{ success: boolean; count?: number; already_exists?: boolean; message?: string; error?: string }> => {
         try {
             const response = await api.post('/user/cart', { course_id: courseId });
+            invalidateCheckoutCache();
             return { success: true, count: response.data.data?.count, message: response.data.message };
         } catch (error: any) {
             if (error.response?.status === 409) {
@@ -656,6 +799,7 @@ export const userAuthService = {
     removeFromCart: async (courseId: number): Promise<{ success: boolean; count?: number; message?: string; error?: string }> => {
         try {
             const response = await api.delete(`/user/cart/${courseId}`);
+            invalidateCheckoutCache();
             return { success: true, count: response.data.data?.count, message: response.data.message };
         } catch (error: any) {
             return { success: false, error: error.response?.data?.message || 'Failed to remove from cart' };
@@ -665,6 +809,7 @@ export const userAuthService = {
     clearCart: async (): Promise<{ success: boolean; message?: string; error?: string }> => {
         try {
             const response = await api.delete('/user/cart');
+            invalidateCheckoutCache();
             return { success: true, message: response.data.message };
         } catch (error: any) {
             return { success: false, error: error.response?.data?.message || 'Failed to clear cart' };
@@ -672,242 +817,3 @@ export const userAuthService = {
     },
 };
 
-// Auth Service for Organization
-export const orgAuthService = {
-    login: async (email: string, password: string, remember: boolean = false): Promise<{ success: boolean; user?: any; requiresVerification?: boolean; verificationCode?: string; error?: string }> => {
-        try {
-            await initializeCsrf();
-            const response = await api.post('/org/login', { email, password, remember });
-
-            // Check if 2FA is required
-            if (response.data.data?.requires_verification) {
-                return {
-                    success: true,
-                    requiresVerification: true,
-                    verificationCode: response.data.data.verification_code
-                };
-            }
-
-            return { success: true, user: response.data.data?.user };
-        } catch (error: any) {
-            return {
-                success: false,
-                error: error.response?.data?.message || 'Login failed',
-            };
-        }
-    },
-
-    register: async (data: { name: string; email: string; password: string; password_confirmation: string; phone?: string; address?: string; locale?: string }): Promise<{ success: boolean; user?: any; requiresVerification?: boolean; verificationCode?: string; error?: string; errors?: any }> => {
-        try {
-            await initializeCsrf();
-            const response = await api.post('/org/register', data);
-
-            // Check if 2FA is required
-            if (response.data.data?.requires_verification) {
-                return {
-                    success: true,
-                    requiresVerification: true,
-                    verificationCode: response.data.data.verification_code
-                };
-            }
-
-            return { success: true, user: response.data.data?.user };
-        } catch (error: any) {
-            return {
-                success: false,
-                error: error.response?.data?.message || 'Registration failed',
-                errors: error.response?.data?.errors,
-            };
-        }
-    },
-
-    verify2FA: async (code: string, remember: boolean = false): Promise<{ success: boolean; user?: any; error?: string }> => {
-        try {
-            await initializeCsrf();
-            const response = await api.post('/org/verify-2fa', { code, remember });
-            return { success: true, user: response.data.data?.user };
-        } catch (error: any) {
-            return {
-                success: false,
-                error: error.response?.data?.message || 'Verification failed',
-            };
-        }
-    },
-
-    resend2FA: async (): Promise<{ success: boolean; verificationCode?: string; error?: string }> => {
-        try {
-            await initializeCsrf();
-            const response = await api.post('/org/resend-2fa');
-
-            return {
-                success: true,
-                verificationCode: response.data.data?.verification_code
-            };
-        } catch (error: any) {
-            return {
-                success: false,
-                error: error.response?.data?.message || 'Failed to resend code',
-            };
-        }
-    },
-
-    logout: async (): Promise<void> => {
-        try {
-            await api.post('/org/logout');
-        } catch (error) {
-            console.warn('Logout failed', error);
-        }
-    },
-
-    getUser: async (): Promise<any | null> => {
-        try {
-            const response = await api.get('/org/user');
-            return response.data.user;
-        } catch (error) {
-            return null;
-        }
-    },
-
-    getDashboardStats: async (): Promise<any> => {
-        const response = await api.get('/org/dashboard/stats');
-        return response.data.data;
-    },
-
-
-
-    getVerificationStatus: async (): Promise<any> => {
-        const response = await api.get('/org/verification/status');
-        return response.data.data;
-    },
-
-    submitVerification: async (formData: FormData): Promise<{ success: boolean; message?: string; error?: string }> => {
-        try {
-            const response = await api.post('/org/verification/submit', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-            return { success: true, message: response.data.message };
-        } catch (error: any) {
-            return {
-                success: false,
-                error: error.response?.data?.message || 'Verification submission failed',
-            };
-        }
-    },
-
-    updateProfile: async (formData: FormData): Promise<{ success: boolean; data?: any; message?: string; error?: string; errors?: any }> => {
-        try {
-            // Use POST directly since API routes don't support _method
-            const response = await api.post('/org/profile', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-            return { success: true, data: response.data.data, message: response.data.message };
-        } catch (error: any) {
-            return {
-                success: false,
-                error: error.response?.data?.message || 'Profile update failed',
-                errors: error.response?.data?.errors,
-            };
-        }
-    },
-
-    updateEmail: async (newEmail: string, currentPassword: string): Promise<{ success: boolean; message?: string; error?: string; errors?: any; otpCode?: string }> => {
-        try {
-            // Use POST directly since API routes don't support _method
-            const response = await api.post('/org/profile/email', {
-                new_email: newEmail,
-                current_password: currentPassword,
-            });
-            return {
-                success: true,
-                message: response.data.message,
-                otpCode: response.data.data?.otp_code,
-            };
-        } catch (error: any) {
-            return {
-                success: false,
-                error: error.response?.data?.message || 'Email update failed',
-                errors: error.response?.data?.errors,
-            };
-        }
-    },
-
-    verifyEmailOTP: async (otpCode: string): Promise<{ success: boolean; message?: string; error?: string; errors?: any }> => {
-        try {
-            const response = await api.post('/org/profile/email/verify-otp', {
-                otp_code: otpCode,
-            });
-            return { success: true, message: response.data.message };
-        } catch (error: any) {
-            return {
-                success: false,
-                error: error.response?.data?.message || 'OTP verification failed',
-                errors: error.response?.data?.errors,
-            };
-        }
-    },
-
-    forgotPassword: async (email: string): Promise<{ success: boolean; otpCode?: string; error?: string }> => {
-        try {
-            await initializeCsrf();
-            const response = await api.post('/org/forgot-password', { email });
-            return {
-                success: true,
-                otpCode: response.data?.data?.otp_code,
-            };
-        } catch (error: any) {
-            return {
-                success: false,
-                error: error.response?.data?.message || 'Failed to send password reset code',
-            };
-        }
-    },
-
-    resetPassword: async (email: string, otpCode: string, password: string, passwordConfirmation: string): Promise<{ success: boolean; error?: string }> => {
-        try {
-            await initializeCsrf();
-            const response = await api.post('/org/reset-password', {
-                email,
-                otp_code: otpCode,
-                password,
-                password_confirmation: passwordConfirmation,
-            });
-            return { success: true };
-        } catch (error: any) {
-            return {
-                success: false,
-                error: error.response?.data?.message || 'Failed to reset password',
-            };
-        }
-    },
-
-    updatePassword: async (currentPassword: string, newPassword: string): Promise<{ success: boolean; message?: string; error?: string; errors?: any }> => {
-        try {
-            // Use POST directly since API routes don't support _method
-            const response = await api.post('/org/profile/password', {
-                current_password: currentPassword,
-                new_password: newPassword,
-                new_password_confirmation: newPassword,
-            });
-            return { success: true, message: response.data.message };
-        } catch (error: any) {
-            return {
-                success: false,
-                error: error.response?.data?.message || 'Password update failed',
-                errors: error.response?.data?.errors,
-            };
-        }
-    },
-
-    updateLocale: async (locale: string): Promise<{ success: boolean; user?: any; error?: string }> => {
-        try {
-            await initializeCsrf();
-            const response = await api.post('/org/locale', { locale });
-            return { success: true, user: response.data.data?.user };
-        } catch (error: any) {
-            return {
-                success: false,
-                error: error.response?.data?.message || 'Failed to update language',
-            };
-        }
-    },
-};

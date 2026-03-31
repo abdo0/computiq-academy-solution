@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import AppLink from './common/AppLink';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useCurrency } from '../utils/currency';
 
 const CourseDetailsPage: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
@@ -17,6 +19,8 @@ const CourseDetailsPage: React.FC = () => {
     const { __, t } = useTranslation();
     const isRTL = language === 'ar' || language === 'ku';
     const { addToCart, isInCart } = useCart();
+    const { user } = useAuth();
+    const { formatAmount } = useCurrency();
 
     const [course, setCourse] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -96,6 +100,7 @@ const CourseDetailsPage: React.FC = () => {
         sum + (m.lessons?.filter((l: any) => l.is_free)?.length || 0), 0) || 0;
 
     const instructorSlug = course.instructor?.slug;
+    const isEnrolled = Boolean(user?.purchasedCourseIds?.includes(course.id));
 
     return (
         <div className="bg-[#f8fafc] dark:bg-gray-950 min-h-screen pb-20">
@@ -358,29 +363,42 @@ const CourseDetailsPage: React.FC = () => {
                             {/* Purchase Info */}
                             <div className="p-6 md:p-8 flex flex-col gap-6">
                                 <div className="flex items-baseline gap-2">
-                                    <span className="text-3xl font-black text-brand-600">{course.price}</span>
+                                    <span className="text-3xl font-black text-brand-600">{formatAmount(course.price)}</span>
                                     {course.old_price && (
-                                        <span className="text-lg font-bold text-gray-400 line-through">{course.old_price}</span>
+                                        <span className="text-lg font-bold text-gray-400 line-through">{formatAmount(course.old_price)}</span>
                                     )}
-                                    <span className="text-xl font-bold text-brand-600">{isRTL ? 'د.ع' : 'IQD'}</span>
                                 </div>
                                 
                                 <div className="flex gap-3">
-                                    <button className="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 px-4 rounded-md text-base transition-colors shadow-lg shadow-brand-600/20 active:scale-95">
-                                        {isRTL ? 'سجّل الآن' : 'Enroll Now'}
+                                    <button
+                                        onClick={!isEnrolled ? handleAddToCart : undefined}
+                                        disabled={isEnrolled}
+                                        className={`flex-1 font-bold py-3.5 px-4 rounded-md text-base transition-colors shadow-lg active:scale-95 ${
+                                            isEnrolled
+                                                ? 'bg-emerald-600/90 text-white shadow-emerald-600/20 cursor-default'
+                                                : 'bg-brand-600 hover:bg-brand-700 text-white shadow-brand-600/20'
+                                        }`}
+                                    >
+                                        {isEnrolled
+                                            ? (isRTL ? 'تم التسجيل' : 'Enrolled')
+                                            : isInCart(course.id)
+                                                ? (isRTL ? 'اذهب إلى السلة' : 'Go to Cart')
+                                                : (isRTL ? 'سجّل الآن' : 'Enroll Now')}
                                     </button>
                                     <button
                                         onClick={handleAddToCart}
-                                        disabled={isAdding}
+                                        disabled={isAdding || isEnrolled}
                                         className={`w-14 h-[52px] shrink-0 border-2 flex items-center justify-center rounded-md transition-colors active:scale-95 ${
-                                            isInCart(course.id)
+                                            isEnrolled
+                                                ? 'border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
+                                                : isInCart(course.id)
                                                 ? 'border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
                                                 : 'border-brand-100 dark:border-gray-700 text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-gray-800'
                                         } ${isAdding ? 'opacity-75 cursor-not-allowed' : ''}`}
-                                        aria-label={isInCart(course.id) ? __('In Cart') : __('Add to Cart')}
+                                        aria-label={isEnrolled ? __('Enrolled') : isInCart(course.id) ? __('In Cart') : __('Add to Cart')}
                                     >
                                         {isAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : 
-                                         isInCart(course.id) ? <CheckCircle2 className="w-5 h-5" /> : <ShoppingCart className="w-5 h-5" />}
+                                         (isEnrolled || isInCart(course.id)) ? <CheckCircle2 className="w-5 h-5" /> : <ShoppingCart className="w-5 h-5" />}
                                     </button>
                                 </div>
 

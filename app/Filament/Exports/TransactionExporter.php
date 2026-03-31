@@ -2,6 +2,7 @@
 
 namespace App\Filament\Exports;
 
+use App\Models\Currency;
 use App\Models\Transaction;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
@@ -69,23 +70,23 @@ class TransactionExporter extends Exporter
 
             ExportColumn::make('amount')
                 ->label(__('Amount'))
-                ->formatStateUsing(fn ($state) => $state ? number_format($state, 2).' '.(settings('currency', 'USD')) : __('No amount')),
+                ->formatStateUsing(fn ($state) => $state ? number_format($state, 2).' '.Currency::getDefaultSymbol() : __('No amount')),
 
             ExportColumn::make('total_amount')
                 ->label(__('Total Paid'))
-                ->formatStateUsing(fn ($state) => $state ? number_format($state, 2).' '.(settings('currency', 'USD')) : __('N/A')),
+                ->formatStateUsing(fn ($state) => $state ? number_format($state, 2).' '.Currency::getDefaultSymbol() : __('N/A')),
 
             ExportColumn::make('net_amount')
                 ->label(__('Net Amount'))
-                ->formatStateUsing(fn ($state) => $state ? number_format($state, 2).' '.(settings('currency', 'USD')) : __('N/A')),
+                ->formatStateUsing(fn ($state) => $state ? number_format($state, 2).' '.Currency::getDefaultSymbol() : __('N/A')),
 
             ExportColumn::make('gateway_processing_fee')
                 ->label(__('Gateway Fee'))
-                ->formatStateUsing(fn ($state) => $state ? number_format($state, 2).' '.(settings('currency', 'USD')) : __('No fee')),
+                ->formatStateUsing(fn ($state) => $state ? number_format($state, 2).' '.Currency::getDefaultSymbol() : __('No fee')),
 
             ExportColumn::make('platform_commission')
                 ->label(__('Platform Commission'))
-                ->formatStateUsing(fn ($state) => $state ? number_format($state, 2).' '.(settings('currency', 'USD')) : __('No commission')),
+                ->formatStateUsing(fn ($state) => $state ? number_format($state, 2).' '.Currency::getDefaultSymbol() : __('No commission')),
 
             ExportColumn::make('status')
                 ->label(__('Status'))

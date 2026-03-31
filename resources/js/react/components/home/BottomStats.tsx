@@ -21,7 +21,7 @@ const BottomStats: React.FC<BottomStatsProps> = ({ sectionData, isLoading = fals
 
     const stats = [
         { value: sectionData?.extra_data?.stat_1_val || "600K+", label: sectionData?.extra_data?.stat_1_label?.[langKey] || sectionData?.extra_data?.stat_1_label?.['en'] || "Students" },
-        { value: sectionData?.extra_data?.stat_2_val || "$12M+", label: sectionData?.extra_data?.stat_2_label?.[langKey] || sectionData?.extra_data?.stat_2_label?.['en'] || "Revenue" },
+        { value: sectionData?.extra_data?.stat_2_val || "12M+", label: sectionData?.extra_data?.stat_2_label?.[langKey] || sectionData?.extra_data?.stat_2_label?.['en'] || "Revenue" },
         { value: sectionData?.extra_data?.stat_3_val || "1500+", label: sectionData?.extra_data?.stat_3_label?.[langKey] || sectionData?.extra_data?.stat_3_label?.['en'] || "Courses" },
         { value: sectionData?.extra_data?.stat_4_val || "150+", label: sectionData?.extra_data?.stat_4_label?.[langKey] || sectionData?.extra_data?.stat_4_label?.['en'] || "Countries" }
     ];

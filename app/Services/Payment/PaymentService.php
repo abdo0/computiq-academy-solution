@@ -2,10 +2,12 @@
 
 namespace App\Services\Payment;
 
-use App\Models\Campaign;
-use App\Models\Donor;
 use App\Models\PaymentGateway;
+use App\Models\CartItem;
+use App\Models\Currency;
+use App\Models\PromoCode;
 use App\Models\Transaction;
+use App\Models\User;
 use App\Services\Payment\Contracts\PaymentGatewayInterface;
 use Illuminate\Support\Facades\Log;
 
@@ -13,73 +15,115 @@ class PaymentService
 {
     public function __construct(
         protected PaymentProcessor $processor,
-        protected PaymentCalculator $calculator
+        protected PaymentCalculator $calculator,
+        protected PromoCodeService $promoCodeService
     ) {}
 
-    /**
-     * Initiate a payment
-     */
-    public function initiatePayment(
-        float $amount,
-        ?Campaign $campaign = null,
-        PaymentGateway $gateway,
-        ?Donor $donor = null,
-        array $donorData = [],
-        array $metadata = []
-    ): array {
+    public function quoteCheckout(User $user, ?PaymentGateway $gateway = null, ?string $promoCode = null): array
+    {
         try {
-            // Create transaction
-            $result = $this->processor->processDonation(
-                $amount,
-                $campaign,
-                $gateway,
-                $donor,
-                $donorData,
-                $metadata
-            );
+            $cartItems = CartItem::with('course')
+                ->where('user_id', $user->id)
+                ->latest()
+                ->get()
+                ->filter(fn (CartItem $item) => $item->course !== null);
 
-            // Extract transaction from result array
+            if ($cartItems->isEmpty()) {
+                throw new \RuntimeException(__('Your cart is empty.'));
+            }
+
+            $resolvedPromoCode = $this->promoCodeService->resolve($promoCode);
+            $subtotal = (float) $cartItems->sum(fn (CartItem $item) => (float) $item->price);
+            $totals = $this->calculator->calculateCheckoutTotals($subtotal, $gateway, $resolvedPromoCode);
+
+            return [
+                'success' => true,
+                'items' => $cartItems->map(fn (CartItem $item) => [
+                    'id' => (string) $item->id,
+                    'course_id' => (string) $item->course_id,
+                    'price' => $this->formatMoney((float) $item->price),
+                    'course' => $item->course ? [
+                        'id' => (string) $item->course->id,
+                        'title' => $item->course->title,
+                        'slug' => $item->course->slug,
+                        'image' => $item->course->image,
+                    ] : null,
+                ])->values()->all(),
+                'count' => $cartItems->count(),
+                'gateway' => $gateway ? [
+                    'id' => (string) $gateway->id,
+                    'code' => $gateway->code,
+                    'name' => $gateway->name,
+                    'type' => $gateway->type?->value,
+                ] : null,
+                'promo' => $this->promoCodeService->toSummary($resolvedPromoCode, $totals['discount_amount']),
+                'totals' => $this->formatTotals($totals),
+                'currency' => Currency::getDefaultCurrencyData(),
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Initiate checkout for the authenticated user's cart.
+     */
+    public function initiateCheckout(User $user, PaymentGateway $gateway, array $metadata = []): array
+    {
+        try {
+            $result = $this->processor->processCheckout($user, $gateway, $metadata);
             $transaction = $result['transaction'];
-
-            // Get gateway implementation
+            $order = $result['order'];
             $gatewayService = $this->getGatewayService($gateway);
 
-            // Initiate payment with gateway
             $gatewayResponse = $gatewayService->initiatePayment($transaction, [
                 'amount' => $transaction->total_amount,
-                'currency' => settings('currency', 'USD'),
-                'description' => $campaign ? "Donation to: {$campaign->title}" : "General Donation",
-                'return_url' => route('payment.callback', ['transactionRef' => $transaction->transaction_ref]),
-                'callback_url' => route('payment.webhook', ['gateway' => $gateway->code]),
+                'currency' => Currency::getDefaultCode(),
+                'description' => __('Course checkout :order', ['order' => $order->order_ref]),
+                'return_url' => route('api.v1.payments.callback', ['transactionRef' => $transaction->transaction_ref]),
+                'failure_url' => route('api.v1.payments.callback', ['transactionRef' => $transaction->transaction_ref, 'status' => 'failure']),
+                'callback_url' => route('api.payments.webhook', ['gateway' => $gateway->code]),
+                'customer_phone' => $user->phone ?: $user->mobile,
             ]);
 
-            // Update transaction with gateway response
             $transaction->update([
                 'gateway_transaction_id' => $gatewayResponse['transaction_id'] ?? null,
                 'gateway_response' => $gatewayResponse,
-                'status' => 'processing',
+                'status' => $gatewayResponse['status'] ?? 'processing',
             ]);
 
-            // Check if gateway returned payment_url
             $paymentUrl = $gatewayResponse['payment_url'] ?? null;
-            
-            if (! $paymentUrl && isset($gatewayResponse['message'])) {
-                // Gateway didn't return payment_url - might not be implemented
-                throw new \Exception(__('Payment gateway ":gateway" is not fully configured. Please contact support.', [
-                    'gateway' => $gateway->name ?? $gateway->code,
-                ]));
+
+            if (! $paymentUrl) {
+                throw new \RuntimeException($gatewayResponse['message'] ?? __('Payment URL was not returned by the gateway.'));
             }
 
             return [
                 'success' => true,
+                'order' => $order,
                 'transaction' => $transaction,
                 'payment_url' => $paymentUrl,
+                'promo' => $this->promoCodeService->toSummary(
+                    $order->promoCode,
+                    (float) $order->discount_amount
+                ),
+                'totals' => $this->formatTotals([
+                    'subtotal_before_discount' => (float) $order->subtotal_before_discount,
+                    'discount_amount' => (float) $order->discount_amount,
+                    'subtotal_after_discount' => (float) $order->subtotal_after_discount,
+                    'gateway_processing_fee' => (float) $order->gateway_processing_fee,
+                    'total_amount' => (float) $order->total_amount,
+                ]),
+                'currency' => Currency::getDefaultCurrencyData(),
                 'gateway_response' => $gatewayResponse,
             ];
         } catch (\Exception $e) {
-            Log::error('Payment initiation failed', [
+            Log::error('Checkout initiation failed', [
                 'error' => $e->getMessage(),
-                'campaign_id' => $campaign?->id,
+                'user_id' => $user->id,
                 'gateway_id' => $gateway->id,
             ]);
 
@@ -96,12 +140,19 @@ class PaymentService
     public function verifyPayment(Transaction $transaction): array
     {
         try {
+            if ($transaction->status === \App\Enums\TransactionStatus::COMPLETED) {
+                return [
+                    'success' => true,
+                    'transaction' => $transaction,
+                    'status' => $transaction->status->value,
+                ];
+            }
+
             $gateway = $transaction->paymentGateway;
             $gatewayService = $this->getGatewayService($gateway);
 
-            // لا يمكن التحقق بدون gateway_transaction_id
             if (blank($transaction->gateway_transaction_id)) {
-                Log::warning('Payment verification skipped: missing gateway_transaction_id', [
+                Log::warning('Payment verification skipped because gateway transaction id is missing', [
                     'transaction_id' => $transaction->id,
                     'transaction_ref' => $transaction->transaction_ref,
                     'gateway' => $gateway->code ?? null,
@@ -110,14 +161,13 @@ class PaymentService
                 return [
                     'success' => false,
                     'transaction' => $transaction,
-                    'status' => $transaction->status->value ?? 'pending',
+                    'status' => $transaction->status?->value ?? 'pending',
                     'error' => __('Cannot verify payment: missing gateway transaction reference.'),
                 ];
             }
 
             $verification = $gatewayService->verifyPayment((string) $transaction->gateway_transaction_id);
 
-            // Update transaction based on verification
             if ($verification['status'] === 'completed') {
                 $this->processor->updateStatus($transaction, 'completed', [
                     'gateway_response' => $verification,
@@ -142,7 +192,12 @@ class PaymentService
                 ];
             }
 
-            // Pending or other status
+            if ($verification['status'] === 'processing') {
+                $this->processor->updateStatus($transaction, 'processing', [
+                    'gateway_response' => $verification,
+                ]);
+            }
+
             return [
                 'success' => false,
                 'transaction' => $transaction->fresh(),
@@ -169,9 +224,7 @@ class PaymentService
     {
         try {
             $gatewayService = $this->getGatewayService($gateway);
-            $transaction = $gatewayService->processCallback($data);
-
-            return $transaction;
+            return $gatewayService->processCallback($data);
         } catch (\Exception $e) {
             Log::error('Webhook processing failed', [
                 'error' => $e->getMessage(),
@@ -251,12 +304,12 @@ class PaymentService
     protected function getGatewayService(PaymentGateway $gateway): PaymentGatewayInterface
     {
         $gatewayClass = match ($gateway->code) {
-            'qi-card' => \App\Services\Payment\Gateways\QiCardGateway::class,
             'zaincash' => \App\Services\Payment\Gateways\ZainCashGateway::class,
+            'tap_payments' => \App\Services\Payment\Gateways\TapPaymentsGateway::class,
+            'qi-card' => \App\Services\Payment\Gateways\QiCardGateway::class,
             'fastpay' => \App\Services\Payment\Gateways\FastPayGateway::class,
             'nasaq' => \App\Services\Payment\Gateways\NasaqGateway::class,
             'asia-hawala' => \App\Services\Payment\Gateways\AsiaHawalaGateway::class,
-            'tap_payments' => \App\Services\Payment\Gateways\TapPaymentsGateway::class,
             default => throw new \Exception(__('Gateway implementation not found for: :gateway', ['gateway' => $gateway->code])),
         };
 
@@ -264,5 +317,21 @@ class PaymentService
         $service->setGateway($gateway);
 
         return $service;
+    }
+
+    protected function formatTotals(array $totals): array
+    {
+        return [
+            'subtotal_before_discount' => $this->formatMoney((float) ($totals['subtotal_before_discount'] ?? 0)),
+            'discount_amount' => $this->formatMoney((float) ($totals['discount_amount'] ?? 0)),
+            'subtotal_after_discount' => $this->formatMoney((float) ($totals['subtotal_after_discount'] ?? $totals['amount'] ?? 0)),
+            'gateway_processing_fee' => $this->formatMoney((float) ($totals['gateway_processing_fee'] ?? 0)),
+            'total_amount' => $this->formatMoney((float) ($totals['total_amount'] ?? 0)),
+        ];
+    }
+
+    protected function formatMoney(float $amount): string
+    {
+        return number_format(round($amount, 2), 2, '.', '');
     }
 }

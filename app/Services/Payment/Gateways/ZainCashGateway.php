@@ -3,6 +3,7 @@
 namespace App\Services\Payment\Gateways;
 
 use App\Enums\TransactionStatus;
+use App\Models\Currency;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -102,10 +103,10 @@ class ZainCashGateway extends BaseGateway
                 'language' => $config['language'] ?? 'en',
                 'externalReferenceId' => (string) Str::uuid(),
                 'orderId' => $transaction->transaction_ref,
-                'serviceType' => $config['service_type'] ?? 'General Donation',
+                'serviceType' => $config['service_type'] ?? 'Course Checkout',
                 'amount' => [
                     'value' => (string) $amount,
-                    'currency' => strtoupper($config['currency'] ?? 'IQD'),
+                    'currency' => strtoupper($data['currency'] ?? $config['currency'] ?? Currency::getDefaultCode()),
                 ],
                 'customer' => [
                     'phone' => $data['customer_phone'] ?? null,
@@ -275,14 +276,13 @@ class ZainCashGateway extends BaseGateway
             default => TransactionStatus::PROCESSING->value,
         };
 
-        $transaction->update([
-            'status' => $enumStatus,
-            'gateway_transaction_id' => $gatewayTxnId ?? $transaction->gateway_transaction_id,
-            'gateway_response' => $decoded ?: $data,
-        ]);
+            $processor = app(\App\Services\Payment\PaymentProcessor::class);
 
-        return $transaction->fresh();
-    }
+            return $processor->updateStatus($transaction, $enumStatus, [
+                'gateway_transaction_id' => $gatewayTxnId ?? $transaction->gateway_transaction_id,
+                'gateway_response' => $decoded ?: $data,
+            ]);
+        }
 
     // ===========================================================================
     // Helpers

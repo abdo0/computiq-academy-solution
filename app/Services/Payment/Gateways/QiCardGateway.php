@@ -2,6 +2,7 @@
 
 namespace App\Services\Payment\Gateways;
 
+use App\Models\Currency;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -77,7 +78,7 @@ class QiCardGateway extends BaseGateway
             $payload = [
                 'merchant_id' => $merchantId,
                 'amount' => $data['amount'],
-                'currency' => $data['currency'] ?? (settings('currency', 'USD')),
+                'currency' => $data['currency'] ?? Currency::getDefaultCode(),
                 'order_id' => $transaction->transaction_ref,
                 'description' => $data['description'] ?? "Donation #{$transaction->transaction_ref}",
                 'return_url' => $data['return_url'],
@@ -112,7 +113,7 @@ class QiCardGateway extends BaseGateway
                 ],
                 'transaction_data' => [
                     'amount' => $data['amount'],
-                    'currency' => $data['currency'] ?? (settings('currency', 'USD')),
+                    'currency' => $data['currency'] ?? Currency::getDefaultCode(),
                     'description' => $data['description'] ?? "Donation #{$transaction->transaction_ref}",
                     'return_url' => $data['return_url'] ?? null,
                     'callback_url' => $data['callback_url'] ?? null,

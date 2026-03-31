@@ -85,6 +85,7 @@ export interface AppSettings {
   currency: {
     code: string;
     symbol: string;
+    name?: string;
   };
   contactEmail: string;
   contactPhone: string[];

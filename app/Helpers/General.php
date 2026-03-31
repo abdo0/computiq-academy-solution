@@ -36,17 +36,13 @@ function settings(?string $key = null, $default = null)
 
     $value = $settings[$key] ?? $default;
 
-    // Special handling for currency - use Currency model if available
-    if ($key === 'currency') {
-        try {
-            if (Schema::hasTable('currencies')) {
-                $defaultCurrency = \App\Models\Currency::getDefaultCode();
+    // Currency is always sourced from the currencies table when available.
+    if (in_array($key, ['currency', 'Currency'], true)) {
+        return Currency::getDefaultCode();
+    }
 
-                return $defaultCurrency;
-            }
-        } catch (\Exception $e) {
-            // Fallback to settings if Currency model is not available
-        }
+    if (in_array($key, ['currency_symbol', 'Currency symbol'], true)) {
+        return Currency::getDefaultSymbol();
     }
 
     // Handle multilingual settings manually
@@ -60,6 +56,11 @@ function settings(?string $key = null, $default = null)
     }
 
     return $value;
+}
+
+function project_currency(): array
+{
+    return Currency::getDefaultCurrencyData();
 }
 function loadSettings(): void
 {
@@ -232,32 +233,17 @@ if (! function_exists('money')) {
      */
     function money(float|int $amount, ?string $currencyCode = null, int $decimals = 2, string $decimalSeparator = '.', string $thousandsSeparator = ','): string
     {
-        $currencySymbol = '';
-        if ($currencyCode === null) {
-            $currencyCode = settings('currency', 'USD');
-        }
+        $currencyCode = strtoupper($currencyCode ?: Currency::getDefaultCode());
+        $currency = Currency::query()
+            ->where('code', $currencyCode)
+            ->where('is_active', true)
+            ->first();
 
-        // You can extend this to get symbols based on currencyCode from settings or a config file
-        switch (strtoupper($currencyCode)) {
-            case 'USD':
-                $currencySymbol = '$';
-                break;
-            case 'EUR':
-                $currencySymbol = '€';
-                break;
-            case 'GBP':
-                $currencySymbol = '£';
-                break;
-                // Add more currency cases as needed
-            default:
-                $currencySymbol = strtoupper($currencyCode).' ';
-        }
+        $currencySymbol = $currency?->symbol ?: ($currencyCode === 'IQD' ? 'د.ع' : $currencyCode);
 
         $formattedAmount = number_format($amount, $decimals, $decimalSeparator, $thousandsSeparator);
 
-        // Example: Place symbol before or after based on locale/currency convention if needed
-        // For simplicity, this example places it before.
-        return $currencySymbol.$formattedAmount;
+        return trim("{$formattedAmount} {$currencySymbol}");
     }
 }
 

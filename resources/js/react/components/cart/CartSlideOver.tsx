@@ -6,6 +6,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { X, Trash2, ShoppingCart, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import AppLink from '../common/AppLink';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useCurrency } from '../../utils/currency';
 
 interface CartSlideOverProps {
     isOpen: boolean;
@@ -16,6 +17,7 @@ const CartSlideOver: React.FC<CartSlideOverProps> = ({ isOpen, onClose }) => {
     const { __, t } = useTranslation();
     const { cartItems, cartCount, cartTotal, removeFromCart } = useCart();
     const { dir } = useLanguage();
+    const { formatAmount } = useCurrency();
     const [removingItems, setRemovingItems] = useState<number[]>([]);
 
     const ArrowIcon = dir === 'rtl' ? ArrowLeft : ArrowRight;
@@ -147,7 +149,7 @@ const CartSlideOver: React.FC<CartSlideOverProps> = ({ isOpen, onClose }) => {
                                                             {item.course?.instructor_name}
                                                         </span>
                                                         <span className="text-sm font-bold text-brand-600 dark:text-brand-400 shrink-0">
-                                                            {item.price} {__('Currency symbol')}
+                                                            {formatAmount(item.price)}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -163,14 +165,18 @@ const CartSlideOver: React.FC<CartSlideOverProps> = ({ isOpen, onClose }) => {
                             <div className="border-t border-gray-100 dark:border-gray-700 p-6 bg-gray-50/50 dark:bg-gray-800/50 shrink-0">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="text-base font-semibold text-gray-900 dark:text-white">{__('Subtotal')}</span>
-                                    <span className="text-lg font-bold text-brand-600 dark:text-brand-400">{cartTotal} {__('Currency symbol')}</span>
+                                    <span className="text-lg font-bold text-brand-600 dark:text-brand-400">{formatAmount(cartTotal)}</span>
                                 </div>
                                 
                                 <div className="flex flex-col gap-3">
-                                    <button className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-brand-600 to-brand-700 text-white rounded-xl font-bold hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25 active:scale-[0.98]">
+                                    <AppLink
+                                        to="/checkout"
+                                        onClick={onClose}
+                                        className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-brand-600 to-brand-700 text-white rounded-xl font-bold hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25 active:scale-[0.98]"
+                                    >
                                         {__('Proceed to Checkout')}
                                         <ArrowIcon className="w-4 h-4" />
-                                    </button>
+                                    </AppLink>
                                     
                                     <AppLink 
                                         to="/cart"

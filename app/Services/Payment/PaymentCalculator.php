@@ -2,52 +2,39 @@
 
 namespace App\Services\Payment;
 
-use App\Enums\CampaignType;
-use App\Enums\OrganizationType;
 use App\Enums\PaymentGatewayFeeType;
-use App\Models\Campaign;
-use App\Models\Organization;
 use App\Models\PaymentGateway;
 use App\Models\PaymentGatewayFee;
+use App\Models\PromoCode;
+use App\Enums\PromoCodeDiscountType;
 
 class PaymentCalculator
 {
     /**
-     * Calculate all fees for a donation
+     * Calculate checkout totals for an order subtotal.
      */
-    public function calculateFees(
-        float $amount,
-        PaymentGateway $gateway,
-        ?Organization $organization = null,
-        ?Campaign $campaign = null
-    ): array {
-        // Gateway Processing Fee (User → Platform)
-        $gatewayFee = $this->calculateGatewayProcessingFee($amount, $gateway);
-
-        // Platform Commission (Platform → Organization)
-        $platformCommission = $this->calculatePlatformCommission(
-            $amount,
-            $organization,
-            $campaign
-        );
-
-        // Net amount to organization
-        $netAmount = $amount - $platformCommission;
-
-        // Total amount donor pays
-        $totalAmount = $amount + $gatewayFee;
+    public function calculateCheckoutTotals(float $subtotal, ?PaymentGateway $gateway = null, ?PromoCode $promoCode = null): array
+    {
+        $discountAmount = $this->calculateDiscountAmount($subtotal, $promoCode);
+        $discountedSubtotal = max($subtotal - $discountAmount, 0);
+        $gatewayFee = $gateway ? $this->calculateGatewayProcessingFee($discountedSubtotal, $gateway) : 0;
+        $platformCommission = $gateway ? $this->calculatePlatformCommission($discountedSubtotal, $gateway) : 0;
+        $netAmount = $discountedSubtotal - $platformCommission;
+        $totalAmount = $discountedSubtotal + $gatewayFee;
 
         return [
-            'amount' => $amount,
-            'gateway_processing_fee' => $gatewayFee,
-            'platform_commission' => $platformCommission,
-            'net_amount' => $netAmount,
-            'total_amount' => $totalAmount,
+            'amount' => $this->roundMoney($discountedSubtotal),
+            'subtotal_before_discount' => $this->roundMoney($subtotal),
+            'discount_amount' => $this->roundMoney($discountAmount),
+            'subtotal_after_discount' => $this->roundMoney($discountedSubtotal),
+            'gateway_processing_fee' => $this->roundMoney($gatewayFee),
+            'platform_commission' => $this->roundMoney($platformCommission),
+            'net_amount' => $this->roundMoney($netAmount),
+            'total_amount' => $this->roundMoney($totalAmount),
         ];
     }
 
     /**
-     * Calculate gateway processing fee
      */
     protected function calculateGatewayProcessingFee(float $amount, PaymentGateway $gateway): float
     {
@@ -57,55 +44,54 @@ class PaymentCalculator
             ->first();
 
         if (! $fee) {
-            // Fallback to gateway's default processing fee
             $percentage = $gateway->processing_fee_percentage ?? 0;
             $fixed = $gateway->processing_fee_fixed ?? 0;
 
-            return ($amount * $percentage / 100) + $fixed;
+            return $this->calculateFee($amount, (float) $percentage, (float) $fixed);
         }
 
-        return $this->calculateFee($amount, $fee->percentage, $fee->fixed_amount);
+        return $this->calculateFee($amount, (float) $fee->percentage, (float) $fee->fixed_amount);
     }
 
     /**
-     * Calculate platform commission
+     * Platform commission is optional in the course checkout flow.
      */
-    protected function calculatePlatformCommission(
-        float $amount,
-        ?Organization $organization = null,
-        ?Campaign $campaign = null
-    ): float {
-        if (!$organization || !$campaign) {
-            return 0; // No platform commission for general donations
-        }
-        $organizationType = $organization->type ?? OrganizationType::STANDARD;
-        $campaignType = $campaign->campaign_type ?? CampaignType::STANDARD;
-
+    protected function calculatePlatformCommission(float $amount, PaymentGateway $gateway): float
+    {
         $fee = PaymentGatewayFee::where('fee_type', PaymentGatewayFeeType::PLATFORM_COMMISSION)
-            ->where('organization_type', $organizationType)
-            ->where('campaign_type', $campaignType)
+            ->where('payment_gateway_id', $gateway->id)
             ->where('is_active', true)
             ->first();
 
         if (! $fee) {
-            // Default platform commission: 5% for standard, 3% for verified, 2.5% for featured
-            $percentage = match (true) {
-                $campaignType === CampaignType::FEATURED => 2.5,
-                $organizationType === OrganizationType::VERIFIED => 3.0,
-                default => 5.0,
-            };
-
-            return $amount * $percentage / 100;
+            return 0;
         }
 
-        return $this->calculateFee($amount, $fee->percentage, $fee->fixed_amount);
+        return $this->calculateFee($amount, (float) $fee->percentage, (float) $fee->fixed_amount);
     }
 
-    /**
-     * Calculate fee from percentage and fixed amount
-     */
-    protected function calculateFee(float $amount, float $percentage, int $fixed): float
+    protected function calculateFee(float $amount, float $percentage, float $fixed): float
     {
         return ($amount * $percentage / 100) + $fixed;
+    }
+
+    protected function calculateDiscountAmount(float $subtotal, ?PromoCode $promoCode = null): float
+    {
+        if (! $promoCode) {
+            return 0;
+        }
+
+        $discountAmount = match ($promoCode->discount_type) {
+            PromoCodeDiscountType::FIXED => (float) $promoCode->discount_value,
+            PromoCodeDiscountType::PERCENTAGE => $subtotal * ((float) $promoCode->discount_value / 100),
+            default => 0,
+        };
+
+        return min($discountAmount, $subtotal);
+    }
+
+    protected function roundMoney(float $amount): float
+    {
+        return round($amount, 2);
     }
 }

@@ -19,12 +19,16 @@ class DatabaseSeeder extends Seeder
             // System seeders
             RoleSeeder::class,
             PermissionSeeder::class,
+            AdminSeeder::class,
             UserSeeder::class,
 
             // Basic entities
             CurrencySeeder::class,
             CountrySeeder::class,
             StateSeeder::class,
+            PaymentMethodSeeder::class,
+            PaymentGatewaySeeder::class,
+            PromoCodeSeeder::class,
 
 
             // Content Management seeders

@@ -61,6 +61,13 @@ class CartController extends Controller
         $course = Course::findOrFail($request->course_id);
         $user = $request->user();
 
+        if ($user->courseEnrollments()->where('course_id', $course->id)->exists()) {
+            return response()->json([
+                'message' => __('You are already enrolled in this course.'),
+                'data' => ['already_enrolled' => true],
+            ], 409);
+        }
+
         // Check if already in cart
         $existing = CartItem::where('user_id', $user->id)
             ->where('course_id', $course->id)

@@ -7,7 +7,7 @@
                     <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">{{ __('Transaction #') }}</div>
                     <div class="font-semibold text-gray-900 dark:text-white">{{ $transaction->transaction_number }}</div>
                     <div class="text-2xl font-bold text-green-600 dark:text-green-400 mt-2">
-                        {{ \Filament\Support\format_money($transaction->amount, 'USD') }}
+                        {{ money((float) $transaction->amount) }}
                     </div>
                 </div>
 

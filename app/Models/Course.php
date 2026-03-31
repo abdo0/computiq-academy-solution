@@ -77,4 +77,21 @@ class Course extends Model
             ->withPivot('sort_order')
             ->orderByPivot('sort_order');
     }
+
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(CourseEnrollment::class);
+    }
+
+    public function enrolledUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'course_enrollments')
+            ->withPivot(['order_id', 'transaction_id', 'enrolled_at'])
+            ->withTimestamps();
+    }
 }

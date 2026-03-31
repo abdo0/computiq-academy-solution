@@ -2,6 +2,7 @@
 
 namespace App\Services\Payment\Gateways;
 
+use App\Models\Currency;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -39,7 +40,7 @@ class TapPaymentsGateway extends BaseGateway
             
             $payload = [
                 'amount' => $data['amount'],
-                'currency' => $data['currency'] ?? strtoupper(settings('currency', 'USD')),
+                'currency' => $data['currency'] ?? Currency::getDefaultCode(),
                 'threeDSecure' => true,
                 'save_card' => false,
                 'description' => $data['description'] ?? "Donation #{$transaction->transaction_ref}",
@@ -103,7 +104,7 @@ class TapPaymentsGateway extends BaseGateway
                 ],
                 'transaction_data' => [
                     'amount' => $data['amount'],
-                    'currency' => $data['currency'] ?? strtoupper(settings('currency', 'USD')),
+                    'currency' => $data['currency'] ?? Currency::getDefaultCode(),
                     'description' => $data['description'] ?? "Donation #{$transaction->transaction_ref}",
                     'return_url' => $data['return_url'] ?? null,
                     'callback_url' => $data['callback_url'] ?? null,

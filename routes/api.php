@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ArticleController;
+use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\ContentController;
 use App\Http\Controllers\Api\CourseController;
@@ -8,6 +9,8 @@ use App\Http\Controllers\Api\LearningPathController;
 use App\Http\Controllers\Api\InstructorController;
 use App\Http\Controllers\Api\SeoController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\TranslationController;
 use Illuminate\Support\Facades\Route;
 
@@ -54,6 +57,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/content/hero', [ContentController::class, 'hero'])->name('api.v1.content.hero');
     Route::get('/content/footer-pages', [ContentController::class, 'footerPages'])->name('api.v1.content.footer-pages');
     Route::get('/content/other-pages', [ContentController::class, 'otherPages'])->name('api.v1.content.other-pages');
+    Route::get('/payment-gateways', [ContentController::class, 'paymentGateways'])->name('api.v1.payment-gateways');
     Route::get('/categories', [ContentController::class, 'categories'])->name('api.v1.categories');
 
     // Learning Paths
@@ -106,6 +110,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/profile/password', [\App\Http\Controllers\Api\UserAuthController::class, 'updatePassword'])->name('api.v1.user.profile.password');
             Route::post('/locale', [\App\Http\Controllers\Api\UserAuthController::class, 'updateLocale'])->name('api.v1.user.locale');
             Route::get('/dashboard/stats', [\App\Http\Controllers\Api\UserAuthController::class, 'dashboardStats'])->name('api.v1.user.dashboard.stats');
+            Route::get('/enrollments', [\App\Http\Controllers\Api\UserAuthController::class, 'enrollments'])->name('api.v1.user.enrollments');
 
             // Cart routes
             Route::get('/cart', [\App\Http\Controllers\Api\CartController::class, 'index'])->name('api.v1.user.cart.index');
@@ -115,4 +120,16 @@ Route::prefix('v1')->group(function () {
         });
     });
 
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/checkout/quote', [CheckoutController::class, 'quote'])->name('api.v1.checkout.quote');
+        Route::post('/checkout/initiate', [CheckoutController::class, 'initiate'])->name('api.v1.checkout.initiate');
+        Route::get('/payments/verify/{transaction}', [PaymentController::class, 'verify'])->name('api.v1.payments.verify');
+    });
+
+    Route::get('/payments/callback/{transactionRef}', [PaymentController::class, 'callback'])->name('api.v1.payments.callback');
+
 });
+
+Route::post('/payments/webhook/{gateway}', [PaymentWebhookController::class, 'handle'])
+    ->name('api.payments.webhook')
+    ->withoutMiddleware(['web']);

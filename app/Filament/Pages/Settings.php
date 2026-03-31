@@ -166,8 +166,16 @@ class Settings extends Page implements HasForms
 
                     \Filament\Forms\Components\Placeholder::make('currency')
                         ->label(__('Default Currency'))
-                        ->content(fn () => \App\Models\Currency::getDefault()?->name.' ('.(\App\Models\Currency::getDefault()?->code ?? 'USD').')' ?? __('Not Set'))
-                        ->helperText(__('Manage currencies and set the default currency from the Currencies resource in the Entities cluster.')),
+                        ->content(function () {
+                            $currency = \App\Models\Currency::getDefault();
+
+                            if (! $currency) {
+                                return __('Not Set');
+                            }
+
+                            return "{$currency->name} ({$currency->code} / {$currency->symbol})";
+                        })
+                        ->helperText(__('Manage currencies and set the project default currency from the Currencies resource.')),
 
                 ])->columns(2),
 

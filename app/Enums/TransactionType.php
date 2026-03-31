@@ -10,16 +10,16 @@ use Filament\Support\Icons\Heroicon;
 
 enum TransactionType: string implements HasColor, HasDescription, HasIcon, HasLabel
 {
+    case CHECKOUT = 'checkout';
     case DONATION = 'donation';
-    case WALLET_TOPUP = 'wallet_topup';
     case REFUND = 'refund';
     case FEE = 'fee';
 
     public function getLabel(): ?string
     {
         return match ($this) {
+            self::CHECKOUT => __('Course Checkout'),
             self::DONATION => __('Donation Payment'),
-            self::WALLET_TOPUP => __('Wallet Top-up'),
             self::REFUND => __('Refund'),
             self::FEE => __('Platform Fee'),
         };
@@ -28,8 +28,8 @@ enum TransactionType: string implements HasColor, HasDescription, HasIcon, HasLa
     public function getColor(): string|array|null
     {
         return match ($this) {
+            self::CHECKOUT => 'success',
             self::DONATION => 'success',
-            self::WALLET_TOPUP => 'info',
             self::REFUND => 'warning',
             self::FEE => 'gray',
         };
@@ -38,8 +38,8 @@ enum TransactionType: string implements HasColor, HasDescription, HasIcon, HasLa
     public function getIcon(): string|\BackedEnum|null
     {
         return match ($this) {
+            self::CHECKOUT => Heroicon::ShoppingBag,
             self::DONATION => Heroicon::Banknotes,
-            self::WALLET_TOPUP => Heroicon::ArrowDownCircle,
             self::REFUND => Heroicon::ArrowPath,
             self::FEE => Heroicon::CurrencyDollar,
         };
@@ -48,14 +48,10 @@ enum TransactionType: string implements HasColor, HasDescription, HasIcon, HasLa
     public function getDescription(): ?string
     {
         return match ($this) {
-            self::DONATION => __('Payment for a campaign donation'),
-            self::WALLET_TOPUP => __('Adding funds to donor wallet'),
+            self::CHECKOUT => __('Payment for one or more courses'),
+            self::DONATION => __('Legacy donation payment type'),
             self::REFUND => __('Refunding a previous transaction'),
             self::FEE => __('Platform or service fee'),
         };
     }
 }
-
-
-
-

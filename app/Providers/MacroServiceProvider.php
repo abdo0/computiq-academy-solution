@@ -37,12 +37,6 @@ class MacroServiceProvider extends ServiceProvider
                 'success' => true,
                 'message' => $message,
                 'data' => $data,
-                'donor' => Auth::guard('donor')->check()
-                    ? (new \App\Http\Resources\DonorResource(Auth::guard('donor')->user()))->toArray(request())
-                    : null,
-                'organization' => Auth::guard('organization')->check()
-                    ? (new \App\Http\Resources\OrganizationResource(Auth::guard('organization')->user()))->toArray(request())
-                    : null,
                 'meta' => array_merge([
                     'seo' => seo()->meta(),
                 ], $meta),
@@ -57,12 +51,6 @@ class MacroServiceProvider extends ServiceProvider
                 'message' => $message,
                 'data' => $data,
                 'error' => $statusCode,
-                'donor' => Auth::guard('donor')->check()
-                    ? (new \App\Http\Resources\DonorResource(Auth::guard('donor')->user()))->toArray(request())
-                    : null,
-                'organization' => Auth::guard('organization')->check()
-                    ? (new \App\Http\Resources\OrganizationResource(Auth::guard('organization')->user()))->toArray(request())
-                    : null,
                 'meta' => array_merge([
                     'seo' => seo()->meta(),
                 ], $meta),

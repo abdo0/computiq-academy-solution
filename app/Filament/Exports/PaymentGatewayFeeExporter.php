@@ -38,24 +38,6 @@ class PaymentGatewayFeeExporter extends Exporter
                     return $record->paymentGateway?->code ?? __('No gateway');
                 }),
 
-            ExportColumn::make('organization_type')
-                ->label(__('Organization Type'))
-                ->state(function (PaymentGatewayFee $record): string {
-                    return $record->organization_type?->getLabel() ?? __('Not specified');
-                }),
-
-            ExportColumn::make('campaign_type')
-                ->label(__('Campaign Type'))
-                ->state(function (PaymentGatewayFee $record): string {
-                    return $record->campaign_type?->getLabel() ?? __('Not specified');
-                }),
-
-            ExportColumn::make('settlement_method')
-                ->label(__('Settlement Method'))
-                ->state(function (PaymentGatewayFee $record): string {
-                    return $record->settlement_method?->getLabel() ?? __('Not specified');
-                }),
-
             ExportColumn::make('fee_amount')
                 ->label(__('Fee Amount'))
                 ->state(function (PaymentGatewayFee $record): string {
@@ -111,15 +93,12 @@ class PaymentGatewayFeeExporter extends Exporter
         $options->setColumnWidth(8, 1);   // ID column
         $options->setColumnWidth(20, 2);  // Fee Type column
         $options->setColumnWidth(20, 3);  // Payment Gateway column
-        $options->setColumnWidth(20, 4);  // Organization Type column
-        $options->setColumnWidth(20, 5);  // Campaign Type column
-        $options->setColumnWidth(20, 6);  // Settlement Method column
-        $options->setColumnWidth(25, 7);  // Fee Amount column
-        $options->setColumnWidth(40, 8);  // Description column
-        $options->setColumnWidth(12, 9);  // Status column
-        $options->setColumnWidth(12, 10); // Sort Order column
-        $options->setColumnWidth(20, 11); // Created At column
-        $options->setColumnWidth(20, 12); // Updated At column
+        $options->setColumnWidth(25, 4);  // Fee Amount column
+        $options->setColumnWidth(40, 5);  // Description column
+        $options->setColumnWidth(12, 6);  // Status column
+        $options->setColumnWidth(12, 7);  // Sort Order column
+        $options->setColumnWidth(20, 8);  // Created At column
+        $options->setColumnWidth(20, 9);  // Updated At column
 
         return $options;
     }
@@ -202,29 +181,29 @@ class PaymentGatewayFeeExporter extends Exporter
                 ->setFontBold()
                 ->setBackgroundColor(Color::rgb(173, 216, 230))
                 ->setFontColor(Color::rgb(0, 0, 139)),
-            1, 2, 3, 4, 5 => $baseStyle // Type columns
+            1, 2 => $baseStyle // Type columns
                 ->setCellAlignment(CellAlignment::CENTER)
                 ->setBackgroundColor(Color::rgb(144, 238, 144))
                 ->setFontColor(Color::rgb(0, 100, 0)),
-            6 => $baseStyle // Fee Amount column
+            3 => $baseStyle // Fee Amount column
                 ->setCellAlignment(CellAlignment::RIGHT)
                 ->setFontBold()
                 ->setBackgroundColor(Color::rgb(186, 85, 211))
                 ->setFontColor(Color::rgb(75, 0, 130)),
-            7 => $baseStyle // Description column
+            4 => $baseStyle // Description column
                 ->setCellAlignment(CellAlignment::LEFT)
                 ->setBackgroundColor(Color::rgb(255, 165, 0))
                 ->setFontColor(Color::rgb(139, 69, 19)),
-            8 => $baseStyle // Status column
+            5 => $baseStyle // Status column
                 ->setCellAlignment(CellAlignment::CENTER)
                 ->setFontBold()
                 ->setBackgroundColor($this->getStatusColor($value))
                 ->setFontColor(Color::WHITE),
-            9 => $baseStyle // Sort Order column
+            6 => $baseStyle // Sort Order column
                 ->setCellAlignment(CellAlignment::CENTER)
                 ->setBackgroundColor(Color::rgb(169, 169, 169))
                 ->setFontColor(Color::rgb(47, 79, 79)),
-            10, 11 => $baseStyle // Date columns
+            7, 8 => $baseStyle // Date columns
                 ->setCellAlignment(CellAlignment::CENTER)
                 ->setBackgroundColor(Color::rgb(169, 169, 169))
                 ->setFontColor(Color::rgb(47, 79, 79)),

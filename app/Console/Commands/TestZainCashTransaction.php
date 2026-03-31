@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Currency;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -9,7 +10,7 @@ use Illuminate\Support\Str;
 class TestZainCashTransaction extends Command
 {
     protected $signature = 'zaincash:test
-                            {--amount=1000 : Amount in IQD}
+                            {--amount=1000 : Amount in the active project currency}
                             {--phone= : Customer wallet phone (e.g. 9647802999569)}
                             {--check= : Check status of an existing gateway transactionId}';
 
@@ -47,6 +48,7 @@ class TestZainCashTransaction extends Command
 
         $accessToken = $tokenResponse->json()['access_token'];
         $expiresIn   = $tokenResponse->json()['expires_in'] ?? 'unknown';
+        $currencyCode = Currency::getDefaultCode();
         $this->info("  ✓ Access token obtained (expires in {$expiresIn}s)");
         $this->line('  Token (first 60 chars): ' . substr($accessToken, 0, 60) . '...');
         $this->newLine();
@@ -80,7 +82,7 @@ class TestZainCashTransaction extends Command
         $this->table(
             ['Field', 'Value'],
             [
-                ['Amount', "{$amount} IQD"],
+                ['Amount', "{$amount} {$currencyCode}"],
                 ['Order ID', $orderRef],
                 ['External Ref', $extRef],
                 ['Service Type', $serviceType],
@@ -97,7 +99,7 @@ class TestZainCashTransaction extends Command
             'serviceType'         => $serviceType,
             'amount'              => [
                 'value'    => (string) $amount,
-                'currency' => strtoupper(config('zaincash.currency', 'IQD')),
+                'currency' => strtoupper(config('zaincash.currency', $currencyCode)),
             ],
             'redirectUrls' => [
                 'successUrl' => $successUrl,

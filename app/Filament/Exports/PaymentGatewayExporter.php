@@ -2,6 +2,7 @@
 
 namespace App\Filament\Exports;
 
+use App\Models\Currency;
 use App\Models\PaymentGateway;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
@@ -60,7 +61,7 @@ class PaymentGatewayExporter extends Exporter
 
             ExportColumn::make('processing_fee_fixed')
                 ->label(__('Fixed Fee'))
-                ->formatStateUsing(fn ($state) => $state ? number_format($state, 0).' '.(settings('currency', 'USD')) : __('N/A')),
+                ->formatStateUsing(fn ($state) => $state ? number_format($state, 0).' '.Currency::getDefaultSymbol() : __('N/A')),
 
             ExportColumn::make('is_active')
                 ->label(__('Status'))

@@ -14,8 +14,8 @@ return [
     */
 
     'defaults' => [
-        'guard' => env('AUTH_GUARD', 'web'),
-        'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
+        'guard' => env('AUTH_GUARD', 'student'),
+        'passwords' => env('AUTH_PASSWORD_BROKER', 'students'),
     ],
 
     /*
@@ -36,19 +36,19 @@ return [
     */
 
     'guards' => [
-        'web' => [
+        'student' => [
             'driver' => 'session',
-            'provider' => 'users',
+            'provider' => 'students',
         ],
 
-        'donor' => [
+        'trainer' => [
             'driver' => 'session',
-            'provider' => 'donors',
+            'provider' => 'trainers',
         ],
 
-        'organization' => [
+        'admin' => [
             'driver' => 'session',
-            'provider' => 'organizations',
+            'provider' => 'admins',
         ],
     ],
 
@@ -70,19 +70,21 @@ return [
     */
 
     'providers' => [
-        'users' => [
+        'students' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\User::class),
+            'model' => env('AUTH_STUDENT_MODEL', App\Models\User::class),
         ],
 
-        'donors' => [
+        // Reserved for future trainer authentication. Trainers do not have
+        // a public login flow yet, so this stays inactive for now.
+        'trainers' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Donor::class,
+            'model' => env('AUTH_TRAINER_MODEL', App\Models\User::class),
         ],
 
-        'organizations' => [
+        'admins' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Organization::class,
+            'model' => env('AUTH_ADMIN_MODEL', App\Models\Admin::class),
         ],
     ],
 
@@ -106,29 +108,22 @@ return [
     */
 
     'passwords' => [
-        'users' => [
-            'provider' => 'users',
+        'students' => [
+            'provider' => 'students',
             'table' => 'password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,
         ],
 
-        'donors' => [
-            'provider' => 'donors',
+        'trainers' => [
+            'provider' => 'trainers',
             'table' => 'password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,
         ],
 
-        'organizations' => [
-            'provider' => 'organizations',
-            'table' => 'password_reset_tokens',
-            'expire' => 60,
-            'throttle' => 60,
-        ],
-
-        'employees' => [
-            'provider' => 'employees',
+        'admins' => [
+            'provider' => 'admins',
             'table' => 'password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,

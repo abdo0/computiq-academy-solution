@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { useLocation, useNavigate as useRawNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
-import { userAuthService, orgAuthService, dataService } from '../services/dataService';
+import { userAuthService, dataService } from '../services/dataService';
 import { Menu, X, ChevronDown, ChevronLeft, Search, ShoppingCart, Sun, Moon, Loader2 } from 'lucide-react';
 import { useTranslation } from '../contexts/TranslationProvider';
 import { useAppNavigate } from '../hooks/useAppNavigate';

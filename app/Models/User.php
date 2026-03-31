@@ -4,22 +4,23 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Traits\ActivityLoggable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Database\Factories\UserFactory;
-use Filament\Models\Contracts\FilamentUser;
-use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements FilamentUser, HasMedia
+class User extends Authenticatable implements HasMedia
 {
     /** @use HasFactory<UserFactory> */
-    use ActivityLoggable, HasFactory, HasRoles, InteractsWithMedia, Notifiable, SoftDeletes;
+    use ActivityLoggable, HasApiTokens, HasFactory, HasRoles, InteractsWithMedia, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -53,6 +54,8 @@ class User extends Authenticatable implements FilamentUser, HasMedia
         'remember_token',
     ];
 
+    protected string $guard_name = 'student';
+
     /**
      * Get the attributes that should be cast.
      *
@@ -67,11 +70,6 @@ class User extends Authenticatable implements FilamentUser, HasMedia
 
             'last_activity_at' => 'datetime',
         ];
-    }
-
-    public function canAccessPanel(Panel $panel): bool
-    {
-        return true;
     }
 
     // LogsActivity Trait: Define which events to log
@@ -146,5 +144,22 @@ class User extends Authenticatable implements FilamentUser, HasMedia
             $dirtyFields = $user->getDirty();
             // info('Dirty fields: ' . json_encode($dirtyFields));
         });
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function courseEnrollments(): HasMany
+    {
+        return $this->hasMany(CourseEnrollment::class);
+    }
+
+    public function enrolledCourses(): BelongsToMany
+    {
+        return $this->belongsToMany(Course::class, 'course_enrollments')
+            ->withPivot(['order_id', 'transaction_id', 'enrolled_at'])
+            ->withTimestamps();
     }
 }

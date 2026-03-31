@@ -4,6 +4,7 @@ import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { useTranslation } from '../../contexts/TranslationProvider';
 import { useCart } from '../../contexts/CartContext';
 import AppLink from '../common/AppLink';
+import { useCurrency } from '../../utils/currency';
 
 interface CourseCardProps {
   image: string;
@@ -42,6 +43,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
   const navigate = useAppNavigate();
   const { __ } = useTranslation();
   const { addToCart, isInCart } = useCart();
+  const { formatAmount } = useCurrency();
   const [isAdding, setIsAdding] = React.useState(false);
   const inCart = courseId ? isInCart(courseId) : false;
 
@@ -133,13 +135,12 @@ const CourseCard: React.FC<CourseCardProps> = ({
           {/* Price */}
           <div className="flex flex-col items-start leading-tight">
              {oldPrice && (
-               <span className="text-xs text-gray-400 dark:text-gray-500 line-through mb-0.5">{oldPrice} {__('Currency symbol')}</span>
+               <span className="text-xs text-gray-400 dark:text-gray-500 line-through mb-0.5">{formatAmount(oldPrice)}</span>
              )}
              <div className="flex items-baseline gap-1">
                <span className="text-xl font-black text-brand-600 dark:text-brand-400">
-                 {price}
+                 {formatAmount(price)}
                </span>
-               <span className="text-sm font-bold text-gray-500 dark:text-gray-400">{__('Currency symbol')}</span>
              </div>
           </div>
 

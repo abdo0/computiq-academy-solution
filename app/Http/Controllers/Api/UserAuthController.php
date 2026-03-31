@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\CourseEnrollment;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,7 +25,7 @@ class UserAuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        if (!Auth::guard('web')->attempt(
+        if (!Auth::guard('student')->attempt(
             $request->only('email', 'password'),
             $request->boolean('remember')
         )) {
@@ -35,11 +36,11 @@ class UserAuthController extends Controller
 
         $request->session()->regenerate();
 
-        $user = Auth::guard('web')->user();
+        $user = Auth::guard('student')->user();
 
         return response()->json([
             'data' => [
-                'user' => $user,
+                'user' => $this->formatUser($user),
             ],
             'message' => __('Welcome back! You have logged in successfully.'),
         ]);
@@ -67,12 +68,12 @@ class UserAuthController extends Controller
             'is_active' => true,
         ]);
 
-        Auth::guard('web')->login($user, true);
+        Auth::guard('student')->login($user, true);
         $request->session()->regenerate();
 
         return response()->json([
             'data' => [
-                'user' => $user,
+                'user' => $this->formatUser($user),
             ],
             'message' => __('Your account has been created successfully. Welcome!'),
         ], 201);
@@ -83,7 +84,7 @@ class UserAuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        Auth::guard('web')->logout();
+        Auth::guard('student')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
@@ -106,7 +107,7 @@ class UserAuthController extends Controller
         }
 
         return response()->json([
-            'user' => $user,
+            'user' => $this->formatUser($user),
         ]);
     }
 
@@ -299,9 +300,20 @@ class UserAuthController extends Controller
 
         return response()->json([
             'data' => [
-                'user' => $user->fresh(),
+                'user' => $this->formatUser($user->fresh()),
             ],
             'message' => __('Your language preference has been updated.'),
+        ]);
+    }
+
+    public function enrollments(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'data' => [
+                'course_ids' => $user->courseEnrollments()->pluck('course_id')->all(),
+            ],
         ]);
     }
 
@@ -319,5 +331,18 @@ class UserAuthController extends Controller
                 'certificates' => 0,
             ],
         ]);
+    }
+
+    protected function formatUser(User $user): array
+    {
+        return [
+            'id' => (string) $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'locale' => $user->locale,
+            'isVerified' => ! is_null($user->email_verified_at),
+            'purchasedCourseIds' => $user->courseEnrollments()->pluck('course_id')->all(),
+        ];
     }
 }

@@ -3,67 +3,95 @@
 namespace App\Services\Payment;
 
 use App\Enums\ActivityAction;
-use App\Enums\DonationStatus;
+use App\Enums\OrderStatus;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
-use App\Models\Campaign;
-use App\Models\Donation;
-use App\Models\Donor;
-use App\Models\DonorActivityLog;
+use App\Models\CartItem;
+use App\Models\CourseEnrollment;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\PaymentGateway;
 use App\Models\PaymentMethod;
+use App\Models\PromoCode;
 use App\Models\Transaction;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class PaymentProcessor
 {
     public function __construct(
-        protected PaymentCalculator $calculator
+        protected PaymentCalculator $calculator,
+        protected PromoCodeService $promoCodeService
     ) {}
 
     /**
-     * Process a donation payment
+     * Create an order and transaction from the user's current cart.
      */
-    public function processDonation(
-        float $amount,
-        ?Campaign $campaign = null,
-        PaymentGateway $gateway,
-        ?Donor $donor = null,
-        array $donorData = [],
-        array $metadata = []
-    ): array {
-        return DB::transaction(function () use ($amount, $campaign, $gateway, $donor, $metadata) {
-            // Get organization from campaign
-            $organization = $campaign?->organization;
-
-            // Check if organization can receive donations
-            if ($organization && ! $organization->canReceiveDonations()) {
-                throw new \Exception(__('Organization cannot receive donations due to compliance restrictions'));
-            }
-
-            // Calculate all fees
-            $fees = $this->calculator->calculateFees($amount, $gateway, $organization, $campaign);
-
-            // Get payment method by gateway type or default to 'card'
+    public function processCheckout(User $user, PaymentGateway $gateway, array $metadata = []): array
+    {
+        return DB::transaction(function () use ($user, $gateway, $metadata) {
             $paymentMethodCode = $gateway->type->value ?? 'card';
             $paymentMethod = PaymentMethod::where('code', $paymentMethodCode)->first();
 
-            // Create Donation first
-            $donation = Donation::create([
-                'donor_id' => $donor?->id,
-                'campaign_id' => $campaign?->id,
-                'amount' => $amount,
-                'status' => DonationStatus::PENDING,
+            $staleCourseIds = $user->courseEnrollments()
+                ->whereIn('course_id', CartItem::where('user_id', $user->id)->pluck('course_id'))
+                ->pluck('course_id');
+
+            if ($staleCourseIds->isNotEmpty()) {
+                CartItem::where('user_id', $user->id)
+                    ->whereIn('course_id', $staleCourseIds)
+                    ->delete();
+            }
+
+            $cartItems = CartItem::with('course')
+                ->where('user_id', $user->id)
+                ->get()
+                ->filter(fn (CartItem $item) => $item->course !== null);
+
+            if ($cartItems->isEmpty()) {
+                throw new \RuntimeException(__('Your cart is empty.'));
+            }
+
+            $subtotal = (float) $cartItems->sum(fn (CartItem $item) => (float) $item->price);
+            $promoCode = $this->promoCodeService->resolve($metadata['promo_code'] ?? null, true);
+            $fees = $this->calculator->calculateCheckoutTotals($subtotal, $gateway, $promoCode);
+
+            $order = Order::create([
+                'user_id' => $user->id,
+                'payment_gateway_id' => $gateway->id,
                 'payment_method_id' => $paymentMethod?->id,
-                'is_anonymous' => $metadata['is_anonymous'] ?? false,
-                'message' => $metadata['message'] ?? null,
+                'promo_code_id' => $promoCode?->id,
+                'promo_code' => $promoCode?->code,
+                'discount_type' => $promoCode?->discount_type,
+                'discount_value' => $promoCode?->discount_value ?? 0,
+                'discount_amount' => $fees['discount_amount'],
+                'subtotal_before_discount' => $fees['subtotal_before_discount'],
+                'subtotal_after_discount' => $fees['subtotal_after_discount'],
+                'subtotal_amount' => $fees['subtotal_after_discount'],
+                'gateway_processing_fee' => $fees['gateway_processing_fee'],
+                'total_amount' => $fees['total_amount'],
+                'status' => OrderStatus::PENDING,
+                'notes' => $metadata['notes'] ?? null,
             ]);
 
-            // Create Transaction linked to Donation
+            foreach ($cartItems as $item) {
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'course_id' => $item->course_id,
+                    'unit_price' => $item->price,
+                    'total_price' => $item->price,
+                    'course_snapshot' => [
+                        'title' => $item->course->title,
+                        'slug' => $item->course->slug,
+                        'image' => $item->course->image,
+                    ],
+                ]);
+            }
+
             $transaction = Transaction::create([
-                'type' => TransactionType::DONATION,
-                'donation_id' => $donation->id,
+                'type' => TransactionType::CHECKOUT,
+                'order_id' => $order->id,
                 'payment_gateway_id' => $gateway->id,
                 'amount' => $fees['amount'],
                 'gateway_processing_fee' => $fees['gateway_processing_fee'],
@@ -72,49 +100,25 @@ class PaymentProcessor
                 'total_amount' => $fees['total_amount'],
                 'status' => TransactionStatus::PENDING,
                 'payment_method_id' => $paymentMethod?->id,
-                'notes' => $metadata['notes'] ?? null,
+                'notes' => $metadata['notes'] ?? __('Course checkout for order :order', ['order' => $order->order_ref]),
             ]);
 
-            // Update Donation with transaction_id
-            $donation->update(['transaction_id' => $transaction->id]);
+            $transaction->dispatchCreated($user);
+            $transaction->dispatchPending($user);
 
-            Log::info('Donation and Transaction created', [
-                'donation_id' => $donation->id,
-                'donation_ref' => $donation->donation_ref,
+            Log::info('Order and transaction created for checkout', [
+                'order_id' => $order->id,
+                'order_ref' => $order->order_ref,
                 'transaction_id' => $transaction->id,
                 'transaction_ref' => $transaction->transaction_ref,
-                'amount' => $amount,
-                'campaign_id' => $campaign?->id,
+                'user_id' => $user->id,
+                'subtotal_before_discount' => $fees['subtotal_before_discount'],
+                'discount_amount' => $fees['discount_amount'],
+                'amount' => $fees['amount'],
             ]);
 
-            // Log donor activity if donor exists (client-side donation)
-            if ($donor) {
-                DonorActivityLog::log(
-                    ActivityAction::CREATED,
-                    $campaign ? __('Donation of :amount :currency made to campaign ":campaign"', [
-                        'amount' => number_format($amount, 2),
-                        'currency' => settings('currency', 'USD'),
-                        'campaign' => $campaign->title,
-                    ]) : __('General donation of :amount :currency made', [
-                        'amount' => number_format($amount, 2),
-                        'currency' => settings('currency', 'USD'),
-                    ]),
-                    $donor,
-                    [
-                        'donation_id' => $donation->id,
-                        'donation_ref' => $donation->donation_ref,
-                        'campaign_id' => $campaign?->id,
-                        'campaign_title' => $campaign?->title,
-                        'amount' => $amount,
-                        'currency' => settings('currency', 'USD'),
-                        'payment_method' => $donation->paymentMethod?->name ?? __('N/A'),
-                        'is_anonymous' => $donation->is_anonymous,
-                    ]
-                );
-            }
-
             return [
-                'donation' => $donation,
+                'order' => $order,
                 'transaction' => $transaction,
             ];
         });
@@ -126,6 +130,8 @@ class PaymentProcessor
     public function updateStatus(Transaction $transaction, string $status, array $data = []): Transaction
     {
         return DB::transaction(function () use ($transaction, $status, $data) {
+            $oldStatus = $transaction->status;
+
             $transaction->update([
                 'status' => $status,
                 'gateway_transaction_id' => $data['gateway_transaction_id'] ?? $transaction->gateway_transaction_id,
@@ -133,195 +139,83 @@ class PaymentProcessor
                 'failure_reason' => $data['failure_reason'] ?? $transaction->failure_reason,
             ]);
 
-            // If completed, update donation, campaign raised amount, and organization wallet
+            $transaction->refresh();
+
             if ($status === TransactionStatus::COMPLETED->value) {
-                if ($transaction->donation && $transaction->donation->donor) {
-                    $donation = $transaction->donation;
-                    $donation->update(['status' => DonationStatus::PAID]);
-                    
-                    if ($donation->campaign) {
-                        $this->updateCampaignRaisedAmount($donation);
+                if ($transaction->order) {
+                    $transaction->order->update([
+                        'status' => OrderStatus::PAID,
+                        'paid_at' => now(),
+                        'payment_gateway_id' => $transaction->payment_gateway_id,
+                        'payment_method_id' => $transaction->payment_method_id,
+                    ]);
 
-                        // Add money to organization wallet
-                        $organization = $donation->campaign->organization;
-                        if ($organization && $organization->wallet) {
-                            // Add net_amount to wallet (money after fees)
-                            $organization->wallet->addBalance($transaction->net_amount);
-                        }
-                    }
-
-                    // Log to donor activity logs (client-side payment completion)
-                    DonorActivityLog::log(
-                        ActivityAction::APPROVED,
-                        __('Donation :ref of :amount :currency has been successfully paid', [
-                            'ref' => $donation->donation_ref,
-                            'amount' => number_format($donation->amount, 2),
-                            'currency' => settings('currency', 'USD'),
-                        ]),
-                        $donation->donor,
-                        [
-                            'donation_id' => $donation->id,
-                            'donation_ref' => $donation->donation_ref,
-                            'transaction_id' => $transaction->id,
-                            'transaction_ref' => $transaction->transaction_ref,
-                            'campaign_id' => $donation->campaign_id,
-                            'amount' => $donation->amount,
-                            'currency' => settings('currency', 'USD'),
-                        ]
-                    );
+                    $this->fulfillOrder($transaction->order->fresh('items'), $transaction);
+                    $this->syncPromoCodeUsageCount($transaction->order->promoCode);
                 }
+            } elseif ($status === TransactionStatus::FAILED->value) {
+                $transaction->order?->update(['status' => OrderStatus::FAILED]);
+                $this->syncPromoCodeUsageCount($transaction->order?->promoCode);
+            } elseif ($status === TransactionStatus::PROCESSING->value) {
+                $transaction->order?->update(['status' => OrderStatus::PROCESSING]);
+            } elseif ($status === TransactionStatus::CANCELLED->value) {
+                $transaction->order?->update(['status' => OrderStatus::CANCELLED]);
+                $this->syncPromoCodeUsageCount($transaction->order?->promoCode);
             }
 
-            return $transaction->fresh();
-        });
-    }
-
-    /**
-     * Update campaign raised amount
-     */
-    protected function updateCampaignRaisedAmount(Donation $donation): void
-    {
-        $donation->campaign->increment('raised_amount', $donation->amount);
-    }
-
-    /**
-     * Process refund
-     */
-    public function processRefund(Transaction $transaction, ?float $amount = null, ?string $refundReason = null): Transaction
-    {
-        return DB::transaction(function () use ($transaction, $amount, $refundReason) {
-            $refundAmount = $amount ?? $transaction->amount;
-
-            // Validate refund amount
-            if ($refundAmount > $transaction->amount) {
-                throw new \Exception(__('Refund amount cannot exceed original transaction amount'));
-            }
-
-            // Check if transaction can be refunded
-            if ($transaction->status !== TransactionStatus::COMPLETED) {
-                throw new \Exception(__('Only completed transactions can be refunded'));
-            }
-
-            // Create refund transaction record
-            $refundTransaction = Transaction::create([
-                'type' => TransactionType::REFUND,
-                'donation_id' => $transaction->donation_id,
-                'payment_gateway_id' => $transaction->payment_gateway_id,
-                'amount' => $refundAmount,
-                'gateway_processing_fee' => 0, // Refunds typically don't have fees
-                'platform_commission' => 0,
-                'net_amount' => -$refundAmount, // Negative to represent money going out
-                'total_amount' => -$refundAmount,
-                'status' => TransactionStatus::COMPLETED, // Refund is immediately completed
-                'payment_method_id' => $transaction->payment_method_id,
-                'gateway_transaction_id' => null, // Will be set by gateway if needed
-                'notes' => __('Refund for transaction :ref. Original transaction: :original_ref', [
-                    'ref' => $transaction->transaction_ref,
-                    'original_ref' => $transaction->transaction_ref,
-                ]).($refundReason ? "\n".__('Refund Reason').': '.$refundReason : ''),
-            ]);
-
-            // Update original transaction status
-            $transaction->update([
-                'status' => TransactionStatus::REFUNDED,
-                'notes' => ($transaction->notes ?? '')."\n".__('Refunded: :amount :currency on :date', [
-                    'amount' => number_format($refundAmount, 2),
-                    'currency' => settings('currency', 'USD'),
-                    'date' => now()->toDateTimeString(),
-                ]).($refundReason ? "\n".__('Refund Reason').': '.$refundReason : ''),
-            ]);
-
-            // Update donation if exists
-            if ($transaction->donation && $transaction->donation->donor) {
-                $donation = $transaction->donation;
-                $donation->update(['status' => DonationStatus::REFUNDED]);
-
-                // Decrease campaign raised amount
-                if ($donation->campaign) {
-                    $donation->campaign->decrement('raised_amount', $refundAmount);
-
-                    // Subtract refund amount from organization wallet
-                    $organization = $donation->campaign->organization;
-                    if ($organization && $organization->wallet) {
-                        // Subtract the net_amount that was originally added to wallet
-                        // Use the transaction's net_amount, not the refund amount
-                        $netAmountToRefund = $transaction->net_amount;
-                        if ($organization->wallet->available_balance >= $netAmountToRefund) {
-                            $organization->wallet->subtractBalance($netAmountToRefund);
-                        } else {
-                            throw new \Exception(__('Insufficient available balance in organization wallet for refund'));
-                        }
-                    }
-                }
-
-                // Log to donor activity logs
-                DonorActivityLog::log(
-                    ActivityAction::REJECTED,
-                    __('Donation :ref of :amount :currency has been refunded', [
-                        'ref' => $donation->donation_ref,
-                        'amount' => number_format($refundAmount, 2),
-                        'currency' => settings('currency', 'USD'),
-                    ]),
-                    $donation->donor,
-                    [
-                        'donation_id' => $donation->id,
-                        'donation_ref' => $donation->donation_ref,
-                        'transaction_id' => $transaction->id,
-                        'transaction_ref' => $transaction->transaction_ref,
-                        'refund_transaction_id' => $refundTransaction->id,
-                        'refund_transaction_ref' => $refundTransaction->transaction_ref,
-                        'campaign_id' => $donation->campaign_id,
-                        'refund_amount' => $refundAmount,
-                        'currency' => settings('currency', 'USD'),
-                        'refund_reason' => $refundReason,
-                    ]
-                );
-            }
-
-            return $refundTransaction;
-        });
-    }
-
-    /**
-     * Process wallet top-up
-     */
-    public function processWalletTopup(
-        float $amount,
-        Donor $donor,
-        PaymentGateway $gateway,
-        array $metadata = []
-    ): Transaction {
-        return DB::transaction(function () use ($amount, $donor, $gateway, $metadata) {
-            // Calculate gateway fees only (no platform commission for top-ups)
-            $gatewayFee = ($amount * 0.025) + 500; // Simplified: 2.5% + 500 USD
-            $totalAmount = $amount + $gatewayFee;
-
-            // Get payment method by gateway type
-            $paymentMethodCode = $gateway->type->value ?? 'card';
-            $paymentMethod = PaymentMethod::where('code', $paymentMethodCode)->first();
-
-            // Create Transaction for wallet top-up
-            $transaction = Transaction::create([
-                'type' => TransactionType::WALLET_TOPUP,
-                'donor_wallet_id' => $donor->wallet->id,
-                'payment_gateway_id' => $gateway->id,
-                'amount' => $amount,
-                'gateway_processing_fee' => $gatewayFee,
-                'platform_commission' => 0,
-                'net_amount' => $amount,
-                'total_amount' => $totalAmount,
-                'status' => TransactionStatus::PENDING,
-                'payment_method_id' => $paymentMethod?->id,
-                'notes' => $metadata['notes'] ?? null,
-            ]);
-
-            // When completed, add to wallet balance
-            if ($transaction->status === TransactionStatus::COMPLETED) {
-                $donor->wallet->increment('balance', $amount);
-                $donor->wallet->update(['last_transaction_at' => now()]);
+            if ($oldStatus !== $transaction->status) {
+                match ($transaction->status) {
+                    TransactionStatus::COMPLETED => $transaction->dispatchCompleted($transaction->order?->user),
+                    TransactionStatus::FAILED => $transaction->dispatchFailed($transaction->order?->user),
+                    TransactionStatus::CANCELLED => $transaction->dispatchCanceled($transaction->order?->user),
+                    TransactionStatus::REFUND_REQUESTED => $transaction->dispatchRefundRequested($transaction->order?->user),
+                    TransactionStatus::REFUNDED => $transaction->dispatchRefunded($transaction->order?->user),
+                    default => null,
+                };
             }
 
             return $transaction;
         });
+    }
+
+    protected function fulfillOrder(Order $order, Transaction $transaction): void
+    {
+        $courseIdsToRemove = [];
+
+        foreach ($order->items as $item) {
+            $enrollment = CourseEnrollment::firstOrCreate(
+                [
+                    'user_id' => $order->user_id,
+                    'course_id' => $item->course_id,
+                ],
+                [
+                    'order_id' => $order->id,
+                    'transaction_id' => $transaction->id,
+                    'enrolled_at' => now(),
+                ]
+            );
+
+            if ($enrollment->wasRecentlyCreated) {
+                $item->course()->increment('students_count');
+            }
+
+            $courseIdsToRemove[] = $item->course_id;
+        }
+
+        CartItem::where('user_id', $order->user_id)
+            ->whereIn('course_id', $courseIdsToRemove)
+            ->delete();
+    }
+
+    public function processRefund(Transaction $transaction, ?float $amount = null, ?string $refundReason = null): Transaction
+    {
+        throw new \RuntimeException(__('Refunds are not implemented in this checkout flow.'));
+    }
+
+    protected function syncPromoCodeUsageCount(?PromoCode $promoCode): void
+    {
+        if ($promoCode) {
+            $this->promoCodeService->refreshUsedCount($promoCode);
+        }
     }
 }

@@ -52,15 +52,6 @@ Route::middleware([SetLocaleMiddleware::class])->group(function () {
     Route::get('/forgot-password', [ReactAppController::class, 'home'])->name('forgot-password');
     Route::get('/verify-email', [ReactAppController::class, 'home'])->name('verify-email');
     Route::get('/dashboard', [ReactAppController::class, 'home'])->name('dashboard');
-    // Route::get('/org/verify-email/{id}/{hash}', [\App\Http\Controllers\Api\OrganizationAuthController::class, 'verifyEmail'])
-    //    ->name('org.verify-email');
-
-    // Route::middleware('auth:organization')->group(function () {
-    //     Route::get('/verification/download/{file}', [\App\Http\Controllers\Api\VerificationController::class, 'downloadDocument'])
-    //         ->where('file', '.*')
-    //         ->name('organization.verification.download');
-    // });
-
     // Catch-all for SPA
     Route::get('/{any?}', [ReactAppController::class, 'home'])->where('any', '^(?!admin|api|site\.webmanifest|storage|lang).*$');
 });

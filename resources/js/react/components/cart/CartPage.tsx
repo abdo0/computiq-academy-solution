@@ -6,12 +6,14 @@ import { useTranslation } from '../../contexts/TranslationProvider';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Trash2, ShoppingCart, BookOpen, ArrowRight, ArrowLeft, Clock, Loader2 } from 'lucide-react';
 import AppLink from '../common/AppLink';
+import { useCurrency } from '../../utils/currency';
 
 const CartPage: React.FC = () => {
     const { user } = useAuth();
     const { cartItems, cartCount, cartTotal, removeFromCart, clearCart } = useCart();
     const { __, t } = useTranslation();
     const { dir } = useLanguage();
+    const { formatAmount } = useCurrency();
     const [removingItems, setRemovingItems] = useState<number[]>([]);
 
     const handleRemove = async (courseId: number) => {
@@ -103,10 +105,10 @@ const CartPage: React.FC = () => {
                                         <div className="flex sm:flex-col items-center sm:items-end gap-3 sm:gap-2 w-full sm:w-auto justify-between sm:justify-start shrink-0">
                                             <div className="text-end">
                                                 {item.course?.old_price && (
-                                                    <p className="text-xs text-gray-400 line-through">{item.course.old_price} {__('Currency symbol')}</p>
+                                                    <p className="text-xs text-gray-400 line-through">{formatAmount(item.course.old_price)}</p>
                                                 )}
                                                 <p className="text-lg font-bold text-brand-600 dark:text-brand-400">
-                                                    {item.price} <span className="text-sm">{__('Currency symbol')}</span>
+                                                    {formatAmount(item.price)}
                                                 </p>
                                             </div>
                                             <button
@@ -140,21 +142,24 @@ const CartPage: React.FC = () => {
                             <div className="space-y-3 mb-6">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500 dark:text-gray-400">{__('Subtotal')} ({cartCount} {__('items')})</span>
-                                    <span className="font-semibold text-gray-900 dark:text-white">{cartTotal} {__('Currency symbol')}</span>
+                                    <span className="font-semibold text-gray-900 dark:text-white">{formatAmount(cartTotal)}</span>
                                 </div>
                             </div>
 
                             <div className="border-t border-gray-100 dark:border-gray-700 pt-4 mb-6">
                                 <div className="flex justify-between">
                                     <span className="text-base font-bold text-gray-900 dark:text-white">{__('Total')}</span>
-                                    <span className="text-xl font-black text-brand-600 dark:text-brand-400">{cartTotal} {__('Currency symbol')}</span>
+                                    <span className="text-xl font-black text-brand-600 dark:text-brand-400">{formatAmount(cartTotal)}</span>
                                 </div>
                             </div>
 
-                            <button className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white rounded-xl font-bold hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25 active:scale-[0.98]">
+                            <AppLink
+                                to="/checkout"
+                                className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white rounded-xl font-bold hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25 active:scale-[0.98]"
+                            >
                                 {__('Proceed to Checkout')}
                                 <ArrowIcon className="w-4 h-4" />
-                            </button>
+                            </AppLink>
 
                             <AppLink
                                 to="/courses"

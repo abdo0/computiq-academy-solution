@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\PaymentGatewayResource;
 use App\Models\Country;
+use App\Models\Currency;
 use App\Models\FAQ;
 use App\Models\Page;
+use App\Models\PaymentGateway;
 use App\Models\Setting;
 use App\Models\State;
 use App\Models\Testimonial;
@@ -49,6 +52,18 @@ class ContentController extends Controller
         });
 
         return response()->success($faqs->toArray(), __('FAQs retrieved successfully'));
+    }
+
+    public function paymentGateways(): JsonResponse
+    {
+        $gateways = PaymentGateway::active()
+            ->orderBy('sort_order')
+            ->get();
+
+        return response()->success(
+            PaymentGatewayResource::collection($gateways)->toArray(request()),
+            __('Payment gateways retrieved successfully')
+        );
     }
 
 
@@ -375,10 +390,6 @@ class ContentController extends Controller
      */
     private function getCurrencySettings(): array
     {
-        // Fallback to settings
-        return [
-            'code' => Setting::get('Currency', 'USD'),
-            'symbol' => Setting::get('Currency symbol', '$'),
-        ];
+        return Currency::getDefaultCurrencyData();
     }
 }

@@ -113,7 +113,7 @@ class PermissionSeeder extends Seeder
         ];
 
         // Sync permissions - create missing ones and remove extra ones
-        $existingPermissions = Permission::pluck('name')->toArray();
+        $existingPermissions = Permission::where('guard_name', 'admin')->pluck('name')->toArray();
 
         // Create or update permissions
         $createdCount = 0;
@@ -122,7 +122,7 @@ class PermissionSeeder extends Seeder
             $permission = Permission::updateOrCreate(
                 [
                     'name' => $permissionData['name'],
-                    'guard_name' => 'web',
+                    'guard_name' => 'admin',
                 ],
                 [
                     'group' => $permissionData['group'],
@@ -141,8 +141,12 @@ class PermissionSeeder extends Seeder
         $permissionsToRemove = array_diff($existingPermissions, $permissionNames);
         $removedCount = 0;
         if (! empty($permissionsToRemove)) {
-            $removedCount = Permission::whereIn('name', $permissionsToRemove)->count();
-            Permission::whereIn('name', $permissionsToRemove)->delete();
+            $removedCount = Permission::where('guard_name', 'admin')
+                ->whereIn('name', $permissionsToRemove)
+                ->count();
+            Permission::where('guard_name', 'admin')
+                ->whereIn('name', $permissionsToRemove)
+                ->delete();
         }
 
         // Log the sync results
@@ -151,15 +155,14 @@ class PermissionSeeder extends Seeder
         }
 
         // Get roles
-        $superAdminRole = Role::where('name', 'SuperAdmin')->first();
-        $adminRole = Role::where('name', 'Admin')->first();
-        $managerRole = Role::where('name', 'Manager')->first();
-        $employeeRole = Role::where('name', 'Employee')->first();
-        $userRole = Role::where('name', 'User')->first();
+        $superAdminRole = Role::where('name', 'SuperAdmin')->where('guard_name', 'admin')->first();
+        $adminRole = Role::where('name', 'Admin')->where('guard_name', 'admin')->first();
+        $managerRole = Role::where('name', 'Manager')->where('guard_name', 'admin')->first();
+        $employeeRole = Role::where('name', 'Employee')->where('guard_name', 'admin')->first();
 
         // Super Admin - All permissions
         if ($superAdminRole && $superAdminRole->permissions()->count() === 0) {
-            $superAdminRole->givePermissionTo(Permission::all());
+            $superAdminRole->givePermissionTo(Permission::where('guard_name', 'admin')->get());
         }
 
         // Admin - Most permissions except some sensitive ones
@@ -211,16 +214,6 @@ class PermissionSeeder extends Seeder
                 'access_genders', 'view_genders',
             ];
             $employeeRole->givePermissionTo($employeePermissions);
-        }
-
-        // User - Very limited permissions
-        if ($userRole && $userRole->permissions()->count() === 0) {
-            $userPermissions = [
-                'access_customers', 'view_customers',
-                'access_visits', 'view_visits',
-                'access_reports', 'view_reports',
-            ];
-            $userRole->givePermissionTo($userPermissions);
         }
 
     }

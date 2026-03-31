@@ -12,6 +12,7 @@ export interface User {
     phone?: string;
     locale?: string;
     isVerified: boolean;
+    purchasedCourseIds?: number[];
 }
 
 interface AuthContextType {

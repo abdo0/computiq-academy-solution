@@ -3,6 +3,7 @@
 namespace App\Filament\Imports;
 
 use App\Enums\PayoutStatus;
+use App\Models\Currency;
 use App\Models\Organization;
 use App\Models\Payout;
 use App\Models\Transaction;
@@ -35,7 +36,7 @@ class PayoutImporter extends Importer
             ImportColumn::make('currency')
                 ->label(__('Currency'))
                 ->rules(['nullable', 'string', 'max:3'])
-                ->default(fn () => settings('currency', 'USD')),
+                ->default(fn () => Currency::getDefaultCode()),
 
             ImportColumn::make('status')
                 ->label(__('Status'))

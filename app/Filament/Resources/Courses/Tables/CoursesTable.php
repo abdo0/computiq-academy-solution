@@ -43,7 +43,7 @@ class CoursesTable
                     ->color('warning'),
                 TextColumn::make('price')
                     ->label('Price')
-                    ->money('USD')
+                    ->formatStateUsing(fn ($state) => money((float) $state))
                     ->sortable(),
                 TextColumn::make('students_count')
                     ->label('Students')

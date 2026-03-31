@@ -21,7 +21,7 @@ return [
     'msisdn' => env('ZAINCASH_MSISDN', '9647829744545'),
 
     // Service type identifier (provided by ZainCash during onboarding, e.g. "JAWS")
-    'service_type' => env('ZAINCASH_SERVICE_TYPE', 'General Donation'),
+    'service_type' => env('ZAINCASH_SERVICE_TYPE', 'Course Checkout'),
 
     // Currency (must be IQD)
     'currency' => env('ZAINCASH_CURRENCY', 'IQD'),

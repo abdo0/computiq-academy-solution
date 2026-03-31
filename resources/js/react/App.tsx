@@ -31,6 +31,7 @@ const PathsPage = React.lazy(() => import('./components/PathsPage'));
 const PathDetailPage = React.lazy(() => import('./components/PathDetailPage'));
 const DashboardPage = React.lazy(() => import('./components/dashboard/DashboardPage'));
 const CartPage = React.lazy(() => import('./components/cart/CartPage'));
+const CheckoutPage = React.lazy(() => import('./components/cart/CheckoutPage'));
 const SearchPage = React.lazy(() => import('./components/SearchPage'));
 
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
@@ -71,6 +72,7 @@ export const pageImportMap: Record<string, () => Promise<any>> = {
   '/reset-password': () => import('./components/auth/ResetPasswordPage'),
   '/dashboard': () => import('./components/dashboard/DashboardPage'),
   '/cart': () => import('./components/cart/CartPage'),
+  '/checkout': () => import('./components/cart/CheckoutPage'),
   '/search': () => import('./components/SearchPage'),
 };
 
@@ -139,6 +141,8 @@ export const preloadPage = (path: string): Promise<any> => {
           const params = new URLSearchParams(window.location.search);
           const q = params.get('q');
           if (q) dataPromises.push(dataService.searchGlobal(q).catch(() => null));
+      } else if (normalized === '/checkout') {
+          dataPromises.push(dataService.getCheckoutBootstrap().catch(() => null));
       }
       return Promise.all(dataPromises);
   }).catch(() => {});
@@ -264,6 +268,7 @@ const AppContent: React.FC = () => {
       {/* Dashboard (authenticated) */}
       <Route path="dashboard" element={<DashboardPage />} />
       <Route path="cart" element={<CartPage />} />
+      <Route path="checkout" element={<CheckoutPage />} />
       <Route path="search" element={<SearchPage />} />
 
       {/* Fallback */}
