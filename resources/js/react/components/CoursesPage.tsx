@@ -54,6 +54,19 @@ const CoursesPage: React.FC = () => {
     const [sort, setSort] = useState('newest');
 
     useEffect(() => {
+        if (initialCourses.length === 0 && initialCategories.length === 0) {
+            return;
+        }
+
+        setCourses(initialCourses);
+        setCategories(initialCategories);
+        setCurrentPage(initialMeta.current_page || 1);
+        setHasMore((initialMeta.current_page || 1) < (initialMeta.last_page || 1));
+        setIsLoading(false);
+        skipInitialListingFetch.current = true;
+    }, [initialCategories, initialCourses, initialMeta.current_page, initialMeta.last_page]);
+
+    useEffect(() => {
         if (initialCategories.length > 0) {
             return;
         }

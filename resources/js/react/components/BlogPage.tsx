@@ -18,6 +18,9 @@ const BlogPage: React.FC = () => {
 
     useEffect(() => {
         if (initialPosts.length > 0 || initialPageData) {
+            setPosts(initialPosts);
+            setPageData(initialPageData);
+            setIsLoading(false);
             return;
         }
 

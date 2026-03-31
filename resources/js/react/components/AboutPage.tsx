@@ -36,10 +36,12 @@ const AboutPage: React.FC = () => {
     const [pageData, setPageData] = useState<any>(() => initialBootstrap?.pageInfo || null);
     const [loading, setLoading] = useState(() => !initialBootstrap?.pageInfo);
 
-    useEffect(() => {
-        if (initialBootstrap?.pageInfo) {
-            return;
-        }
+  useEffect(() => {
+    if (initialBootstrap?.pageInfo) {
+      setPageData(initialBootstrap.pageInfo);
+      setLoading(false);
+      return;
+    }
 
         fetchPageData();
     }, [initialBootstrap]);

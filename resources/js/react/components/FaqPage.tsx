@@ -16,6 +16,8 @@ const FaqPage: React.FC = () => {
 
     useEffect(() => {
         if (initialBootstrap?.faqs) {
+            setFaqs(initialBootstrap.faqs);
+            setIsLoading(false);
             return;
         }
 

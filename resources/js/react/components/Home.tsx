@@ -26,6 +26,12 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     if (initialHomeData) {
+      setStats(initialHomeData.stats || []);
+      setSections(initialHomeData.sections || {});
+      setCourses(initialHomeData.courses || []);
+      setCourseCategories(initialHomeData.course_categories || []);
+      setSponsors(initialHomeData.sponsors || { partners: [], employment: [] });
+      setIsLoading(false);
       return;
     }
 

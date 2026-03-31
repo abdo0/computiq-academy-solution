@@ -21,6 +21,8 @@ const PathsPage: React.FC = () => {
 
     useEffect(() => {
         if (initialPaths.length > 0) {
+            setPaths(initialPaths);
+            setIsLoading(false);
             return;
         }
 

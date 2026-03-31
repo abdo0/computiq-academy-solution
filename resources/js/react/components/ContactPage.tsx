@@ -61,6 +61,8 @@ const ContactPage: React.FC = () => {
 
     useEffect(() => {
         if (initialBootstrap?.pageInfo) {
+            setPageData(initialBootstrap.pageInfo);
+            setLoading(false);
             return;
         }
 

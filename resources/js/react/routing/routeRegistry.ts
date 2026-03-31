@@ -1,27 +1,46 @@
+import * as React from 'react';
+
 const SUPPORTED_LOCALES = new Set(['ar', 'en', 'ku']);
 
-export const pageImportMap: Record<string, () => Promise<any>> = {
-    '/': () => import('../components/Home'),
-    '/about': () => import('../components/AboutPage'),
-    '/contact': () => import('../components/ContactPage'),
-    '/blog': () => import('../components/BlogPage'),
-    '/faq': () => import('../components/FaqPage'),
-    '/how-it-works': () => import('../components/HowItWorksPage'),
-    '/guide': () => import('../components/GuidePage'),
-    '/success-stories': () => import('../components/SuccessStoriesPage'),
-    '/courses': () => import('../components/CoursesPage'),
-    '/paths': () => import('../components/PathsPage'),
-    '/paths/:slug': () => import('../components/PathDetailPage'),
-    '/page/:slug': () => import('../components/CmsPage'),
-    '/login': () => import('../components/auth/LoginPage'),
-    '/signup': () => import('../components/auth/SignupPage'),
-    '/forgot-password': () => import('../components/auth/ForgotPasswordPage'),
-    '/reset-password': () => import('../components/auth/ResetPasswordPage'),
-    '/dashboard': () => import('../components/dashboard/DashboardPage'),
-    '/cart': () => import('../components/cart/CartPage'),
-    '/checkout': () => import('../components/cart/CheckoutPage'),
-    '/search': () => import('../components/SearchPage'),
-};
+/**
+ * Each eagerRoute() call registers itself here so loadRouteModule()
+ * can resolve the same closure — no separate cache needed.
+ */
+interface RouteEntry {
+    importFn: () => Promise<any>;
+    component: React.ComponentType<any> | null;
+    promise: Promise<any> | null;
+}
+
+const routeEntries = new Map<string, RouteEntry>();
+
+/**
+ * Replaces React.lazy(). If the JS chunk was already loaded (by loadRouteModule
+ * during the progress bar), the component renders synchronously — no Suspense
+ * delay, no empty flash.  If it hasn't been loaded yet (first visit, direct URL),
+ * it behaves exactly like React.lazy and throws a promise that Suspense catches.
+ */
+export function eagerRoute(moduleKey: string, importFn: () => Promise<any>) {
+    const entry: RouteEntry = { importFn, component: null, promise: null };
+    routeEntries.set(moduleKey, entry);
+
+    return function EagerComponent(props: any) {
+        // Already resolved → render synchronously
+        if (entry.component) {
+            return React.createElement(entry.component, props);
+        }
+
+        // Not resolved yet → kick off import & throw for Suspense
+        if (!entry.promise) {
+            entry.promise = importFn().then((mod) => {
+                entry.component = mod.default || mod;
+            });
+        }
+        throw entry.promise;
+    };
+}
+
+// ─── Path helpers ────────────────────────────────────────────────────
 
 export const normalizeRouteTarget = (path: string): { pathname: string; fullPath: string; searchParams: URLSearchParams } => {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
@@ -54,20 +73,30 @@ export const localizeAppPath = (to: string, language: string): string => {
     return to;
 };
 
+// ─── Module preloader (called by useAppNavigate during the progress bar) ─────
+
 export const loadRouteModule = async (path: string): Promise<void> => {
     const { pathname } = normalizeRouteTarget(path);
 
-    let importFn = pageImportMap[pathname];
+    let moduleKey = pathname;
 
-    if (!importFn) {
-        if (pathname.startsWith('/courses/')) importFn = () => import('../components/CourseDetailsPage');
-        else if (pathname.startsWith('/instructors/')) importFn = () => import('../components/InstructorProfilePage');
-        else if (pathname.startsWith('/blog/')) importFn = () => import('../components/BlogPostDetail');
-        else if (pathname.startsWith('/paths/')) importFn = () => import('../components/PathDetailPage');
-        else if (pathname.startsWith('/page/')) importFn = () => import('../components/CmsPage');
+    // For dynamic routes, map the actual path to its pattern key
+    if (!routeEntries.has(moduleKey)) {
+        if (pathname.startsWith('/courses/')) moduleKey = '/courses/:slug';
+        else if (pathname.startsWith('/instructors/')) moduleKey = '/instructors/:slug';
+        else if (pathname.startsWith('/blog/')) moduleKey = '/blog/:slug';
+        else if (pathname.startsWith('/paths/')) moduleKey = '/paths/:slug';
+        else if (pathname.startsWith('/page/')) moduleKey = '/page/:slug';
     }
 
-    if (importFn) {
-        await importFn();
+    const entry = routeEntries.get(moduleKey);
+    if (!entry || entry.component) return;            // already loaded
+
+    if (!entry.promise) {
+        entry.promise = entry.importFn().then((mod) => {
+            entry.component = mod.default || mod;
+        });
     }
+
+    await entry.promise;
 };

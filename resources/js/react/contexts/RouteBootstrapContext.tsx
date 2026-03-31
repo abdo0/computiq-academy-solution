@@ -1,14 +1,17 @@
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import { loadRouteModule, normalizeRouteTarget } from '../routing/routeRegistry';
 import { resolveRouteBootstrapData } from '../services/routeBootstrap';
 
 type AsyncStatus = 'idle' | 'loading' | 'ready' | 'error';
+type NavigationStatus = 'idle' | 'preparing' | 'transitioning' | 'committed' | 'error';
 
 interface RouteBootstrapState {
-    path: string | null;
-    payload: any | null;
-    status: AsyncStatus;
+    renderedPath: string | null;
+    renderedPayload: any | null;
+    pendingTargetPath: string | null;
+    pendingPreparedPath: string | null;
+    pendingPayload: any | null;
+    navigationStatus: NavigationStatus;
     moduleStatus: AsyncStatus;
     dataStatus: AsyncStatus;
     error: unknown;
@@ -17,13 +20,21 @@ interface RouteBootstrapState {
 interface RouteBootstrapContextType {
     state: RouteBootstrapState;
     prepareRoute: (path: string) => Promise<any>;
-    getPayloadForPath: (path: string) => any | null;
+    beginRouteTransition: (path: string) => void;
+    commitRenderedRoute: (path: string) => void;
+    waitForRenderedRoute: (path: string) => Promise<void>;
+    isNavigationPending: () => boolean;
+    getPreparedPayloadForPath: (path: string) => any | null;
+    getRenderedPayloadForPath: (path: string) => any | null;
 }
 
 const initialState: RouteBootstrapState = {
-    path: null,
-    payload: null,
-    status: 'idle',
+    renderedPath: null,
+    renderedPayload: null,
+    pendingTargetPath: null,
+    pendingPreparedPath: null,
+    pendingPayload: null,
+    navigationStatus: 'idle',
     moduleStatus: 'idle',
     dataStatus: 'idle',
     error: null,
@@ -35,40 +46,68 @@ export const RouteBootstrapProvider: React.FC<{ children: ReactNode }> = ({ chil
     const [state, setState] = useState<RouteBootstrapState>(initialState);
     const stateRef = useRef<RouteBootstrapState>(initialState);
     const inFlightRef = useRef<{ path: string; promise: Promise<any> } | null>(null);
+    const renderWaitersRef = useRef<Map<string, Set<() => void>>>(new Map());
+
+    const updateState = useCallback((updater: (current: RouteBootstrapState) => RouteBootstrapState) => {
+        setState((current) => {
+            const nextState = updater(current);
+            stateRef.current = nextState;
+            return nextState;
+        });
+    }, []);
 
     useEffect(() => {
         stateRef.current = state;
     }, [state]);
 
+    const resolveRenderedWaiters = useCallback((path: string) => {
+        const waiters = renderWaitersRef.current.get(path);
+
+        if (!waiters) {
+            return;
+        }
+
+        waiters.forEach((resolve) => resolve());
+        renderWaitersRef.current.delete(path);
+    }, []);
+
     const prepareRoute = useCallback((path: string) => {
         const normalized = normalizeRouteTarget(path).fullPath;
 
-        if (stateRef.current.status === 'ready' && stateRef.current.path === normalized) {
-            return Promise.resolve(stateRef.current.payload);
+        if (stateRef.current.renderedPath === normalized && stateRef.current.renderedPayload !== null) {
+            return Promise.resolve(stateRef.current.renderedPayload);
+        }
+
+        if (stateRef.current.pendingPreparedPath === normalized && stateRef.current.pendingPayload !== null) {
+            return Promise.resolve(stateRef.current.pendingPayload);
         }
 
         if (inFlightRef.current?.path === normalized) {
             return inFlightRef.current.promise;
         }
 
-        setState({
-            path: normalized,
-            payload: null,
-            status: 'loading',
+        updateState((current) => ({
+            ...current,
+            pendingTargetPath: normalized,
+            pendingPreparedPath: current.pendingPreparedPath === normalized ? current.pendingPreparedPath : null,
+            pendingPayload: current.pendingPreparedPath === normalized ? current.pendingPayload : null,
+            navigationStatus: current.navigationStatus === 'transitioning' && current.pendingTargetPath === normalized
+                ? 'transitioning'
+                : 'preparing',
             moduleStatus: 'loading',
             dataStatus: 'loading',
             error: null,
-        });
+        }));
 
         const modulePromise = loadRouteModule(normalized).then(() => {
-            setState((current) => current.path === normalized ? {
+            updateState((current) => current.pendingTargetPath === normalized ? {
                 ...current,
                 moduleStatus: 'ready',
             } : current);
         }).catch((error) => {
-            setState((current) => current.path === normalized ? {
+            updateState((current) => current.pendingTargetPath === normalized ? {
                 ...current,
-                status: 'error',
+                navigationStatus: 'error',
                 moduleStatus: 'error',
                 error,
             } : current);
@@ -76,16 +115,17 @@ export const RouteBootstrapProvider: React.FC<{ children: ReactNode }> = ({ chil
         });
 
         const dataPromise = resolveRouteBootstrapData(normalized).then((payload) => {
-            setState((current) => current.path === normalized ? {
+            updateState((current) => current.pendingTargetPath === normalized ? {
                 ...current,
-                payload,
+                pendingPreparedPath: normalized,
+                pendingPayload: payload,
                 dataStatus: 'ready',
             } : current);
             return payload;
         }).catch((error) => {
-            setState((current) => current.path === normalized ? {
+            updateState((current) => current.pendingTargetPath === normalized ? {
                 ...current,
-                status: 'error',
+                navigationStatus: 'error',
                 dataStatus: 'error',
                 error,
             } : current);
@@ -93,10 +133,11 @@ export const RouteBootstrapProvider: React.FC<{ children: ReactNode }> = ({ chil
         });
 
         const promise = Promise.all([modulePromise, dataPromise]).then(([, payload]) => {
-            setState((current) => current.path === normalized ? {
+            updateState((current) => current.pendingTargetPath === normalized ? {
                 ...current,
-                payload,
-                status: 'ready',
+                pendingPreparedPath: normalized,
+                pendingPayload: payload,
+                navigationStatus: current.navigationStatus === 'transitioning' ? 'transitioning' : 'preparing',
                 moduleStatus: 'ready',
                 dataStatus: 'ready',
                 error: null,
@@ -112,20 +153,111 @@ export const RouteBootstrapProvider: React.FC<{ children: ReactNode }> = ({ chil
         inFlightRef.current = { path: normalized, promise };
 
         return promise;
-    }, []);
+    }, [updateState]);
 
-    const getPayloadForPath = useCallback((path: string) => {
+    const beginRouteTransition = useCallback((path: string) => {
         const normalized = normalizeRouteTarget(path).fullPath;
 
-        if (stateRef.current.status === 'ready' && stateRef.current.path === normalized) {
-            return stateRef.current.payload;
+        updateState((current) => ({
+            ...current,
+            pendingTargetPath: normalized,
+            navigationStatus: 'transitioning',
+            error: null,
+        }));
+    }, [updateState]);
+
+    const commitRenderedRoute = useCallback((path: string) => {
+        const normalized = normalizeRouteTarget(path).fullPath;
+
+        updateState((current) => {
+            const nextPayload =
+                current.pendingPreparedPath === normalized
+                    ? current.pendingPayload
+                    : current.renderedPath === normalized
+                        ? current.renderedPayload
+                        : null;
+
+            return {
+                renderedPath: normalized,
+                renderedPayload: nextPayload,
+                pendingTargetPath: null,
+                pendingPreparedPath: null,
+                pendingPayload: null,
+                navigationStatus: 'committed',
+                moduleStatus: nextPayload !== null ? 'ready' : current.moduleStatus,
+                dataStatus: nextPayload !== null ? 'ready' : current.dataStatus,
+                error: null,
+            };
+        });
+
+        resolveRenderedWaiters(normalized);
+    }, [resolveRenderedWaiters, updateState]);
+
+    const waitForRenderedRoute = useCallback((path: string) => {
+        const normalized = normalizeRouteTarget(path).fullPath;
+
+        if (stateRef.current.renderedPath === normalized) {
+            return Promise.resolve();
+        }
+
+        return new Promise<void>((resolve) => {
+            const currentWaiters = renderWaitersRef.current.get(normalized) ?? new Set<() => void>();
+            const resolver = () => {
+                currentWaiters.delete(resolver);
+                resolve();
+
+                if (currentWaiters.size === 0) {
+                    renderWaitersRef.current.delete(normalized);
+                }
+            };
+
+            currentWaiters.add(resolver);
+            renderWaitersRef.current.set(normalized, currentWaiters);
+        });
+    }, []);
+
+    const isNavigationPending = useCallback(() => {
+        return stateRef.current.navigationStatus === 'preparing'
+            || stateRef.current.navigationStatus === 'transitioning';
+    }, []);
+
+    const getPreparedPayloadForPath = useCallback((path: string) => {
+        const normalized = normalizeRouteTarget(path).fullPath;
+
+        if (stateRef.current.pendingPreparedPath === normalized) {
+            return stateRef.current.pendingPayload;
+        }
+
+        if (stateRef.current.renderedPath === normalized) {
+            return stateRef.current.renderedPayload;
+        }
+
+        return null;
+    }, []);
+
+    const getRenderedPayloadForPath = useCallback((path: string) => {
+        const normalized = normalizeRouteTarget(path).fullPath;
+
+        if (stateRef.current.renderedPath === normalized) {
+            return stateRef.current.renderedPayload;
         }
 
         return null;
     }, []);
 
     return (
-        <RouteBootstrapContext.Provider value={{ state, prepareRoute, getPayloadForPath }}>
+        <RouteBootstrapContext.Provider
+            value={{
+                state,
+                prepareRoute,
+                beginRouteTransition,
+                commitRenderedRoute,
+                waitForRenderedRoute,
+                isNavigationPending,
+                getPreparedPayloadForPath,
+                getRenderedPayloadForPath,
+            }}
+        >
             {children}
         </RouteBootstrapContext.Provider>
     );
@@ -142,8 +274,7 @@ export const useRouteBootstrap = () => {
 };
 
 export const useCurrentRouteBootstrap = <T = any>() => {
-    const location = useLocation();
-    const { getPayloadForPath } = useRouteBootstrap();
+    const context = useContext(RouteBootstrapContext);
 
-    return getPayloadForPath(`${location.pathname}${location.search}`) as T | null;
+    return (context?.state.renderedPayload as T | null) ?? null;
 };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, Suspense } from 'react';
+import { flushSync } from 'react-dom';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 
 // Layout components loaded eagerly (always visible)
@@ -9,30 +10,30 @@ import TwoFactorModal from './components/auth/TwoFactorModal';
 import AuthModal from './components/auth/AuthModal';
 
 // Lazy-loaded page components (code-split, like Inertia.js)
-const Home = React.lazy(() => import('./components/Home'));
-const AboutPage = React.lazy(() => import('./components/AboutPage'));
-const LoginPage = React.lazy(() => import('./components/auth/LoginPage'));
-const SignupPage = React.lazy(() => import('./components/auth/SignupPage'));
-const ContactPage = React.lazy(() => import('./components/ContactPage'));
-const BlogPage = React.lazy(() => import('./components/BlogPage'));
-const BlogPostDetail = React.lazy(() => import('./components/BlogPostDetail'));
-const FaqPage = React.lazy(() => import('./components/FaqPage'));
-const ForgotPasswordPage = React.lazy(() => import('./components/auth/ForgotPasswordPage'));
-const ResetPasswordPage = React.lazy(() => import('./components/auth/ResetPasswordPage'));
-const VerifyEmailPage = React.lazy(() => import('./components/auth/VerifyEmailPage'));
-const SuccessStoriesPage = React.lazy(() => import('./components/SuccessStoriesPage'));
-const HowItWorksPage = React.lazy(() => import('./components/HowItWorksPage'));
-const GuidePage = React.lazy(() => import('./components/GuidePage'));
-const CmsPage = React.lazy(() => import('./components/CmsPage'));
-const CoursesPage = React.lazy(() => import('./components/CoursesPage'));
-const CourseDetailsPage = React.lazy(() => import('./components/CourseDetailsPage'));
-const InstructorProfilePage = React.lazy(() => import('./components/InstructorProfilePage'));
-const PathsPage = React.lazy(() => import('./components/PathsPage'));
-const PathDetailPage = React.lazy(() => import('./components/PathDetailPage'));
-const DashboardPage = React.lazy(() => import('./components/dashboard/DashboardPage'));
-const CartPage = React.lazy(() => import('./components/cart/CartPage'));
-const CheckoutPage = React.lazy(() => import('./components/cart/CheckoutPage'));
-const SearchPage = React.lazy(() => import('./components/SearchPage'));
+const Home = eagerRoute('/', () => import('./components/Home'));
+const AboutPage = eagerRoute('/about', () => import('./components/AboutPage'));
+const LoginPage = eagerRoute('/login', () => import('./components/auth/LoginPage'));
+const SignupPage = eagerRoute('/signup', () => import('./components/auth/SignupPage'));
+const ContactPage = eagerRoute('/contact', () => import('./components/ContactPage'));
+const BlogPage = eagerRoute('/blog', () => import('./components/BlogPage'));
+const BlogPostDetail = eagerRoute('/blog/:slug', () => import('./components/BlogPostDetail'));
+const FaqPage = eagerRoute('/faq', () => import('./components/FaqPage'));
+const ForgotPasswordPage = eagerRoute('/forgot-password', () => import('./components/auth/ForgotPasswordPage'));
+const ResetPasswordPage = eagerRoute('/reset-password', () => import('./components/auth/ResetPasswordPage'));
+const VerifyEmailPage = eagerRoute('/verify-email', () => import('./components/auth/VerifyEmailPage'));
+const SuccessStoriesPage = eagerRoute('/success-stories', () => import('./components/SuccessStoriesPage'));
+const HowItWorksPage = eagerRoute('/how-it-works', () => import('./components/HowItWorksPage'));
+const GuidePage = eagerRoute('/guide', () => import('./components/GuidePage'));
+const CmsPage = eagerRoute('/page/:slug', () => import('./components/CmsPage'));
+const CoursesPage = eagerRoute('/courses', () => import('./components/CoursesPage'));
+const CourseDetailsPage = eagerRoute('/courses/:slug', () => import('./components/CourseDetailsPage'));
+const InstructorProfilePage = eagerRoute('/instructors/:slug', () => import('./components/InstructorProfilePage'));
+const PathsPage = eagerRoute('/paths', () => import('./components/PathsPage'));
+const PathDetailPage = eagerRoute('/paths/:slug', () => import('./components/PathDetailPage'));
+const DashboardPage = eagerRoute('/dashboard', () => import('./components/dashboard/DashboardPage'));
+const CartPage = eagerRoute('/cart', () => import('./components/cart/CartPage'));
+const CheckoutPage = eagerRoute('/checkout', () => import('./components/cart/CheckoutPage'));
+const SearchPage = eagerRoute('/search', () => import('./components/SearchPage'));
 
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { TranslationProvider, useTranslation } from './contexts/TranslationProvider';
@@ -44,7 +45,7 @@ import { RouteBootstrapProvider, useRouteBootstrap } from './contexts/RouteBoots
 import { ToastContainer } from 'react-toastify';
 import { HelmetProvider } from 'react-helmet-async';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
-import { normalizeRouteTarget } from './routing/routeRegistry';
+import { normalizeRouteTarget, eagerRoute } from './routing/routeRegistry';
 
 // Common Components for new architecture
 import SeoWrapper from './components/common/SeoWrapper';
@@ -58,14 +59,12 @@ import FullScreenLoader from './components/common/FullScreenLoader';
  * the target page chunk. It directly links the chunk download time to NProgress.
  */
 const GlobalPageLoader: React.FC = () => {
-  const { __ } = useTranslation();
-
-  return <FullScreenLoader progress={85} label={__('Loading page...')} />;
+  return null;
 };
 
 
 
-const LayoutWrapper: React.FC<{ onLoginClick: () => void }> = ({ onLoginClick }) => {
+const LayoutWrapper: React.FC<{ onLoginClick: () => void; routeKey: string }> = ({ onLoginClick, routeKey }) => {
   const { dir } = useLanguage();
 
   return (
@@ -74,10 +73,12 @@ const LayoutWrapper: React.FC<{ onLoginClick: () => void }> = ({ onLoginClick })
       <SeoWrapper>
         <Header onLoginClick={onLoginClick} />
         <ScrollToTop />
-        <main className="flex-grow animate-fade-in pt-20">
+        <main className="flex-grow pt-20">
           {/* Show spinning loader & progress bar while downloading JS chunk */}
           <Suspense fallback={<GlobalPageLoader />}>
-            <Outlet />
+            <div key={routeKey}>
+              <Outlet />
+            </div>
           </Suspense>
         </main>
         <Footer />
@@ -116,8 +117,10 @@ const AppContent: React.FC = () => {
   const { isLoading: isSettingsLoading } = useSettings();
   const { user, isInitialized: isAuthInitialized, show2FAModal, setShow2FAModal, verify2FA, resend2FA, isLoading, dev2FACode, refreshUser } = useAuth();
   const { isInitialized: isCartInitialized } = useCart();
-  const { state: routeBootstrapState, prepareRoute, getPayloadForPath } = useRouteBootstrap();
+  const { state: routeBootstrapState, prepareRoute, commitRenderedRoute, getPreparedPayloadForPath } = useRouteBootstrap();
   const [isRouteReady, setIsRouteReady] = useState(false);
+  const [hasCompletedInitialBoot, setHasCompletedInitialBoot] = useState(false);
+  const [displayLocation, setDisplayLocation] = useState(location);
 
   const handleAuthSuccess = async () => {
     await refreshUser();
@@ -125,6 +128,10 @@ const AppContent: React.FC = () => {
   };
 
   useEffect(() => {
+    if (hasCompletedInitialBoot) {
+      return;
+    }
+
     let isMounted = true;
     const currentTarget = `${location.pathname}${location.search}`;
     const requiresAuth = isProtectedRoute(location.pathname);
@@ -139,14 +146,19 @@ const AppContent: React.FC = () => {
 
       if (requiresAuth && !user) {
         if (isMounted) {
+          setDisplayLocation(location);
           setIsRouteReady(true);
         }
         return;
       }
 
-      if (getPayloadForPath(currentTarget)) {
+      if (getPreparedPayloadForPath(currentTarget)) {
         if (isMounted) {
-          setIsRouteReady(true);
+          flushSync(() => {
+            commitRenderedRoute(currentTarget);
+            setDisplayLocation(location);
+            setIsRouteReady(true);
+          });
         }
         return;
       }
@@ -161,7 +173,11 @@ const AppContent: React.FC = () => {
         console.error('Initial route bootstrap failed:', error);
       } finally {
         if (isMounted) {
-          setIsRouteReady(true);
+          flushSync(() => {
+            commitRenderedRoute(currentTarget);
+            setDisplayLocation(location);
+            setIsRouteReady(true);
+          });
         }
       }
     };
@@ -171,11 +187,12 @@ const AppContent: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [getPayloadForPath, isAuthInitialized, isSettingsLoading, isTranslationsLoading, location.pathname, location.search, prepareRoute, user]);
+  }, [commitRenderedRoute, getPreparedPayloadForPath, hasCompletedInitialBoot, isAuthInitialized, isSettingsLoading, isTranslationsLoading, location, prepareRoute, user]);
 
   const currentTarget = `${location.pathname}${location.search}`;
   const currentBootstrapPath = normalizeRouteTarget(currentTarget).fullPath;
   const shouldWaitForCart = Boolean(user);
+  const bootstrapTrackedPath = routeBootstrapState.pendingTargetPath || routeBootstrapState.renderedPath;
 
   const loaderSteps = [
     {
@@ -205,14 +222,14 @@ const AppContent: React.FC = () => {
     {
       key: 'route-module',
       label: __('Preparing page...'),
-      done: routeBootstrapState.path === currentBootstrapPath && routeBootstrapState.moduleStatus === 'ready',
-      active: routeBootstrapState.path === currentBootstrapPath && routeBootstrapState.moduleStatus === 'loading',
+      done: bootstrapTrackedPath === currentBootstrapPath && routeBootstrapState.moduleStatus === 'ready',
+      active: bootstrapTrackedPath === currentBootstrapPath && routeBootstrapState.moduleStatus === 'loading',
     },
     {
       key: 'route-data',
       label: __('Loading page data...'),
-      done: routeBootstrapState.path === currentBootstrapPath && routeBootstrapState.dataStatus === 'ready',
-      active: routeBootstrapState.path === currentBootstrapPath && routeBootstrapState.dataStatus === 'loading',
+      done: bootstrapTrackedPath === currentBootstrapPath && routeBootstrapState.dataStatus === 'ready',
+      active: bootstrapTrackedPath === currentBootstrapPath && routeBootstrapState.dataStatus === 'loading',
     },
   ];
 
@@ -220,8 +237,72 @@ const AppContent: React.FC = () => {
   const loaderProgress = Math.round((completedSteps / loaderSteps.length) * 100);
   const activeStep = loaderSteps.find((step) => !step.done);
   const loaderLabel = activeStep?.label || __('Almost ready...');
+  const shouldBlockForInitialBoot = isTranslationsLoading || isSettingsLoading || !isAuthInitialized || (shouldWaitForCart && !isCartInitialized) || !isRouteReady;
 
-  if (isTranslationsLoading || isSettingsLoading || !isAuthInitialized || (shouldWaitForCart && !isCartInitialized) || !isRouteReady) {
+  useEffect(() => {
+    if (!shouldBlockForInitialBoot && !hasCompletedInitialBoot) {
+      React.startTransition(() => {
+        setHasCompletedInitialBoot(true);
+      });
+    }
+  }, [hasCompletedInitialBoot, shouldBlockForInitialBoot]);
+
+  useEffect(() => {
+    if (!hasCompletedInitialBoot) {
+      return;
+    }
+
+    const actualTarget = `${location.pathname}${location.search}`;
+    const displayedTarget = `${displayLocation.pathname}${displayLocation.search}`;
+
+    if (actualTarget === displayedTarget) {
+      return;
+    }
+
+    const requiresAuth = isProtectedRoute(location.pathname);
+
+    // Fast path: auth redirect or data already prepared — commit immediately
+    if (requiresAuth && !user) {
+      flushSync(() => {
+        setDisplayLocation(location);
+      });
+      return;
+    }
+
+    if (getPreparedPayloadForPath(actualTarget)) {
+      flushSync(() => {
+        commitRenderedRoute(actualTarget);
+        setDisplayLocation(location);
+      });
+      return;
+    }
+
+    // Slow path: data not prepared (e.g. browser back/forward, direct URL entry)
+    let isMounted = true;
+
+    const syncDisplayedRoute = async () => {
+      try {
+        await prepareRoute(actualTarget);
+      } catch (error) {
+        console.error('Navigation bootstrap failed:', error);
+      } finally {
+        if (isMounted) {
+          flushSync(() => {
+            commitRenderedRoute(actualTarget);
+            setDisplayLocation(location);
+          });
+        }
+      }
+    };
+
+    void syncDisplayedRoute();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [commitRenderedRoute, displayLocation.pathname, displayLocation.search, getPreparedPayloadForPath, hasCompletedInitialBoot, location, prepareRoute, user]);
+
+  if (!hasCompletedInitialBoot && shouldBlockForInitialBoot) {
     return (
       <FullScreenLoader
         progress={loaderProgress}
@@ -272,8 +353,8 @@ const AppContent: React.FC = () => {
 
   return (
     <>
-      <Routes>
-        <Route element={<LayoutWrapper onLoginClick={() => setIsAuthModalOpen(true)} />}>
+      <Routes location={displayLocation}>
+        <Route element={<LayoutWrapper onLoginClick={() => setIsAuthModalOpen(true)} routeKey={`${displayLocation.pathname}${displayLocation.search}`} />}>
           {/* Default (no prefix) */}
           {commonRoutes}
 

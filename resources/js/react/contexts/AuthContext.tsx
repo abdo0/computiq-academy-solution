@@ -1,5 +1,5 @@
-import { useAppNavigate } from '../hooks/useAppNavigate';
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { useNavigate as useRawNavigate } from 'react-router-dom';
 import { userAuthService } from '../services/dataService';
 import { toast } from 'react-toastify';
 import { useLanguage } from './LanguageContext';
@@ -45,7 +45,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [dev2FACode, setDev2FACode] = useState<string | null>(null);
     const { setLanguage } = useLanguage();
     const { __ } = useTranslation();
-    const navigate = useAppNavigate();
+    const navigate = useRawNavigate();
 
     useEffect(() => {
         const checkAuth = async () => {

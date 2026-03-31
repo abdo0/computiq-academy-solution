@@ -8,7 +8,7 @@ import { userAuthService, dataService } from '../services/dataService';
 import { Menu, X, ChevronDown, ChevronLeft, Search, ShoppingCart, Sun, Moon, Loader2 } from 'lucide-react';
 import { useTranslation } from '../contexts/TranslationProvider';
 import { useAppNavigate } from '../hooks/useAppNavigate';
-import { useRouteBootstrap } from '../contexts/RouteBootstrapContext';
+import { loadRouteModule } from '../routing/routeRegistry';
 import Logo from './Logo';
 import AppLink from './common/AppLink';
 import NProgress from 'nprogress';
@@ -42,7 +42,6 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
   const langDropdownRef = useRef<HTMLDivElement>(null);
 
   const navigate = useAppNavigate();
-  const { prepareRoute } = useRouteBootstrap();
   const rawNavigate = useRawNavigate();
   const location = useLocation();
 
@@ -125,7 +124,7 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
       // Fetch translations + preload page chunk/data in PARALLEL — no state changes yet
       const [prefetched] = await Promise.all([
         prefetchLocale(lang),
-        prepareRoute(currentPath).catch(() => { }),
+        loadRouteModule(currentPath).catch(() => { }),
       ]);
 
       // Fire-and-forget: update backend session + persist for logged-in users
