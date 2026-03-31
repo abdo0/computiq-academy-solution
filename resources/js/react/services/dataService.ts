@@ -508,6 +508,11 @@ export const userAuthService = {
         return response.data.data;
     },
 
+    getMyCourses: async (): Promise<any[]> => {
+        const response = await api.get('/user/courses');
+        return response.data?.data || [];
+    },
+
     getEnrollments: async (): Promise<number[]> => {
         const response = await api.get('/user/enrollments');
         return response.data?.data?.course_ids || [];

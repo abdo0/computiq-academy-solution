@@ -317,6 +317,49 @@ class UserAuthController extends Controller
         ]);
     }
 
+    public function courses(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $courses = CourseEnrollment::query()
+            ->where('user_id', $user->id)
+            ->with(['course.instructor'])
+            ->orderByDesc('enrolled_at')
+            ->orderByDesc('id')
+            ->get()
+            ->filter(fn (CourseEnrollment $enrollment) => $enrollment->course !== null && $enrollment->course->is_active)
+            ->values()
+            ->map(function (CourseEnrollment $enrollment) {
+                $course = $enrollment->course;
+
+                return [
+                    'id' => $course->id,
+                    'title' => $course->getTranslations('title'),
+                    'slug' => $course->slug,
+                    'image' => $course->image,
+                    'duration_hours' => $course->duration_hours,
+                    'status' => 'enrolled',
+                    'enrolled_at' => optional($enrollment->enrolled_at)->toIso8601String(),
+                    'instructor' => $course->instructor ? [
+                        'name' => $course->instructor->getTranslations('name'),
+                        'image' => $course->instructor->image,
+                    ] : [
+                        'name' => [
+                            'ar' => $course->instructor_name,
+                            'en' => $course->instructor_name,
+                            'ku' => $course->instructor_name,
+                        ],
+                        'image' => $course->instructor_image,
+                    ],
+                ];
+            })
+            ->all();
+
+        return response()->json([
+            'data' => $courses,
+        ]);
+    }
+
     /**
      * Get dashboard stats for the user.
      */

@@ -37,6 +37,7 @@ const CheckoutPage: React.FC = () => {
     const [appliedPromoCode, setAppliedPromoCode] = useState<string | null>(null);
     const [promoError, setPromoError] = useState<string | null>(null);
     const [quote, setQuote] = useState<any | null>(() => initialCheckoutBootstrap?.quote ?? null);
+    const [callbackBanner, setCallbackBanner] = useState<{ type: 'info' | 'error'; message: string } | null>(null);
 
     useEffect(() => {
         if (!user) {
@@ -144,31 +145,75 @@ const CheckoutPage: React.FC = () => {
         const payment = params.get('payment');
         const transactionId = params.get('transactionId');
 
-        if (!payment) return;
+        if (!payment) {
+            return;
+        }
 
         const finalize = async () => {
+            setCallbackBanner(null);
+            let shouldClearParams = true;
+            const redirectToCourses = () => {
+                const dashboardPath = location.pathname.replace(/\/checkout$/, '/dashboard');
+                const nextParams = new URLSearchParams();
+                nextParams.set('tab', 'courses');
+                nextParams.set('payment', 'success');
+
+                if (transactionId) {
+                    nextParams.set('transactionId', transactionId);
+                }
+
+                navigate({
+                    pathname: dashboardPath,
+                    search: `?${nextParams.toString()}`,
+                }, { replace: true });
+            };
+
             try {
                 if (payment === 'success') {
                     await Promise.all([refreshCart(), refreshUser()]);
-                    toast.success(__('Payment completed successfully. Your courses are now unlocked.'));
+                    shouldClearParams = false;
+                    redirectToCourses();
                 } else if (payment === 'pending' && transactionId) {
                     const result = await dataService.verifyPayment(Number(transactionId));
                     await Promise.all([refreshCart(), refreshUser()]);
 
                     if (result.success) {
-                        toast.success(__('Payment completed successfully. Your courses are now unlocked.'));
+                        shouldClearParams = false;
+                        redirectToCourses();
                     } else if (result.status === 'processing' || result.status === 'pending') {
-                        toast.info(__('Your payment is still processing. We will update your access once it is confirmed.'));
+                        setCallbackBanner({
+                            type: 'info',
+                            message: __('Your payment is still processing. We will update your access once it is confirmed.'),
+                        });
                     } else {
-                        toast.error(result.error || __('Payment could not be confirmed.'));
+                        setCallbackBanner({
+                            type: 'error',
+                            message: result.error || __('Payment could not be confirmed.'),
+                        });
                     }
                 } else {
-                    toast.error(__('Payment failed or was cancelled.'));
+                    setCallbackBanner({
+                        type: 'error',
+                        message: __('Payment failed or was cancelled.'),
+                    });
                 }
             } catch (error) {
-                toast.error(__('We could not finish syncing your payment status. Please refresh the page.'));
+                setCallbackBanner({
+                    type: 'error',
+                    message: __('We could not finish syncing your payment status. Please refresh the page.'),
+                });
             } finally {
-                navigate(location.pathname, { replace: true });
+                if (shouldClearParams) {
+                    const nextParams = new URLSearchParams(location.search);
+                    nextParams.delete('payment');
+                    nextParams.delete('transaction');
+                    nextParams.delete('transactionId');
+
+                    navigate({
+                        pathname: location.pathname,
+                        search: nextParams.toString() ? `?${nextParams.toString()}` : '',
+                    }, { replace: true });
+                }
             }
         };
 
@@ -290,6 +335,36 @@ const CheckoutPage: React.FC = () => {
     return (
         <div className="min-h-screen py-8">
             <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
+                {callbackBanner && (
+                    <div className={`mb-6 rounded-2xl border p-4 sm:p-5 ${
+                        callbackBanner.type === 'info'
+                            ? 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20'
+                            : 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
+                    }`}>
+                        <div className="flex items-start gap-3">
+                            <div className={callbackBanner.type === 'info' ? 'text-blue-600 dark:text-blue-300' : 'text-red-600 dark:text-red-300'}>
+                                {callbackBanner.type === 'info' ? <Clock className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+                            </div>
+                            <div className="flex-1">
+                                <p className={`font-semibold ${
+                                    callbackBanner.type === 'info'
+                                        ? 'text-blue-800 dark:text-blue-100'
+                                        : 'text-red-800 dark:text-red-100'
+                                }`}>
+                                    {callbackBanner.message}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setCallbackBanner(null)}
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                aria-label={__('Close')}
+                            >
+                                <XCircle className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
                 <div className="flex items-center justify-between gap-4 mb-8">
                     <div>
                         <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">{__('Checkout')}</h1>

@@ -212,13 +212,16 @@ export const resolveRouteBootstrapData = async (path: string): Promise<any> => {
     }
 
     if (pathname === '/dashboard') {
-        const [seo, dashboardStats, cart] = await Promise.all([
+        const shouldLoadDashboardCourses = searchParams.get('tab') === 'courses' || searchParams.get('payment') === 'success';
+
+        const [seo, dashboardStats, cart, dashboardCourses] = await Promise.all([
             seoPromise,
             userAuthService.getDashboardStats().catch(() => null),
             userAuthService.getCart().catch(() => null),
+            shouldLoadDashboardCourses ? userAuthService.getMyCourses().catch(() => null) : Promise.resolve(null),
         ]);
 
-        return { path: fullPath, seo, dashboardStats, cart };
+        return { path: fullPath, seo, dashboardStats, cart, dashboardCourses };
     }
 
     return {

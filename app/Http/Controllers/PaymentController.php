@@ -73,6 +73,10 @@ class PaymentController extends Controller
                 ? 'success'
                 : (($verification['status'] ?? null) === 'processing' || ($verification['status'] ?? null) === 'pending' ? 'pending' : 'error');
 
+            if ($paymentState === 'success') {
+                return redirect($this->buildFrontendDashboardUrl($transaction));
+            }
+
             return redirect($this->buildFrontendCheckoutUrl($transaction, $paymentState));
         } catch (\Throwable $e) {
             Log::error('Payment callback failed', [
@@ -86,15 +90,32 @@ class PaymentController extends Controller
 
     protected function buildFrontendCheckoutUrl(Transaction $transaction, string $paymentState): string
     {
-        $locale = $transaction->order?->user?->locale ?: 'ar';
-        $checkoutPath = $locale !== 'ar' ? "/{$locale}/checkout" : '/checkout';
-
-        $query = http_build_query([
+        return $this->buildLocalizedFrontendUrl($transaction, '/checkout', [
             'payment' => $paymentState,
             'transaction' => $transaction->transaction_ref,
             'transactionId' => $transaction->id,
         ]);
+    }
 
-        return "{$checkoutPath}?{$query}";
+    protected function buildFrontendDashboardUrl(Transaction $transaction): string
+    {
+        return $this->buildLocalizedFrontendUrl($transaction, '/dashboard', [
+            'tab' => 'courses',
+            'payment' => 'success',
+            'transactionId' => $transaction->id,
+        ]);
+    }
+
+    protected function buildLocalizedFrontendUrl(Transaction $transaction, string $path, array $query = []): string
+    {
+        $locale = $transaction->order?->user?->locale ?: 'ar';
+        $localizedPath = $locale !== 'ar' ? "/{$locale}{$path}" : $path;
+
+        $queryString = http_build_query(array_filter(
+            $query,
+            static fn ($value) => $value !== null && $value !== ''
+        ));
+
+        return $queryString !== '' ? "{$localizedPath}?{$queryString}" : $localizedPath;
     }
 }

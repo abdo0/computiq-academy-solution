@@ -111,6 +111,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/locale', [\App\Http\Controllers\Api\UserAuthController::class, 'updateLocale'])->name('api.v1.user.locale');
             Route::get('/dashboard/stats', [\App\Http\Controllers\Api\UserAuthController::class, 'dashboardStats'])->name('api.v1.user.dashboard.stats');
             Route::get('/enrollments', [\App\Http\Controllers\Api\UserAuthController::class, 'enrollments'])->name('api.v1.user.enrollments');
+            Route::get('/courses', [\App\Http\Controllers\Api\UserAuthController::class, 'courses'])->name('api.v1.user.courses');
 
             // Cart routes
             Route::get('/cart', [\App\Http\Controllers\Api\CartController::class, 'index'])->name('api.v1.user.cart.index');

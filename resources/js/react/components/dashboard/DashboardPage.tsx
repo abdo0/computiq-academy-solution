@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from '../../contexts/TranslationProvider';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -7,20 +7,37 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { userAuthService } from '../../services/dataService';
 import { useCurrentRouteBootstrap } from '../../contexts/RouteBootstrapContext';
 import { toast } from 'react-toastify';
+import AppLink from '../common/AppLink';
 import {
     User, Settings, Shield, LayoutDashboard, BookOpen, Award, Clock,
-    Camera, Save, Eye, EyeOff, LogOut, Globe, Moon, Sun, ChevronLeft, ChevronRight
+    Camera, Save, Eye, EyeOff, LogOut, Globe, Moon, Sun, ChevronLeft, ChevronRight,
+    CheckCircle2, Loader2, X
 } from 'lucide-react';
 
-type TabKey = 'overview' | 'profile' | 'security' | 'settings';
+type TabKey = 'overview' | 'courses' | 'profile' | 'security' | 'settings';
+type BannerState = { type: 'success' | 'info' | 'error'; message: string } | null;
+
+const resolveDashboardTab = (search: string): TabKey => {
+    const rawTab = new URLSearchParams(search).get('tab');
+
+    return rawTab === 'courses'
+        || rawTab === 'profile'
+        || rawTab === 'security'
+        || rawTab === 'settings'
+        ? rawTab
+        : 'overview';
+};
 
 const DashboardPage: React.FC = () => {
     const { user, logout, refreshUser } = useAuth();
-    const { __ } = useTranslation();
+    const { __, t } = useTranslation();
     const { language, dir, setLanguage } = useLanguage();
     const { theme, toggleTheme } = useTheme();
+    const location = useLocation();
+    const navigate = useNavigate();
     const initialBootstrap = useCurrentRouteBootstrap<any>();
-    const [activeTab, setActiveTab] = useState<TabKey>('overview');
+    const [activeTab, setActiveTab] = useState<TabKey>(() => resolveDashboardTab(location.search));
+    const [banner, setBanner] = useState<BannerState>(null);
 
     // Profile form
     const [profileName, setProfileName] = useState('');
@@ -44,6 +61,9 @@ const DashboardPage: React.FC = () => {
 
     // Stats
     const [stats, setStats] = useState(() => initialBootstrap?.dashboardStats || { courses_enrolled: 0, courses_completed: 0, certificates: 0 });
+    const [courses, setCourses] = useState<any[]>(() => initialBootstrap?.dashboardCourses || []);
+    const [coursesLoading, setCoursesLoading] = useState(false);
+    const [coursesLoaded, setCoursesLoaded] = useState<boolean>(() => Array.isArray(initialBootstrap?.dashboardCourses));
 
     useEffect(() => {
         if (user) {
@@ -60,12 +80,113 @@ const DashboardPage: React.FC = () => {
         }
     }, [initialBootstrap, user]);
 
+    useEffect(() => {
+        setActiveTab(resolveDashboardTab(location.search));
+    }, [location.search]);
+
+    useEffect(() => {
+        if (Array.isArray(initialBootstrap?.dashboardCourses)) {
+            setCourses(initialBootstrap.dashboardCourses);
+            setCoursesLoaded(true);
+        }
+    }, [initialBootstrap]);
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+
+        if (params.get('payment') !== 'success') {
+            return;
+        }
+
+        setBanner({
+            type: 'success',
+            message: __('Payment completed successfully. Your courses are now unlocked.'),
+        });
+        setActiveTab('courses');
+
+        const nextParams = new URLSearchParams(location.search);
+        nextParams.set('tab', 'courses');
+        nextParams.delete('payment');
+        nextParams.delete('transactionId');
+
+        navigate({
+            pathname: location.pathname,
+            search: nextParams.toString() ? `?${nextParams.toString()}` : '',
+        }, { replace: true });
+    }, [__, location.pathname, location.search, navigate]);
+
+    useEffect(() => {
+        if (!user || activeTab !== 'courses' || coursesLoaded || coursesLoading) {
+            return;
+        }
+
+        let isMounted = true;
+        setCoursesLoading(true);
+
+        userAuthService.getMyCourses()
+            .then((data) => {
+                if (!isMounted) {
+                    return;
+                }
+
+                setCourses(data || []);
+                setCoursesLoaded(true);
+            })
+            .catch(() => {
+                if (!isMounted) {
+                    return;
+                }
+
+                setCourses([]);
+                setCoursesLoaded(true);
+            })
+            .finally(() => {
+                if (isMounted) {
+                    setCoursesLoading(false);
+                }
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [activeTab, coursesLoaded, coursesLoading, user]);
+
     if (!user) {
         return <Navigate to="/login" replace />;
     }
 
+    const setDashboardTab = (tab: TabKey) => {
+        setActiveTab(tab);
+
+        const params = new URLSearchParams(location.search);
+        params.set('tab', tab);
+        params.delete('payment');
+        params.delete('transactionId');
+
+        navigate({
+            pathname: location.pathname,
+            search: `?${params.toString()}`,
+        }, { replace: true });
+    };
+
+    const formatEnrollmentDate = (value?: string | null) => {
+        if (!value) {
+            return __('Recently enrolled');
+        }
+
+        try {
+            return new Intl.DateTimeFormat(
+                language === 'ar' ? 'ar-EG' : language === 'ku' ? 'ku' : 'en-US',
+                { year: 'numeric', month: 'short', day: 'numeric' }
+            ).format(new Date(value));
+        } catch {
+            return value;
+        }
+    };
+
     const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
         { key: 'overview', label: __('Overview'), icon: <LayoutDashboard className="w-5 h-5" /> },
+        { key: 'courses', label: __('My Courses'), icon: <BookOpen className="w-5 h-5" /> },
         { key: 'profile', label: __('Profile'), icon: <User className="w-5 h-5" /> },
         { key: 'security', label: __('Security'), icon: <Shield className="w-5 h-5" /> },
         { key: 'settings', label: __('Settings'), icon: <Settings className="w-5 h-5" /> },
@@ -191,8 +312,17 @@ const DashboardPage: React.FC = () => {
             {/* Quick Actions */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/50 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{__('Quick Actions')}</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <button onClick={() => setActiveTab('profile')} className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors group text-start">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button onClick={() => setDashboardTab('courses')} className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors group text-start">
+                        <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                            <BookOpen className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="font-medium text-gray-900 dark:text-white">{__('My Courses')}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{__('View your enrolled courses')}</p>
+                        </div>
+                    </button>
+                    <button onClick={() => setDashboardTab('profile')} className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors group text-start">
                         <div className="w-10 h-10 rounded-lg bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center text-brand-600 dark:text-brand-400 group-hover:scale-110 transition-transform">
                             <User className="w-5 h-5" />
                         </div>
@@ -201,7 +331,7 @@ const DashboardPage: React.FC = () => {
                             <p className="text-xs text-gray-500 dark:text-gray-400">{__('Update your personal information')}</p>
                         </div>
                     </button>
-                    <button onClick={() => setActiveTab('security')} className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors group text-start">
+                    <button onClick={() => setDashboardTab('security')} className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors group text-start">
                         <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
                             <Shield className="w-5 h-5" />
                         </div>
@@ -211,6 +341,97 @@ const DashboardPage: React.FC = () => {
                         </div>
                     </button>
                 </div>
+            </div>
+        </div>
+    );
+
+    const renderCourses = () => (
+        <div className="space-y-6 animate-fade-in">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/50 p-6 sm:p-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                    <div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">{__('My Courses')}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{__('All courses you have successfully unlocked appear here.')}</p>
+                    </div>
+                    <AppLink
+                        to="/courses"
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-200 hover:border-brand-400 transition-colors"
+                    >
+                        <BookOpen className="w-4 h-4" />
+                        {__('Browse Courses')}
+                    </AppLink>
+                </div>
+
+                {coursesLoading ? (
+                    <div className="flex items-center justify-center py-20">
+                        <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
+                    </div>
+                ) : courses.length > 0 ? (
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                        {courses.map((course) => (
+                            <AppLink
+                                key={course.id}
+                                to={`/courses/${course.slug}`}
+                                className="group block overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-700/50 bg-gray-50 dark:bg-gray-900/30 hover:border-brand-300 dark:hover:border-brand-700 hover:shadow-lg transition-all"
+                            >
+                                <div className="aspect-[16/9] overflow-hidden bg-gray-100 dark:bg-gray-700">
+                                    {course.image ? (
+                                        <img
+                                            src={course.image}
+                                            alt={course.title?.en || course.title?.ar || __('Course image')}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                            <BookOpen className="w-10 h-10" />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="p-5">
+                                    <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 mb-4">
+                                        <CheckCircle2 className="w-4 h-4" />
+                                        {__('Enrolled')}
+                                    </div>
+
+                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2">
+                                        {course.title ? t(course.title) : __('Untitled course')}
+                                    </h4>
+
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                                        {course.instructor?.name ? t(course.instructor.name) : __('Instructor')}
+                                    </p>
+
+                                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                                        <span className="inline-flex items-center gap-2">
+                                            <Clock className="w-4 h-4" />
+                                            {course.duration_hours} {__('Hours')}
+                                        </span>
+                                        <span className="inline-flex items-center gap-2">
+                                            <CheckCircle2 className="w-4 h-4" />
+                                            {formatEnrollmentDate(course.enrolled_at)}
+                                        </span>
+                                    </div>
+                                </div>
+                            </AppLink>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 p-10 text-center">
+                        <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center mx-auto mb-4">
+                            <BookOpen className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{__('No enrolled courses yet')}</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{__('Once you complete checkout successfully, your courses will appear here.')}</p>
+                        <AppLink
+                            to="/courses"
+                            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 text-white font-medium hover:from-brand-700 hover:to-brand-800 transition-all"
+                        >
+                            <BookOpen className="w-4 h-4" />
+                            {__('Explore Courses')}
+                        </AppLink>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -478,6 +699,7 @@ const DashboardPage: React.FC = () => {
 
     const tabContent: Record<TabKey, React.ReactNode> = {
         overview: renderOverview(),
+        courses: renderCourses(),
         profile: renderProfile(),
         security: renderSecurity(),
         settings: renderSettings(),
@@ -499,7 +721,7 @@ const DashboardPage: React.FC = () => {
                             {tabs.map(tab => (
                                 <button
                                     key={tab.key}
-                                    onClick={() => setActiveTab(tab.key)}
+                                    onClick={() => setDashboardTab(tab.key)}
                                     className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all whitespace-nowrap w-full ${
                                         activeTab === tab.key
                                             ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 shadow-sm'
@@ -520,6 +742,46 @@ const DashboardPage: React.FC = () => {
 
                     {/* Content Area */}
                     <div className="flex-1 min-w-0">
+                        {banner && (
+                            <div className={`mb-6 rounded-2xl border p-4 sm:p-5 ${
+                                banner.type === 'success'
+                                    ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20'
+                                    : banner.type === 'error'
+                                        ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
+                                        : 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20'
+                            }`}>
+                                <div className="flex items-start gap-3">
+                                    <div className={`mt-0.5 ${
+                                        banner.type === 'success'
+                                            ? 'text-emerald-600 dark:text-emerald-300'
+                                            : banner.type === 'error'
+                                                ? 'text-red-600 dark:text-red-300'
+                                                : 'text-blue-600 dark:text-blue-300'
+                                    }`}>
+                                        <CheckCircle2 className="w-5 h-5" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className={`font-semibold ${
+                                            banner.type === 'success'
+                                                ? 'text-emerald-800 dark:text-emerald-100'
+                                                : banner.type === 'error'
+                                                    ? 'text-red-800 dark:text-red-100'
+                                                    : 'text-blue-800 dark:text-blue-100'
+                                        }`}>
+                                            {banner.message}
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setBanner(null)}
+                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                        aria-label={__('Close')}
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         {tabContent[activeTab]}
                     </div>
                 </div>

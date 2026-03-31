@@ -108,22 +108,16 @@ class ZainCashGateway extends BaseGateway
                     'value' => (string) $amount,
                     'currency' => strtoupper($data['currency'] ?? $config['currency'] ?? Currency::getDefaultCode()),
                 ],
-                'customer' => [
-                    'phone' => $data['customer_phone'] ?? null,
-                ],
                 'redirectUrls' => [
                     'successUrl' => $successUrl,
                     'failureUrl' => $failureUrl,
                 ],
             ];
 
-            // Remove null customer phone
-            if (empty($payload['customer']['phone'])) {
-                unset($payload['customer']);
-            }
-
             Log::info('ZainCash v2 - initiatePayment Request', [
                 'transaction_ref' => $transaction->transaction_ref,
+                'customer_phone_omitted' => true,
+                'provided_customer_phone_ignored' => array_key_exists('customer_phone', $data),
                 'payload' => $payload,
             ]);
 

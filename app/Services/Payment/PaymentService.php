@@ -79,15 +79,21 @@ class PaymentService
             $order = $result['order'];
             $gatewayService = $this->getGatewayService($gateway);
 
-            $gatewayResponse = $gatewayService->initiatePayment($transaction, [
+            $gatewayPayload = [
                 'amount' => $transaction->total_amount,
                 'currency' => Currency::getDefaultCode(),
                 'description' => __('Course checkout :order', ['order' => $order->order_ref]),
                 'return_url' => route('api.v1.payments.callback', ['transactionRef' => $transaction->transaction_ref]),
                 'failure_url' => route('api.v1.payments.callback', ['transactionRef' => $transaction->transaction_ref, 'status' => 'failure']),
                 'callback_url' => route('api.payments.webhook', ['gateway' => $gateway->code]),
-                'customer_phone' => $user->phone ?: $user->mobile,
-            ]);
+            ];
+
+            // ZainCash hosted checkout does not require or accept the local profile phone.
+            if ($gateway->code !== 'zaincash') {
+                $gatewayPayload['customer_phone'] = $user->phone ?: $user->mobile;
+            }
+
+            $gatewayResponse = $gatewayService->initiatePayment($transaction, $gatewayPayload);
 
             $transaction->update([
                 'gateway_transaction_id' => $gatewayResponse['transaction_id'] ?? null,
