@@ -7,7 +7,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use SolutionForest\FilamentTranslateField\Forms\Component\Translate;
 
 class PageForm
 {
@@ -21,15 +20,16 @@ class PageForm
                     ->schema([
                         Section::make(__('Page Information'))
                             ->schema([
-                                Translate::make()
-                                    ->schema([
-                                        TextInput::make('title')
-                                            ->label(__('Title'))
-                                            ->required()
-                                            ->maxLength(255),
-                                    ])
-                                    ->locales(appLocales())
-                                    ->columnSpanFull(),
+                                $schema->translate([
+                                    TextInput::make('title')
+                                        ->label(__('Title'))
+                                        ->required()
+                                        ->maxLength(255),
+                                    \Filament\Forms\Components\RichEditor::make('content')
+                                        ->label(__('Content'))
+                                        ->required()
+                                        ->columnSpanFull(),
+                                ]),
 
                                 TextInput::make('slug')
                                     ->label(__('Slug'))
@@ -37,16 +37,6 @@ class PageForm
                                     ->unique(ignoreRecord: true)
                                     ->maxLength(255)
                                     ->helperText(__('URL-friendly identifier'))
-                                    ->columnSpanFull(),
-
-                                Translate::make()
-                                    ->schema([
-                                        \Filament\Forms\Components\RichEditor::make('content')
-                                            ->label(__('Content'))
-                                            ->required()
-                                            ->columnSpanFull(),
-                                    ])
-                                    ->locales(appLocales())
                                     ->columnSpanFull(),
                             ])
                             ->columns(1),

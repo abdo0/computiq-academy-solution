@@ -33,6 +33,17 @@ class SectionResource extends Resource
     {
         return __('Sections');
     }
+
+    public static function getModelLabel(): string
+    {
+        return __('Section');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Sections');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return SectionForm::configure($schema);

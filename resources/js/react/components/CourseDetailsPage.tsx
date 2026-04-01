@@ -1,28 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useLanguage } from '../contexts/LanguageContext';
 import { useTranslation } from '../contexts/TranslationProvider';
 import { dataService } from '../services/dataService';
 import { 
     Star, PlayCircle, Users, Clock, Award, Infinity as InfinityIcon, 
-    Globe, Share2, ShoppingCart, CheckCircle2, ChevronDown, ChevronUp, User, ChevronLeft, ChevronRight, Loader2
+    Globe, Share2, ShoppingCart, CheckCircle2, ChevronDown, ChevronUp, User, Loader2
 } from 'lucide-react';
 import AppLink from './common/AppLink';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useCurrency } from '../utils/currency';
 import { useCurrentRouteBootstrap } from '../contexts/RouteBootstrapContext';
+import { useAppNavigate } from '../hooks/useAppNavigate';
 
 const CourseDetailsPage: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
     const navigate = useNavigate();
-    const { language } = useLanguage();
     const { __, t } = useTranslation();
-    const isRTL = language === 'ar' || language === 'ku';
     const { addToCart, isInCart } = useCart();
     const { user } = useAuth();
     const { formatAmount } = useCurrency();
     const initialBootstrap = useCurrentRouteBootstrap<any>();
+    const appNavigate = useAppNavigate();
 
     const [course, setCourse] = useState<any>(() => initialBootstrap?.course ?? null);
     const [loading, setLoading] = useState(() => !initialBootstrap?.course);
@@ -31,6 +30,11 @@ const CourseDetailsPage: React.FC = () => {
     const [isAdding, setIsAdding] = useState(false);
 
     const handleAddToCart = async () => {
+        if (course?.id && isEnrolled) {
+            await appNavigate(`/learn/${course.slug}`);
+            return;
+        }
+
         if (course?.id && !isInCart(course.id) && !isAdding) {
             setIsAdding(true);
             await addToCart(course.id);
@@ -86,10 +90,10 @@ const CourseDetailsPage: React.FC = () => {
             <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] dark:bg-gray-950">
                 <div className="text-center">
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
-                        {isRTL ? 'الدورة غير موجودة' : 'Course Not Found'}
+                        {__('Course Not Found')}
                     </h2>
                     <AppLink to="/" className="text-brand-600 font-bold mt-4 inline-block">
-                        {isRTL ? 'العودة للرئيسية' : 'Go Home'}
+                        {__('Go Home')}
                     </AppLink>
                 </div>
             </div>
@@ -97,10 +101,10 @@ const CourseDetailsPage: React.FC = () => {
     }
 
     const tabs = [
-        isRTL ? 'نظرة عامة' : 'Overview',
-        isRTL ? 'محتوى الدورة' : 'Course Content',
-        isRTL ? 'المدرب' : 'Instructor',
-        isRTL ? 'التقييمات' : 'Reviews',
+        __('Overview'),
+        __('Course Content'),
+        __('Instructor'),
+        __('Reviews'),
     ];
 
     const totalLessons = course.modules?.reduce((sum: number, m: any) => sum + (m.lessons_count || m.lessons?.length || 0), 0) || 0;
@@ -128,13 +132,13 @@ const CourseDetailsPage: React.FC = () => {
                         <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
                             {course.is_best_seller && (
                                 <span className="bg-[#fcd34d] text-amber-900 px-3 py-1 rounded-sm font-bold text-xs uppercase tracking-wider">
-                                    {isRTL ? 'الأكثر مبيعاً' : 'Best Seller'}
+                                    {__('Best Seller')}
                                 </span>
                             )}
                             {course.is_live && (
                                 <span className="bg-red-500 text-white px-3 py-1 rounded-sm font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
                                     <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                                    {isRTL ? 'مباشر' : 'LIVE'}
+                                    {__('Live')}
                                 </span>
                             )}
                             <div className="flex items-center gap-1.5 border border-white/20 px-3 py-1 rounded-sm bg-white/5">
@@ -143,12 +147,12 @@ const CourseDetailsPage: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-1.5 border border-white/20 px-3 py-1 rounded-sm bg-white/5">
                                 <Users className="w-4 h-4" />
-                                <span>{course.students_count?.toLocaleString()} {isRTL ? 'طالب' : 'Learners'}</span>
+                                <span>{course.students_count?.toLocaleString()} {__('Learners')}</span>
                             </div>
                         </div>
 
                         <div className="mt-8 pt-6 border-t border-white/10 flex items-center gap-2 text-sm text-gray-300">
-                            {isRTL ? 'بواسطة' : 'Made by'}{' '}
+                            {__('By')}{' '}
                             <AppLink 
                                 to={instructorSlug ? `/instructors/${instructorSlug}` : '#'}
                                 className="text-white font-bold underline decoration-brand-500 underline-offset-4 cursor-pointer hover:text-brand-400 transition-colors inline-block"
@@ -187,7 +191,7 @@ const CourseDetailsPage: React.FC = () => {
                         {activeTab === 0 && (
                             <div id="overview" className="scroll-mt-24">
                                 <h2 className="text-xl font-bold text-brand-600 dark:text-brand-400 mb-4 tracking-tight">
-                                    {isRTL ? 'نظرة عامة' : 'Overview'}
+                                    {__('Overview')}
                                 </h2>
                                 <p className="text-sm md:text-base text-gray-700 dark:text-gray-300 leading-loose whitespace-pre-line">
                                     {t(course.description)}
@@ -199,13 +203,13 @@ const CourseDetailsPage: React.FC = () => {
                         {activeTab === 1 && (
                             <div id="course-content" className="scroll-mt-24">
                                 <h2 className="text-xl font-bold text-brand-600 dark:text-brand-400 mb-4 tracking-tight">
-                                    {isRTL ? 'محتوى الدورة' : 'Course Content'}
+                                    {__('Course Content')}
                                 </h2>
                                 
                                 <div className="flex items-center gap-6 mb-6 text-sm font-bold text-gray-600 dark:text-gray-400">
-                                    <div className="flex items-center gap-2"><PlayCircle className="w-4 h-4 text-brand-500"/> {totalLessons} {isRTL ? 'درس' : 'Lessons'}</div>
+                                    <div className="flex items-center gap-2"><PlayCircle className="w-4 h-4 text-brand-500"/> {totalLessons} {__('Lessons')}</div>
                                     {freeLessons > 0 && (
-                                        <div className="flex items-center gap-2"><Award className="w-4 h-4 text-brand-500"/> {freeLessons} {isRTL ? 'دروس مجانية' : 'Free Lessons'}</div>
+                                        <div className="flex items-center gap-2"><Award className="w-4 h-4 text-brand-500"/> {freeLessons} {__('Free Lessons')}</div>
                                     )}
                                     <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-brand-500"/> {formatDuration(totalDurationMin)}</div>
                                 </div>
@@ -225,7 +229,7 @@ const CourseDetailsPage: React.FC = () => {
                                                             <PlayCircle className="w-4 h-4"/>
                                                             <span>{formatDuration(module.duration_minutes || 0)}</span>
                                                             <span className="hidden sm:inline">•</span>
-                                                            <span>{module.lessons_count || module.lessons?.length || 0} {isRTL ? 'درس' : 'Lessons'}</span>
+                                                            <span>{module.lessons_count || module.lessons?.length || 0} {__('Lessons')}</span>
                                                         </div>
                                                     </div>
                                                     {isOpen ? <ChevronUp className="w-5 h-5 text-gray-400 shrink-0"/> : <ChevronDown className="w-5 h-5 text-gray-400 shrink-0"/>}
@@ -243,7 +247,7 @@ const CourseDetailsPage: React.FC = () => {
                                                                         </span>
                                                                         {lesson.is_free && (
                                                                             <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-xl">
-                                                                                {isRTL ? 'مجاني' : 'FREE'}
+                                                                                {__('Free')}
                                                                             </span>
                                                                         )}
                                                                     </div>
@@ -264,7 +268,7 @@ const CourseDetailsPage: React.FC = () => {
                         {activeTab === 2 && course.instructor && (
                             <div id="instructor" className="scroll-mt-24">
                                 <h2 className="text-xl font-bold text-brand-600 dark:text-brand-400 mb-6 tracking-tight">
-                                    {isRTL ? 'المدرب' : 'Instructor'}
+                                    {__('Instructor')}
                                 </h2>
                                 <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-md p-6 md:p-8 flex flex-col md:flex-row gap-8 shadow-sm">
                                     <AppLink to={`/instructors/${course.instructor.slug}`} className="shrink-0 w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-gray-50 dark:border-gray-800 overflow-hidden mx-auto md:mx-0 shadow-lg block hover:opacity-90 transition-opacity">
@@ -284,11 +288,11 @@ const CourseDetailsPage: React.FC = () => {
                                         <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
                                             <div className="flex items-center gap-2">
                                                 <PlayCircle className="w-5 h-5 text-brand-500" />
-                                                <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{course.instructor.courses_count} {isRTL ? 'دورة تدريبية' : 'Courses'}</span>
+                                                <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{course.instructor.courses_count} {__('Courses')}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <Users className="w-5 h-5 text-brand-500" />
-                                                <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{course.instructor.total_students?.toLocaleString()} {isRTL ? 'طالب' : 'Learners'}</span>
+                                                <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{course.instructor.total_students?.toLocaleString()} {__('Learners')}</span>
                                             </div>
                                         </div>
                                         
@@ -298,7 +302,7 @@ const CourseDetailsPage: React.FC = () => {
                                                     to={`/instructors/${instructorSlug}`}
                                                     className="bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 px-8 rounded-md text-sm transition-colors shadow-md active:scale-95 w-full md:w-auto inline-block text-center"
                                                 >
-                                                    {isRTL ? 'صفحة المدرب' : 'Profile Page'}
+                                                    {__('Profile Page')}
                                                 </AppLink>
                                             </div>
                                         )}
@@ -311,7 +315,7 @@ const CourseDetailsPage: React.FC = () => {
                         {activeTab === 3 && (
                             <div id="reviews" className="scroll-mt-24">
                                 <h2 className="text-xl font-bold text-brand-600 dark:text-brand-400 mb-6 tracking-tight">
-                                    {isRTL ? 'تقييمات الطلاب' : "Student Reviews"} ({course.reviews?.length || 0})
+                                    {__('Student Reviews')} ({course.reviews?.length || 0})
                                 </h2>
                                 <div className="flex flex-col gap-0 border-t border-gray-100 dark:border-gray-800">
                                     {course.reviews?.map((review: any, idx: number) => (
@@ -354,7 +358,7 @@ const CourseDetailsPage: React.FC = () => {
                                 <div className="absolute top-6 left-6 z-10">
                                     <span className="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-md shadow-sm flex items-center gap-1.5">
                                         <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                                        {isRTL ? 'بث مباشر' : 'Interactive Live'}
+                                        {__('Interactive Live')}
                                     </span>
                                 </div>
                             )}
@@ -380,19 +384,18 @@ const CourseDetailsPage: React.FC = () => {
                                 
                                 <div className="flex gap-3">
                                     <button
-                                        onClick={!isEnrolled ? handleAddToCart : undefined}
-                                        disabled={isEnrolled}
+                                        onClick={handleAddToCart}
                                         className={`flex-1 font-bold py-3.5 px-4 rounded-md text-base transition-colors shadow-lg active:scale-95 ${
                                             isEnrolled
-                                                ? 'bg-emerald-600/90 text-white shadow-emerald-600/20 cursor-default'
+                                                ? 'bg-emerald-600/90 hover:bg-emerald-700 text-white shadow-emerald-600/20'
                                                 : 'bg-brand-600 hover:bg-brand-700 text-white shadow-brand-600/20'
                                         }`}
                                     >
                                         {isEnrolled
-                                            ? (isRTL ? 'تم التسجيل' : 'Enrolled')
+                                            ? __('Continue Learning')
                                             : isInCart(course.id)
-                                                ? (isRTL ? 'اذهب إلى السلة' : 'Go to Cart')
-                                                : (isRTL ? 'سجّل الآن' : 'Enroll Now')}
+                                                ? __('Go to Cart')
+                                                : __('Enroll Now')}
                                     </button>
                                     <button
                                         onClick={handleAddToCart}
@@ -412,10 +415,10 @@ const CourseDetailsPage: React.FC = () => {
                                 </div>
 
                                 <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex flex-col gap-4">
-                                    <p className="font-bold text-gray-900 dark:text-white mb-1">{isRTL ? 'تحتوي هذه الدورة على:' : 'This course contains:'}</p>
+                                    <p className="font-bold text-gray-900 dark:text-white mb-1">{__('This course contains:')}</p>
                                     <div className="flex items-center gap-3 text-sm">
                                         <span className="w-5 flex justify-center"><User className="w-4 h-4 text-gray-500" strokeWidth={2.5} /></span>
-                                        <span className="text-gray-500">{isRTL ? 'المدرب:' : 'By:'}</span>
+                                        <span className="text-gray-500">{__('By:')}</span>
                                         <AppLink 
                                             to={instructorSlug ? `/instructors/${instructorSlug}` : '#'}
                                             className="font-bold text-brand-600 underline decoration-brand-200 underline-offset-4 cursor-pointer hover:text-brand-700 transition-colors"
@@ -425,32 +428,32 @@ const CourseDetailsPage: React.FC = () => {
                                     </div>
                                     <div className="flex items-center gap-3 text-sm">
                                         <span className="w-5 flex justify-center"><Clock className="w-4 h-4 text-gray-500" strokeWidth={2.5} /></span>
-                                        <span className="text-gray-500">{isRTL ? 'المدة:' : 'Duration:'}</span>
-                                        <span className="font-bold text-gray-800 dark:text-gray-200">{course.duration_hours} {isRTL ? 'ساعة' : 'hours'}</span>
+                                        <span className="text-gray-500">{__('Duration:')}</span>
+                                        <span className="font-bold text-gray-800 dark:text-gray-200">{course.duration_hours} {__('hours')}</span>
                                     </div>
                                     <div className="flex items-center gap-3 text-sm">
                                         <span className="w-5 flex justify-center"><PlayCircle className="w-4 h-4 text-gray-500" strokeWidth={2.5} /></span>
-                                        <span className="text-gray-500">{isRTL ? 'الدروس:' : 'Lessons:'}</span>
-                                        <span className="font-bold text-gray-800 dark:text-gray-200">{totalLessons} {isRTL ? 'درس' : 'lessons'}</span>
+                                        <span className="text-gray-500">{__('Lessons:')}</span>
+                                        <span className="font-bold text-gray-800 dark:text-gray-200">{totalLessons} {__('lessons')}</span>
                                     </div>
                                     <div className="flex items-center gap-3 text-sm">
                                         <span className="w-5 flex justify-center"><Award className="w-4 h-4 text-gray-500" strokeWidth={2.5} /></span>
-                                        <span className="text-gray-500">{isRTL ? 'شهادة إتمام معتمدة' : 'Accredited Certificate of Completion'}</span>
+                                        <span className="text-gray-500">{__('Accredited Certificate of Completion')}</span>
                                     </div>
                                     <div className="flex items-center gap-3 text-sm">
                                         <span className="w-5 flex justify-center"><InfinityIcon className="w-4 h-4 text-gray-500" strokeWidth={2.5} /></span>
-                                        <span className="text-gray-500">{isRTL ? 'وصول مدى الحياة' : 'Lifetime Access'}</span>
+                                        <span className="text-gray-500">{__('Lifetime Access')}</span>
                                     </div>
                                     <div className="flex items-center gap-3 text-sm">
                                         <span className="w-5 flex justify-center"><Globe className="w-4 h-4 text-gray-500" strokeWidth={2.5} /></span>
-                                        <span className="text-gray-500">{isRTL ? 'اللغة:' : 'Language:'}</span>
-                                        <span className="font-bold text-gray-800 dark:text-gray-200">{isRTL ? 'العربية' : 'Arabic'}</span>
+                                        <span className="text-gray-500">{__('Language:')}</span>
+                                        <span className="font-bold text-gray-800 dark:text-gray-200">{__('Arabic')}</span>
                                     </div>
                                 </div>
 
                                 <button className="mt-4 pt-6 border-t border-gray-100 dark:border-gray-800 flex items-center justify-center gap-2 text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-brand-600 transition-colors w-full group">
                                     <Share2 className="w-4 h-4 transition-transform group-hover:scale-110" />
-                                    <span>{isRTL ? 'مشاركة الدورة' : 'Share Course'}</span>
+                                    <span>{__('Share Course')}</span>
                                 </button>
                             </div>
 

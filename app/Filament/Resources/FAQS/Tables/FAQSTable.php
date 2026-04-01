@@ -45,11 +45,6 @@ class FAQSTable
                     ->color(fn ($state) => $state ? 'success' : 'danger')
                     ->sortable(),
 
-                TextColumn::make('sort_order')
-                    ->label(__('Sort Order'))
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
                 TextColumn::make('created_at')
                     ->label(__('Created At'))
                     ->icon(Heroicon::Clock)

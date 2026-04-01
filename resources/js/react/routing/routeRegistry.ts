@@ -83,6 +83,7 @@ export const loadRouteModule = async (path: string): Promise<void> => {
     // For dynamic routes, map the actual path to its pattern key
     if (!routeEntries.has(moduleKey)) {
         if (pathname.startsWith('/courses/')) moduleKey = '/courses/:slug';
+        else if (pathname.startsWith('/learn/')) moduleKey = '/learn/:courseSlug';
         else if (pathname.startsWith('/instructors/')) moduleKey = '/instructors/:slug';
         else if (pathname.startsWith('/blog/')) moduleKey = '/blog/:slug';
         else if (pathname.startsWith('/paths/')) moduleKey = '/paths/:slug';

@@ -10,7 +10,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use SolutionForest\FilamentTranslateField\Forms\Component\Translate;
 
 class SmsTemplateForm
 {
@@ -32,15 +31,19 @@ class SmsTemplateForm
                                     ->helperText(__('Unique identifier for the template'))
                                     ->columnSpanFull(),
 
-                                Translate::make()
-                                    ->schema([
-                                        TextInput::make('name')
-                                            ->label(__('Name'))
-                                            ->required()
-                                            ->maxLength(255),
-                                    ])
-                                    ->locales(appLocales())
-                                    ->columnSpanFull(),
+                                $schema->translate([
+                                    TextInput::make('name')
+                                        ->label(__('Name'))
+                                        ->required()
+                                        ->maxLength(255),
+                                    Textarea::make('content')
+                                        ->label(__('Content'))
+                                        ->required()
+                                        ->rows(5)
+                                        ->maxLength(500)
+                                        ->helperText(__('SMS content (max 500 characters). Use {{variable_name}} for dynamic content'))
+                                        ->columnSpanFull(),
+                                ]),
 
                                 Select::make('purpose')
                                     ->label(__('Purpose'))
@@ -49,19 +52,6 @@ class SmsTemplateForm
                                     ->searchable()
                                     ->preload()
                                     ->helperText(__('Select the purpose of this SMS template')),
-
-                                Translate::make()
-                                    ->schema([
-                                        Textarea::make('content')
-                                            ->label(__('Content'))
-                                            ->required()
-                                            ->rows(5)
-                                            ->maxLength(500)
-                                            ->helperText(__('SMS content (max 500 characters). Use {{variable_name}} for dynamic content'))
-                                            ->columnSpanFull(),
-                                    ])
-                                    ->locales(appLocales())
-                                    ->columnSpanFull(),
 
                                 Textarea::make('variables')
                                     ->label(__('Available Variables'))
@@ -85,12 +75,6 @@ class SmsTemplateForm
                                     ->label(__('Active'))
                                     ->default(true)
                                     ->helperText(__('Enable or disable this template')),
-
-                                TextInput::make('sort_order')
-                                    ->label(__('Sort Order'))
-                                    ->numeric()
-                                    ->default(0)
-                                    ->helperText(__('Order for display')),
                             ])
                             ->columns(1),
                     ]),

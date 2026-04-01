@@ -13,7 +13,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use SolutionForest\FilamentTranslateField\Forms\Component\Translate;
 
 class PaymentGatewayForm
 {
@@ -27,19 +26,16 @@ class PaymentGatewayForm
                     ->schema([
                         Section::make(__('Gateway Information'))
                             ->schema([
-                                Translate::make()
-                                    ->schema([
-                                        TextInput::make('name')
-                                            ->label(__('Name'))
-                                            ->required()
-                                            ->maxLength(255),
-                                        Textarea::make('description')
-                                            ->label(__('Description'))
-                                            ->rows(3)
-                                            ->columnSpanFull(),
-                                    ])
-                                    ->locales(appLocales())
-                                    ->columnSpanFull(),
+                                $schema->translate([
+                                    TextInput::make('name')
+                                        ->label(__('Name'))
+                                        ->required()
+                                        ->maxLength(255),
+                                    Textarea::make('description')
+                                        ->label(__('Description'))
+                                        ->rows(3)
+                                        ->columnSpanFull(),
+                                ]),
                                 TextInput::make('code')
                                     ->label(__('Code'))
                                     ->required()
@@ -92,9 +88,6 @@ class PaymentGatewayForm
                                 Toggle::make('is_active')
                                     ->label(__('Active'))
                                     ->default(true),
-                                TextInput::make('sort_order')
-                                    ->numeric()
-                                    ->default(0),
                             ]),
                     ]),
             ]);

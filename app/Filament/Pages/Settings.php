@@ -107,19 +107,19 @@ class Settings extends Page implements HasForms
     {
         return $form
             ->components([
-                Tabs::make('Tabs')
+                Tabs::make(__('Tabs'))
                     ->columnSpanFull()
                     ->tabs([
-                        Tab::make('General')->id('general')->label(__('General'))->icon('heroicon-o-cog-6-tooth')->schema($this->getGeneralSchema()),
-                        Tab::make('Company')->id('company')->label(__('Company Info'))->icon('heroicon-o-building-office')->schema($this->getCompanySchema()),
-                        Tab::make('Frontend')->id('frontend')->label(__('Frontend'))->icon('heroicon-o-globe-alt')->schema($this->getFrontendSchema()),
+                        Tab::make(__('General'))->id('general')->label(__('General'))->icon('heroicon-o-cog-6-tooth')->schema($this->getGeneralSchema()),
+                        Tab::make(__('Company'))->id('company')->label(__('Company Info'))->icon('heroicon-o-building-office')->schema($this->getCompanySchema()),
+                        Tab::make(__('Frontend'))->id('frontend')->label(__('Frontend'))->icon('heroicon-o-globe-alt')->schema($this->getFrontendSchema()),
 
-                        Tab::make('SEO')->id('seo-flat')->label(__('SEO'))->icon('heroicon-o-magnifying-glass')->schema($this->getSeoFlatSchema()),
-                        Tab::make('Contact')->id('contact')->label(__('Contact'))->icon('heroicon-o-phone')->schema($this->getContactSchema()),
-                        Tab::make('Location')->id('location')->label(__('Location'))->icon('heroicon-o-map-pin')->schema($this->getLocationSchema()),
-                        Tab::make('Social')->id('social')->label(__('Social Media'))->icon('heroicon-o-share')->schema($this->getSocialSchema()),
-                        Tab::make('Email')->id('email')->label(__('Email'))->icon('heroicon-o-envelope')->schema($this->getEmailSchema()),
-                        Tab::make('WhatsApp')->id('whatsapp')->label(__('WhatsApp Integration'))->icon('heroicon-o-chat-bubble-left-right')->schema($this->getWhatsAppSettingsSchema()),
+                        Tab::make(__('SEO'))->id('seo-flat')->label(__('SEO'))->icon('heroicon-o-magnifying-glass')->schema($this->getSeoFlatSchema()),
+                        Tab::make(__('Contact'))->id('contact')->label(__('Contact'))->icon('heroicon-o-phone')->schema($this->getContactSchema()),
+                        Tab::make(__('Location'))->id('location')->label(__('Location'))->icon('heroicon-o-map-pin')->schema($this->getLocationSchema()),
+                        Tab::make(__('Social'))->id('social')->label(__('Social Media'))->icon('heroicon-o-share')->schema($this->getSocialSchema()),
+                        Tab::make(__('Email'))->id('email')->label(__('Email'))->icon('heroicon-o-envelope')->schema($this->getEmailSchema()),
+                        Tab::make(__('WhatsApp'))->id('whatsapp')->label(__('WhatsApp Integration'))->icon('heroicon-o-chat-bubble-left-right')->schema($this->getWhatsAppSettingsSchema()),
                     ])->persistTab(),
             ])
             ->statePath('data')

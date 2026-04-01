@@ -6,28 +6,38 @@ use Filament\Actions\AttachAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DetachAction;
 use Filament\Actions\DetachBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Hidden;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class CoursesRelationManager extends RelationManager
 {
     protected static string $relationship = 'courses';
 
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('Path Courses');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('Course');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Courses');
+    }
+
     public function form(Schema $schema): Schema
     {
-        return $schema
-            ->components([
-                TextInput::make('sort_order')
-                    ->label('Sort Order')
-                    ->numeric()
-                    ->default(0)
-                    ->required(),
-            ]);
+        return $schema->components([]);
     }
 
     public function table(Table $table): Table
@@ -37,32 +47,31 @@ class CoursesRelationManager extends RelationManager
             ->columns([
                 ImageColumn::make('image'),
                 TextColumn::make('title')
-                    ->label('Title')
+                    ->label(__('Title'))
+                    ->icon(Heroicon::AcademicCap)
                     ->formatStateUsing(fn ($record) => $record->getTranslation('title', 'ar') ?: $record->getTranslation('title', 'en')),
                 TextColumn::make('instructor.name')
-                    ->label('Instructor'),
-                TextColumn::make('sort_order')
-                    ->label('Order')
-                    ->sortable(),
+                    ->label(__('Instructor'))
+                    ->icon(Heroicon::User),
             ])
             ->filters([
                 //
             ])
             ->headerActions([
                 AttachAction::make()
+                    ->label(__('Add Course'))
                     ->preloadRecordSelect()
                     ->form(fn (AttachAction $action): array => [
                         $action->getRecordSelect(),
-                        TextInput::make('sort_order')
-                            ->label('Sort Order')
-                            ->numeric()
-                            ->default(0)
-                            ->required(),
+                        Hidden::make('sort_order')
+                            ->default(fn () => ((DB::table('learning_path_course')
+                                ->where('learning_path_id', $this->getOwnerRecord()->getKey())
+                                ->max('sort_order') ?? -1) + 1)),
                     ]),
             ])
             ->recordActions([
-                EditAction::make(),
-                DetachAction::make(),
+                DetachAction::make()
+                    ->label(__('Detach Course')),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -70,6 +79,6 @@ class CoursesRelationManager extends RelationManager
                 ]),
             ])
             ->reorderable('sort_order')
-            ->defaultSort('sort_order');
+            ->defaultSort('learning_path_course.sort_order');
     }
 }

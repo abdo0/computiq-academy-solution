@@ -7,7 +7,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use SolutionForest\FilamentTranslateField\Forms\Component\Translate;
 
 class ArticleCategoryForm
 {
@@ -21,15 +20,16 @@ class ArticleCategoryForm
                     ->schema([
                         Section::make(__('Category Information'))
                             ->schema([
-                                Translate::make()
-                                    ->schema([
-                                        TextInput::make('name')
-                                            ->label(__('Name'))
-                                            ->required()
-                                            ->maxLength(255),
-                                    ])
-                                    ->locales(appLocales())
-                                    ->columnSpanFull(),
+                                $schema->translate([
+                                    TextInput::make('name')
+                                        ->label(__('Name'))
+                                        ->required()
+                                        ->maxLength(255),
+                                    \Filament\Forms\Components\Textarea::make('description')
+                                        ->label(__('Description'))
+                                        ->rows(3)
+                                        ->maxLength(65535),
+                                ]),
 
                                 TextInput::make('code')
                                     ->label(__('Code'))
@@ -37,16 +37,6 @@ class ArticleCategoryForm
                                     ->unique(ignoreRecord: true)
                                     ->maxLength(50)
                                     ->helperText(__('Unique identifier for the category')),
-
-                                Translate::make()
-                                    ->schema([
-                                        \Filament\Forms\Components\Textarea::make('description')
-                                            ->label(__('Description'))
-                                            ->rows(3)
-                                            ->maxLength(65535),
-                                    ])
-                                    ->locales(appLocales())
-                                    ->columnSpanFull(),
                             ])
                             ->columns(2),
                     ]),

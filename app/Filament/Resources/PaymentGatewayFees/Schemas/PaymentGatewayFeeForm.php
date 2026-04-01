@@ -11,7 +11,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use SolutionForest\FilamentTranslateField\Forms\Component\Translate;
 
 class PaymentGatewayFeeForm
 {
@@ -55,14 +54,11 @@ class PaymentGatewayFeeForm
                                     ->default(0)
                                     ->minValue(0)
                                     ->suffix(Currency::getDefaultSymbol()),
-                                Translate::make()
-                                    ->schema([
-                                        Textarea::make('description')
-                                            ->label(__('Description'))
-                                            ->rows(3),
-                                    ])
-                                    ->locales(appLocales())
-                                    ->columnSpanFull(),
+                                $schema->translate([
+                                    Textarea::make('description')
+                                        ->label(__('Description'))
+                                        ->rows(3),
+                                ]),
                             ])
                             ->columns(2),
                     ]),
@@ -74,9 +70,6 @@ class PaymentGatewayFeeForm
                                 Toggle::make('is_active')
                                     ->label(__('Active'))
                                     ->default(true),
-                                TextInput::make('sort_order')
-                                    ->numeric()
-                                    ->default(0),
                             ]),
                     ]),
             ]);

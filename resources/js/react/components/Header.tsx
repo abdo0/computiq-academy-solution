@@ -121,6 +121,8 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
         targetPath = `/${lang}${currentPath === '/' ? '' : currentPath}`;
       }
 
+      const targetUrl = `${targetPath}${location.search || ''}${location.hash || ''}`;
+
       // Fetch translations + preload page chunk/data in PARALLEL — no state changes yet
       const [prefetched] = await Promise.all([
         prefetchLocale(lang),
@@ -139,7 +141,7 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
       // Update language context (also flips DOM dir)
       setLanguage(lang);
       // Navigate (SPA push — no reload)
-      rawNavigate(targetPath);
+      rawNavigate(targetUrl);
       // Done!
       NProgress.done();
 

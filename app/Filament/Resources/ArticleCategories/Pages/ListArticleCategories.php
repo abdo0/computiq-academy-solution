@@ -4,7 +4,7 @@ namespace App\Filament\Resources\ArticleCategories\Pages;
 
 use App\Filament\Exports\ArticleCategoryExporter;
 use App\Filament\Resources\ArticleCategories\ArticleCategoryResource;
-use App\Traits\HasActiveStatusTabs;
+use App\Traits\HasSoftDeleteTabs;
 use Filament\Actions\CreateAction;
 use Filament\Actions\ExportAction;
 use Filament\Actions\Exports\Enums\ExportFormat;
@@ -13,7 +13,7 @@ use Filament\Support\Icons\Heroicon;
 
 class ListArticleCategories extends ListRecords
 {
-    use HasActiveStatusTabs;
+    use HasSoftDeleteTabs;
 
     protected static string $resource = ArticleCategoryResource::class;
 
@@ -21,6 +21,7 @@ class ListArticleCategories extends ListRecords
     {
         return [
             CreateAction::make()
+                ->label(__('Create Article Category'))
                 ->icon(Heroicon::Plus),
 
             ExportAction::make()

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Filament\Forms\Components\Select;
+use Filament\Schemas\Schema;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Routing\ResponseFactory;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use SolutionForest\FilamentTranslateField\Forms\Component\Translate;
 
 class MacroServiceProvider extends ServiceProvider
 {
@@ -31,6 +33,15 @@ class MacroServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Schema::macro('translate', function (callable|array $schema, ?array $locales = null): Translate {
+            $locales ??= appLocales();
+
+            return Translate::make()
+                ->schema(is_callable($schema) ? $schema() : $schema)
+                ->locales($locales)
+                ->columnSpanFull();
+        });
+
         // Register Response macros
         ResponseFactory::macro('success', function ($data = [], $message = '', $statusCode = 200, $meta = []) {
             $response = [

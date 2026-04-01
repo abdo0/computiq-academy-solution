@@ -29,10 +29,9 @@ class RolesTable
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('permissions_count')
-                    ->label('Permissions Count')
+                    ->label(__('Permissions Count'))
                     ->icon(Heroicon::ShieldCheck)
                     ->counts('permissions')
-                    ->translateLabel()
                     ->sortable()
                     ->toggleable(),
                 TextColumn::make('created_at')

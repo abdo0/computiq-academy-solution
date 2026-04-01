@@ -4,8 +4,10 @@ use App\Http\Controllers\Api\ArticleController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\ContentController;
+use App\Http\Controllers\Api\CourseCertificateController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\LearningPathController;
+use App\Http\Controllers\Api\LearningController;
 use App\Http\Controllers\Api\InstructorController;
 use App\Http\Controllers\Api\SeoController;
 use App\Http\Controllers\Api\SearchController;
@@ -112,6 +114,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/dashboard/stats', [\App\Http\Controllers\Api\UserAuthController::class, 'dashboardStats'])->name('api.v1.user.dashboard.stats');
             Route::get('/enrollments', [\App\Http\Controllers\Api\UserAuthController::class, 'enrollments'])->name('api.v1.user.enrollments');
             Route::get('/courses', [\App\Http\Controllers\Api\UserAuthController::class, 'courses'])->name('api.v1.user.courses');
+            Route::get('/certificates/{course}', [CourseCertificateController::class, 'download'])->name('api.v1.user.certificates.download');
 
             // Cart routes
             Route::get('/cart', [\App\Http\Controllers\Api\CartController::class, 'index'])->name('api.v1.user.cart.index');
@@ -125,6 +128,12 @@ Route::prefix('v1')->group(function () {
         Route::post('/checkout/quote', [CheckoutController::class, 'quote'])->name('api.v1.checkout.quote');
         Route::post('/checkout/initiate', [CheckoutController::class, 'initiate'])->name('api.v1.checkout.initiate');
         Route::get('/payments/verify/{transaction}', [PaymentController::class, 'verify'])->name('api.v1.payments.verify');
+        Route::get('/learning/courses/{slug}', [LearningController::class, 'showCourse'])->name('api.v1.learning.courses.show');
+        Route::post('/learning/lessons/{lesson}/open', [LearningController::class, 'openLesson'])->name('api.v1.learning.lessons.open');
+        Route::post('/learning/lessons/{lesson}/complete', [LearningController::class, 'completeLesson'])->name('api.v1.learning.lessons.complete');
+        Route::post('/learning/exams/{exam}/start', [LearningController::class, 'startExam'])->name('api.v1.learning.exams.start');
+        Route::post('/learning/exams/{exam}/submit', [LearningController::class, 'submitExam'])->name('api.v1.learning.exams.submit');
+        Route::post('/learning/exams/{exam}/reset', [LearningController::class, 'resetExam'])->name('api.v1.learning.exams.reset');
     });
 
     Route::get('/payments/callback/{transactionRef}', [PaymentController::class, 'callback'])->name('api.v1.payments.callback');

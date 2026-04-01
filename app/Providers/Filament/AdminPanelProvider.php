@@ -98,12 +98,14 @@ class AdminPanelProvider extends PanelProvider
                 // ActivityLogWidget::class,
             ])
             ->navigationGroups([
-                NavigationGroup::make()->label(fn () => __('Courses & Learning')),
-                NavigationGroup::make()->label(fn () => __('Content Management')),
-                NavigationGroup::make()->label(fn () => __('Communication')),
-                NavigationGroup::make()->label(fn () => __('User Management')),
-                NavigationGroup::make()->label(fn () => __('Settings')),
-                NavigationGroup::make()->label(fn () => __('System')),
+                NavigationGroup::make()->label(fn () => __('Courses & Learning'))->icon('heroicon-o-academic-cap'),
+                NavigationGroup::make()->label(fn () => __('Content Management'))->icon('heroicon-o-document-text'),
+                NavigationGroup::make()->label(fn () => __('Communication'))->icon('heroicon-o-chat-bubble-left-right'),
+                NavigationGroup::make()->label(fn () => __('Payments'))->icon('heroicon-o-credit-card'),
+                NavigationGroup::make()->label(fn () => __('Reports & Analytics'))->icon('heroicon-o-chart-bar'),
+                NavigationGroup::make()->label(fn () => __('Administration'))->icon('heroicon-o-users'),
+                NavigationGroup::make()->label(fn () => __('Settings'))->icon('heroicon-o-cog-6-tooth'),
+                NavigationGroup::make()->label(fn () => __('System'))->icon('heroicon-o-server-stack'),
             ])
             ->plugins([
 

@@ -7,6 +7,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Enums\Width;
 
 class EditCourse extends EditRecord
 {
@@ -15,9 +16,17 @@ class EditCourse extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
-            ForceDeleteAction::make(),
-            RestoreAction::make(),
+            DeleteAction::make()
+                ->label(__('Delete Course')),
+            ForceDeleteAction::make()
+                ->label(__('Force Delete Course')),
+            RestoreAction::make()
+                ->label(__('Restore Course')),
         ];
+    }
+
+    public function getMaxContentWidth(): Width|string|null
+    {
+        return Width::Full;
     }
 }

@@ -74,6 +74,50 @@ export const dataService = {
         }
     },
 
+    getLearningCourse: async (slug: string): Promise<any> => {
+        try {
+            const response = await api.get<{ data: any }>(`/learning/courses/${slug}`);
+            return response.data.data;
+        } catch (error) {
+            console.error('API fetch failed for learning course.', error);
+            return null;
+        }
+    },
+
+    openLearningLesson: async (lessonId: number, lastPositionSeconds?: number): Promise<any> => {
+        const response = await api.post(`/learning/lessons/${lessonId}/open`, {
+            last_position_seconds: lastPositionSeconds,
+        });
+
+        return response.data.data;
+    },
+
+    completeLearningLesson: async (lessonId: number): Promise<any> => {
+        const response = await api.post(`/learning/lessons/${lessonId}/complete`);
+        return response.data.data;
+    },
+
+    startLearningExam: async (examId: number): Promise<any> => {
+        const response = await api.post(`/learning/exams/${examId}/start`);
+        return response.data.data;
+    },
+
+    submitLearningExam: async (examId: number, attemptId: number, answers: Record<number, number>): Promise<any> => {
+        const response = await api.post(`/learning/exams/${examId}/submit`, {
+            attempt_id: attemptId,
+            answers,
+        });
+
+        return response.data.data;
+    },
+
+    resetLearningExam: async (examId: number): Promise<any> => {
+        const response = await api.post(`/learning/exams/${examId}/reset`);
+        return response.data.data;
+    },
+
+    getCourseCertificateUrl: (courseId: number): string => `/api/v1/user/certificates/${courseId}`,
+
     getInstructorBySlug: async (slug: string): Promise<any> => {
         try {
             const response = await api.get<{ data: any }>(`/instructors/${slug}`);

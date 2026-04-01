@@ -3,11 +3,11 @@
 namespace App\Filament\Resources\Courses\Schemas;
 
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
 class CourseForm
@@ -15,101 +15,101 @@ class CourseForm
     public static function configure(Schema $schema): Schema
     {
         return $schema
+            ->columns(12)
             ->components([
-                // --- Main Info ---
-                Section::make('Course Information')
+                Section::make(__('Course Information'))
+                    ->compact()
+                    ->columnSpan(8)
                     ->columns(2)
                     ->schema([
-                        TextInput::make('title.ar')
-                            ->label('Title (Arabic)')
-                            ->required()
-                            ->columnSpan(1),
-                        TextInput::make('title.en')
-                            ->label('Title (English)')
-                            ->required()
-                            ->columnSpan(1),
-                        TextInput::make('title.ku')
-                            ->label('Title (Kurdish)')
-                            ->columnSpan(1),
+                        $schema->translate([
+                            TextInput::make('title')
+                                ->label(__('Title'))
+                                ->required()
+                                ->maxLength(255),
+                            Textarea::make('short_description')
+                                ->label(__('Short Description'))
+                                ->rows(2),
+                            Textarea::make('description')
+                                ->label(__('Description'))
+                                ->rows(5),
+                        ]),
                         TextInput::make('slug')
-                            ->label('Slug')
+                            ->label(__('Slug'))
                             ->required()
                             ->unique(ignoreRecord: true)
                             ->columnSpan(1),
                         Select::make('course_category_id')
-                            ->label('Category')
+                            ->label(__('Category'))
                             ->relationship('category', 'name')
                             ->getOptionLabelFromRecordUsing(fn ($record) => $record->getTranslation('name', 'ar') ?: $record->getTranslation('name', 'en'))
                             ->searchable()
+                            ->preload()
                             ->nullable()
-                            ->columnSpan(2),
+                            ->columnSpan(1),
+                        Select::make('instructor_id')
+                            ->label(__('Instructor'))
+                            ->relationship('instructor', 'slug')
+                            ->getOptionLabelFromRecordUsing(fn ($record) => $record->getTranslation('name', 'ar') ?: $record->getTranslation('name', 'en'))
+                            ->searchable()
+                            ->preload()
+                            ->nullable()
+                            ->columnSpan(1),
                     ]),
-
-                // --- Descriptions ---
-                Section::make('Descriptions')
+                Section::make(__('Instructor Fallback'))
+                    ->compact()
+                    ->columnSpan(4)
                     ->columns(1)
                     ->schema([
-                        Textarea::make('short_description.ar')->label('Short Description (Arabic)')->rows(2),
-                        Textarea::make('short_description.en')->label('Short Description (English)')->rows(2),
-                        Textarea::make('short_description.ku')->label('Short Description (Kurdish)')->rows(2),
-                    ]),
-
-                // --- Instructor ---
-                Section::make('Instructor')
-                    ->columns(2)
-                    ->schema([
                         TextInput::make('instructor_name')
-                            ->label('Instructor Name')
-                            ->columnSpan(1),
+                            ->label(__('Instructor Name'))
+                            ->helperText(__('Used only when no linked instructor is selected.'))
+                            ->columnSpanFull(),
                         FileUpload::make('instructor_image')
-                            ->label('Instructor Photo')
+                            ->label(__('Instructor Photo'))
                             ->image()
                             ->directory('instructors')
-                            ->avatar()
-                            ->columnSpan(1),
+                            ->imageEditor()
+                            ->columnSpanFull(),
                     ]),
-
-                // --- Stats ---
-                Section::make('Stats')
+                Section::make(__('Pricing'))
+                    ->compact()
+                    ->columnSpan(6)
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('price')->label(__('Price'))->numeric()->default(0)->prefix('$'),
+                        TextInput::make('old_price')->label(__('Old Price (before discount)'))->numeric()->nullable()->prefix('$'),
+                    ]),
+                Section::make(__('Stats'))
+                    ->compact()
+                    ->columnSpan(6)
                     ->columns(4)
                     ->schema([
-                        TextInput::make('rating')->label('Rating')->numeric()->default(0)->minValue(0)->maxValue(5)->step(0.1),
-                        TextInput::make('review_count')->label('Reviews')->numeric()->default(0),
-                        TextInput::make('duration_hours')->label('Hours')->numeric()->default(0),
-                        TextInput::make('students_count')->label('Students')->numeric()->default(0),
+                        TextInput::make('rating')->label(__('Rating'))->numeric()->default(0)->minValue(0)->maxValue(5)->step(0.1),
+                        TextInput::make('review_count')->label(__('Reviews'))->numeric()->default(0),
+                        TextInput::make('duration_hours')->label(__('Hours'))->numeric()->default(0),
+                        TextInput::make('students_count')->label(__('Students'))->numeric()->default(0),
                     ]),
-
-                // --- Pricing ---
-                Section::make('Pricing')
-                    ->columns(2)
-                    ->schema([
-                        TextInput::make('price')->label('Price')->numeric()->default(0)->prefix('$'),
-                        TextInput::make('old_price')->label('Old Price (before discount)')->numeric()->nullable()->prefix('$'),
-                    ]),
-
-                // --- Flags ---
-                Section::make('Badges & Status')
+                Section::make(__('Badges & Status'))
+                    ->compact()
+                    ->columnSpan(6)
                     ->columns(3)
                     ->schema([
-                        Toggle::make('is_active')->label('Active')->default(true),
-                        Toggle::make('is_live')->label('Live Course (Instructor-Led)'),
-                        Toggle::make('is_best_seller')->label('Best Seller'),
+                        Toggle::make('is_active')->label(__('Active'))->default(true),
+                        Toggle::make('is_live')->label(__('Live Course (Instructor-Led)')),
+                        Toggle::make('is_best_seller')->label(__('Best Seller')),
                     ]),
-
-                // --- Order & Image ---
-                Section::make('Image & Ordering')
-                    ->columns(2)
+                Section::make(__('Image'))
+                    ->compact()
+                    ->columnSpan(6)
+                    ->columns(1)
                     ->schema([
                         FileUpload::make('image')
-                            ->label('Course Thumbnail')
+                            ->label(__('Course Thumbnail'))
                             ->image()
                             ->directory('courses')
-                            ->columnSpan(1),
-                        TextInput::make('sort_order')
-                            ->label('Sort Order')
-                            ->numeric()
-                            ->default(0)
-                            ->columnSpan(1),
+                            ->imageEditor()
+                            ->columnSpanFull(),
                     ]),
             ]);
     }

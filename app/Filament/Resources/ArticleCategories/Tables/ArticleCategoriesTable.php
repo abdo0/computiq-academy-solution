@@ -36,11 +36,6 @@ class ArticleCategoriesTable
                     ->sortable()
                     ->toggleable(),
 
-                TextColumn::make('sort_order')
-                    ->label(__('Sort Order'))
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
                 TextColumn::make('is_active')
                     ->label(__('Status'))
                     ->icon(Heroicon::CheckCircle)

@@ -10,7 +10,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use SolutionForest\FilamentTranslateField\Forms\Component\Translate;
 
 class EmailTemplateForm
 {
@@ -32,15 +31,21 @@ class EmailTemplateForm
                                     ->helperText(__('Unique identifier for the template'))
                                     ->columnSpanFull(),
 
-                                Translate::make()
-                                    ->schema([
-                                        TextInput::make('name')
-                                            ->label(__('Name'))
-                                            ->required()
-                                            ->maxLength(255),
-                                    ])
-                                    ->locales(appLocales())
-                                    ->columnSpanFull(),
+                                $schema->translate([
+                                    TextInput::make('name')
+                                        ->label(__('Name'))
+                                        ->required()
+                                        ->maxLength(255),
+                                    TextInput::make('subject')
+                                        ->label(__('Subject'))
+                                        ->required()
+                                        ->maxLength(255),
+                                    \Filament\Forms\Components\RichEditor::make('body')
+                                        ->label(__('Body'))
+                                        ->required()
+                                        ->columnSpanFull()
+                                        ->helperText(__('Use {{variable_name}} for dynamic content')),
+                                ]),
 
                                 Select::make('purpose')
                                     ->label(__('Purpose'))
@@ -49,27 +54,6 @@ class EmailTemplateForm
                                     ->searchable()
                                     ->preload()
                                     ->helperText(__('Select the purpose of this email template')),
-
-                                Translate::make()
-                                    ->schema([
-                                        TextInput::make('subject')
-                                            ->label(__('Subject'))
-                                            ->required()
-                                            ->maxLength(255),
-                                    ])
-                                    ->locales(appLocales())
-                                    ->columnSpanFull(),
-
-                                Translate::make()
-                                    ->schema([
-                                        \Filament\Forms\Components\RichEditor::make('body')
-                                            ->label(__('Body'))
-                                            ->required()
-                                            ->columnSpanFull()
-                                            ->helperText(__('Use {{variable_name}} for dynamic content')),
-                                    ])
-                                    ->locales(appLocales())
-                                    ->columnSpanFull(),
 
                                 Textarea::make('variables')
                                     ->label(__('Available Variables'))
@@ -93,12 +77,6 @@ class EmailTemplateForm
                                     ->label(__('Active'))
                                     ->default(true)
                                     ->helperText(__('Enable or disable this template')),
-
-                                TextInput::make('sort_order')
-                                    ->label(__('Sort Order'))
-                                    ->numeric()
-                                    ->default(0)
-                                    ->helperText(__('Order for display')),
                             ])
                             ->columns(1),
                     ]),

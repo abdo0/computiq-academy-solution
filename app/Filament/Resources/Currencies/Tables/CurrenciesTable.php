@@ -36,9 +36,6 @@ class CurrenciesTable
                 IconColumn::make('is_active')
                     ->label(__('Active'))
                     ->boolean(),
-                TextColumn::make('sort_order')
-                    ->label(__('Sort Order'))
-                    ->sortable(),
             ])
             ->recordActions([
                 Action::make('set_default')
@@ -69,6 +66,7 @@ class CurrenciesTable
                         ->color('danger'),
                 ]),
             ])
+            ->reorderable('sort_order')
             ->defaultSort('sort_order')
             ->paginated([10, 25, 50, 100]);
     }

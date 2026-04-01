@@ -4,9 +4,9 @@ namespace App\Filament\Resources\Currencies\Schemas;
 
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Get;
-use Filament\Forms\Set;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
 class CurrencyForm
@@ -35,12 +35,6 @@ class CurrencyForm
                             ->label(__('Currency Symbol'))
                             ->required()
                             ->maxLength(10),
-
-                        TextInput::make('sort_order')
-                            ->label(__('Sort Order'))
-                            ->numeric()
-                            ->default(0)
-                            ->minValue(0),
 
                         Toggle::make('is_active')
                             ->label(__('Active'))

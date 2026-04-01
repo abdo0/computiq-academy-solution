@@ -162,4 +162,19 @@ class User extends Authenticatable implements HasMedia
             ->withPivot(['order_id', 'transaction_id', 'enrolled_at'])
             ->withTimestamps();
     }
+
+    public function lessonProgress(): HasMany
+    {
+        return $this->hasMany(CourseLessonProgress::class);
+    }
+
+    public function examAttempts(): HasMany
+    {
+        return $this->hasMany(CourseExamAttempt::class);
+    }
+
+    public function courseCertificates(): HasMany
+    {
+        return $this->hasMany(CourseCertificate::class);
+    }
 }

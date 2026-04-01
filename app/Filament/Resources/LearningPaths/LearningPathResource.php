@@ -25,6 +25,28 @@ class LearningPathResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'title';
 
+    protected static ?int $navigationSort = 3;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Courses & Learning');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Learning Paths');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('Learning Path');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Learning Paths');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return LearningPathForm::configure($schema);

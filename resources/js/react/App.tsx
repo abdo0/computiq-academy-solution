@@ -27,6 +27,7 @@ const GuidePage = eagerRoute('/guide', () => import('./components/GuidePage'));
 const CmsPage = eagerRoute('/page/:slug', () => import('./components/CmsPage'));
 const CoursesPage = eagerRoute('/courses', () => import('./components/CoursesPage'));
 const CourseDetailsPage = eagerRoute('/courses/:slug', () => import('./components/CourseDetailsPage'));
+const LearnCoursePage = eagerRoute('/learn/:courseSlug', () => import('./components/learning/LearnCoursePage'));
 const InstructorProfilePage = eagerRoute('/instructors/:slug', () => import('./components/InstructorProfilePage'));
 const PathsPage = eagerRoute('/paths', () => import('./components/PathsPage'));
 const PathDetailPage = eagerRoute('/paths/:slug', () => import('./components/PathDetailPage'));
@@ -105,7 +106,8 @@ const isProtectedRoute = (pathname: string): boolean => {
 
   return normalized === '/dashboard'
     || normalized === '/cart'
-    || normalized === '/checkout';
+    || normalized === '/checkout'
+    || normalized.startsWith('/learn/');
 };
 
 const AppContent: React.FC = () => {
@@ -325,6 +327,7 @@ const AppContent: React.FC = () => {
       <Route path="success-stories" element={<SuccessStoriesPage />} />
       <Route path="courses" element={<CoursesPage />} />
       <Route path="courses/:slug" element={<CourseDetailsPage />} />
+      <Route path="learn/:courseSlug" element={<LearnCoursePage />} />
       <Route path="paths" element={<PathsPage />} />
       <Route path="paths/:slug" element={<PathDetailPage />} />
       <Route path="instructors/:slug" element={<InstructorProfilePage />} />

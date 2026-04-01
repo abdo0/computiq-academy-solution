@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Spatie\Translatable\HasTranslations;
 
 class Course extends Model
@@ -64,6 +65,27 @@ class Course extends Model
     public function modules(): HasMany
     {
         return $this->hasMany(CourseModule::class)->orderBy('sort_order');
+    }
+
+    public function lessonProgress(): HasMany
+    {
+        return $this->hasMany(CourseLessonProgress::class);
+    }
+
+    public function examAttempts(): HasMany
+    {
+        return $this->hasMany(CourseExamAttempt::class);
+    }
+
+    public function certificates(): HasMany
+    {
+        return $this->hasMany(CourseCertificate::class);
+    }
+
+    public function exams(): HasManyThrough
+    {
+        return $this->hasManyThrough(CourseExam::class, CourseModule::class, 'course_id', 'course_module_id')
+            ->orderByDesc('id');
     }
 
     public function reviews(): HasMany

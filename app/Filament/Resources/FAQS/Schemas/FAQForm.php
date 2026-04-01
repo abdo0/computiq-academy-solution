@@ -7,7 +7,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use SolutionForest\FilamentTranslateField\Forms\Component\Translate;
 
 class FAQForm
 {
@@ -21,25 +20,16 @@ class FAQForm
                     ->schema([
                         Section::make(__('FAQ Information'))
                             ->schema([
-                                Translate::make()
-                                    ->schema([
-                                        TextInput::make('question')
-                                            ->label(__('Question'))
-                                            ->required()
-                                            ->maxLength(255),
-                                    ])
-                                    ->locales(appLocales())
-                                    ->columnSpanFull(),
-
-                                Translate::make()
-                                    ->schema([
-                                        \Filament\Forms\Components\RichEditor::make('answer')
-                                            ->label(__('Answer'))
-                                            ->required()
-                                            ->columnSpanFull(),
-                                    ])
-                                    ->locales(appLocales())
-                                    ->columnSpanFull(),
+                                $schema->translate([
+                                    TextInput::make('question')
+                                        ->label(__('Question'))
+                                        ->required()
+                                        ->maxLength(255),
+                                    \Filament\Forms\Components\RichEditor::make('answer')
+                                        ->label(__('Answer'))
+                                        ->required()
+                                        ->columnSpanFull(),
+                                ]),
 
                                 TextInput::make('category')
                                     ->label(__('Category'))

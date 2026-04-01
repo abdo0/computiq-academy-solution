@@ -12,12 +12,20 @@ class EditLearningPath extends EditRecord
 {
     protected static string $resource = LearningPathResource::class;
 
+    public function getTitle(): string
+    {
+        return __('Edit Learning Path');
+    }
+
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
-            ForceDeleteAction::make(),
-            RestoreAction::make(),
+            DeleteAction::make()
+                ->label(__('Delete Learning Path')),
+            ForceDeleteAction::make()
+                ->label(__('Force Delete Learning Path')),
+            RestoreAction::make()
+                ->label(__('Restore Learning Path')),
         ];
     }
 }

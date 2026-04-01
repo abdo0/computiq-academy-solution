@@ -50,7 +50,7 @@ class DatabaseSeeder extends Seeder
             // Course & Instructor seeders
             InstructorSeeder::class,
             CourseSeeder::class,
-            CourseModuleSeeder::class,
+            CourseCurriculumSeeder::class,
             CourseReviewSeeder::class,
             LearningPathSeeder::class,
         ]);

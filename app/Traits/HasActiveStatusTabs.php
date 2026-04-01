@@ -7,44 +7,38 @@ use Illuminate\Database\Eloquent\Builder;
 
 trait HasActiveStatusTabs
 {
-    /**
-     * Automatically configure tabs and default tab for active status resources
-     */
-    public function bootHasActiveStatusTabs(): void
-    {
-        // This method will be called automatically when the trait is used
-    }
-
-    /**
-     * Get tabs - automatically returns active status tabs
-     */
     public function getTabs(): array
     {
         $model = static::getModel();
 
         return [
-            __('All') => Tab::make()
+            'all' => Tab::make(__('All'))
                 ->icon('heroicon-o-squares-2x2')
                 ->badge($model::count())
                 ->badgeColor('primary'),
 
-            __('Active') => Tab::make()
+            'active' => Tab::make(__('Active'))
                 ->icon('heroicon-o-check-circle')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('is_active', true))
                 ->badge($model::where('is_active', true)->count())
                 ->badgeColor('success'),
 
-            __('Inactive') => Tab::make()
+            'inactive' => Tab::make(__('Inactive'))
                 ->icon('heroicon-o-x-circle')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('is_active', false))
                 ->badge($model::where('is_active', false)->count())
                 ->badgeColor('warning'),
 
-            __('Trashed') => Tab::make()
+            'trashed' => Tab::make(__('Trashed'))
                 ->icon('heroicon-o-trash')
                 ->modifyQueryUsing(fn (Builder $query) => $query->onlyTrashed())
                 ->badge($model::onlyTrashed()->count())
                 ->badgeColor('danger'),
         ];
+    }
+
+    public function getDefaultActiveTab(): string|int|null
+    {
+        return 'active';
     }
 }

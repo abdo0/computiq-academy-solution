@@ -69,6 +69,15 @@ export const resolveRouteBootstrapData = async (path: string): Promise<any> => {
         return { path: fullPath, seo, course };
     }
 
+    if (pathname.startsWith('/learn/')) {
+        const [seo, learningCourse] = await Promise.all([
+            seoPromise,
+            dataService.getLearningCourse(pathname.replace('/learn/', '')).catch(() => null),
+        ]);
+
+        return { path: fullPath, seo, learningCourse };
+    }
+
     if (pathname.startsWith('/instructors/')) {
         const [seo, instructor] = await Promise.all([
             seoPromise,

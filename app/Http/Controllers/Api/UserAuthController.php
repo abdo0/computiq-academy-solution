@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\User;
+use App\Services\Learning\LearningService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +17,11 @@ use Illuminate\Validation\Rules;
 
 class UserAuthController extends Controller
 {
+    public function __construct(
+        protected LearningService $learningService,
+    ) {
+    }
+
     /**
      * Login a user via Sanctum session.
      */
@@ -323,36 +330,18 @@ class UserAuthController extends Controller
 
         $courses = CourseEnrollment::query()
             ->where('user_id', $user->id)
-            ->with(['course.instructor'])
+            ->with([
+                'course.instructor',
+                'course.modules' => fn ($query) => $query->orderBy('sort_order'),
+                'course.modules.lessons' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order'),
+                'course.modules.exam',
+            ])
             ->orderByDesc('enrolled_at')
             ->orderByDesc('id')
             ->get()
             ->filter(fn (CourseEnrollment $enrollment) => $enrollment->course !== null && $enrollment->course->is_active)
             ->values()
-            ->map(function (CourseEnrollment $enrollment) {
-                $course = $enrollment->course;
-
-                return [
-                    'id' => $course->id,
-                    'title' => $course->getTranslations('title'),
-                    'slug' => $course->slug,
-                    'image' => $course->image,
-                    'duration_hours' => $course->duration_hours,
-                    'status' => 'enrolled',
-                    'enrolled_at' => optional($enrollment->enrolled_at)->toIso8601String(),
-                    'instructor' => $course->instructor ? [
-                        'name' => $course->instructor->getTranslations('name'),
-                        'image' => $course->instructor->image,
-                    ] : [
-                        'name' => [
-                            'ar' => $course->instructor_name,
-                            'en' => $course->instructor_name,
-                            'ku' => $course->instructor_name,
-                        ],
-                        'image' => $course->instructor_image,
-                    ],
-                ];
-            })
+            ->map(fn (CourseEnrollment $enrollment) => $this->learningService->buildCourseCard($enrollment, $user))
             ->all();
 
         return response()->json([
@@ -366,12 +355,24 @@ class UserAuthController extends Controller
     public function dashboardStats(Request $request): JsonResponse
     {
         $user = $request->user();
+        $courses = Course::query()
+            ->whereIn('id', $user->courseEnrollments()->pluck('course_id'))
+            ->where('is_active', true)
+            ->with([
+                'modules' => fn ($query) => $query->orderBy('sort_order'),
+                'modules.lessons' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order'),
+                'modules.exam',
+            ])
+            ->get();
+        $completedCount = $courses
+            ->filter(fn (Course $course) => $this->learningService->getCourseProgressSummary($course, $user)['completed'])
+            ->count();
 
         return response()->json([
             'data' => [
-                'courses_enrolled' => 0,
-                'courses_completed' => 0,
-                'certificates' => 0,
+                'courses_enrolled' => $courses->count(),
+                'courses_completed' => $completedCount,
+                'certificates' => $user->courseCertificates()->count(),
             ],
         ]);
     }

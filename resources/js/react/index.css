@@ -66,3 +66,56 @@ button {
 .dir-rtl {
     direction: rtl;
 }
+
+.app-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.45) transparent;
+}
+
+.app-scrollbar-soft {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(71, 85, 105, 0.45) transparent;
+}
+
+.app-scrollbar::-webkit-scrollbar,
+.app-scrollbar-soft::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.app-scrollbar::-webkit-scrollbar-track,
+.app-scrollbar-soft::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.app-scrollbar::-webkit-scrollbar-thumb,
+.app-scrollbar-soft::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    background-color: rgba(100, 116, 139, 0.45);
+}
+
+.app-scrollbar-soft::-webkit-scrollbar-thumb {
+    background-color: rgba(71, 85, 105, 0.38);
+}
+
+.app-scrollbar:hover::-webkit-scrollbar-thumb,
+.app-scrollbar-soft:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(220, 38, 38, 0.55);
+}
+
+.dark .app-scrollbar,
+.dark .app-scrollbar-soft {
+    scrollbar-color: rgba(148, 163, 184, 0.38) transparent;
+}
+
+.dark .app-scrollbar::-webkit-scrollbar-thumb,
+.dark .app-scrollbar-soft::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.34);
+}
+
+.dark .app-scrollbar:hover::-webkit-scrollbar-thumb,
+.dark .app-scrollbar-soft:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(248, 113, 113, 0.5);
+}

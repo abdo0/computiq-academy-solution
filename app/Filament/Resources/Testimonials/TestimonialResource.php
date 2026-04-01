@@ -33,6 +33,17 @@ class TestimonialResource extends Resource
     {
         return __('Testimonials');
     }
+
+    public static function getModelLabel(): string
+    {
+        return __('Testimonial');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Testimonials');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return TestimonialForm::configure($schema);

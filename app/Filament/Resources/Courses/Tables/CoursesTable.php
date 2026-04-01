@@ -11,8 +11,8 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Filament\Support\Icons\Heroicon;
 
 class CoursesTable
 {
@@ -22,57 +22,60 @@ class CoursesTable
             ->defaultSort('sort_order')
             ->columns([
                 ImageColumn::make('image')
-                    ->label('Thumb')
+                    ->label(__('Thumb'))
                     ->square()
                     ->size(50),
                 TextColumn::make('title')
-                    ->label('Title')
-                    ->searchable()
+                    ->label(__('Title'))
+                    ->icon(Heroicon::AcademicCap)
+                    ->formatStateUsing(fn ($record) => $record->getTranslation('title', app()->getLocale()) ?: $record->getTranslation('title', 'en'))
                     ->sortable()
                     ->limit(40),
                 TextColumn::make('category.name')
-                    ->label('Category')
+                    ->label(__('Category'))
+                    ->icon(Heroicon::Tag)
+                    ->formatStateUsing(fn ($record) => $record->category?->getTranslation('name', app()->getLocale()) ?: $record->category?->getTranslation('name', 'en') ?: '-')
                     ->sortable(),
                 TextColumn::make('instructor_name')
-                    ->label('Instructor')
+                    ->label(__('Instructor'))
+                    ->icon(Heroicon::User)
                     ->searchable(),
                 TextColumn::make('rating')
-                    ->label('Rating')
+                    ->label(__('Rating'))
+                    ->icon(Heroicon::Star)
                     ->sortable()
                     ->badge()
                     ->color('warning'),
                 TextColumn::make('price')
-                    ->label('Price')
+                    ->label(__('Price'))
+                    ->icon(Heroicon::Banknotes)
                     ->formatStateUsing(fn ($state) => money((float) $state))
                     ->sortable(),
                 TextColumn::make('students_count')
-                    ->label('Students')
+                    ->label(__('Students'))
+                    ->icon(Heroicon::Users)
                     ->numeric()
                     ->sortable(),
                 IconColumn::make('is_active')
-                    ->label('Active')
+                    ->label(__('Active'))
                     ->boolean(),
                 IconColumn::make('is_live')
-                    ->label('Live')
+                    ->label(__('Live'))
                     ->boolean(),
                 IconColumn::make('is_best_seller')
-                    ->label('Best')
+                    ->label(__('Best'))
                     ->boolean(),
-                TextColumn::make('sort_order')
-                    ->label('Order')
-                    ->numeric()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
+                    ->label(__('Created At'))
+                    ->icon(Heroicon::Clock)
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('course_category_id')
-                    ->label('Category')
+                    ->label(__('Category'))
                     ->relationship('category', 'name'),
-                TrashedFilter::make(),
             ])
             ->recordActions([
                 EditAction::make(),
@@ -83,6 +86,7 @@ class CoursesTable
                     ForceDeleteBulkAction::make(),
                     RestoreBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->reorderable('sort_order');
     }
 }

@@ -4,13 +4,13 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from '../../contexts/TranslationProvider';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { userAuthService } from '../../services/dataService';
+import { dataService, userAuthService } from '../../services/dataService';
 import { useCurrentRouteBootstrap } from '../../contexts/RouteBootstrapContext';
 import { toast } from 'react-toastify';
 import AppLink from '../common/AppLink';
 import {
     User, Settings, Shield, LayoutDashboard, BookOpen, Award, Clock,
-    Camera, Save, Eye, EyeOff, LogOut, Globe, Moon, Sun, ChevronLeft, ChevronRight,
+    Camera, Save, Eye, EyeOff, LogOut, Globe, Moon, Sun, ChevronLeft, ChevronRight, PlayCircle,
     CheckCircle2, Loader2, X
 } from 'lucide-react';
 
@@ -268,6 +268,8 @@ const DashboardPage: React.FC = () => {
     const userInitials = user.name
         ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
         : '?';
+    const completedCoursesCount = courses.filter((course) => (course.progress_percent ?? 0) === 100).length;
+    const readyCertificatesCount = courses.filter((course) => !!course.certificate_available).length;
 
     // ── Tab Content Renderers ──
 
@@ -297,7 +299,7 @@ const DashboardPage: React.FC = () => {
                 {[
                     { label: __('Courses Enrolled'), value: stats.courses_enrolled, icon: <BookOpen className="w-6 h-6" />, color: 'from-blue-500 to-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
                     { label: __('Courses Completed'), value: stats.courses_completed, icon: <Award className="w-6 h-6" />, color: 'from-emerald-500 to-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                    { label: __('Certificates'), value: stats.certificates, icon: <Clock className="w-6 h-6" />, color: 'from-amber-500 to-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+                    { label: __('Certificates'), value: stats.certificates, icon: <Award className="w-6 h-6" />, color: 'from-amber-500 to-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
                 ].map((stat, i) => (
                     <div key={i} className={`${stat.bg} rounded-2xl p-6 border border-gray-100 dark:border-gray-700/50 hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 group`}>
                         <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform duration-300`}>
@@ -347,19 +349,37 @@ const DashboardPage: React.FC = () => {
 
     const renderCourses = () => (
         <div className="space-y-6 animate-fade-in">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/50 p-6 sm:p-8">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/50 p-5 sm:p-6 shadow-[0_20px_70px_-48px_rgba(15,23,42,0.42)]">
+                <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-5 mb-6">
                     <div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">{__('My Courses')}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{__('All courses you have successfully unlocked appear here.')}</p>
+                        <div className="inline-flex items-center gap-2 rounded-full border border-brand-200/60 dark:border-brand-800/70 bg-brand-50/70 dark:bg-brand-900/20 px-3 py-1 text-xs font-semibold text-brand-700 dark:text-brand-300 mb-3">
+                            <BookOpen className="w-4 h-4" />
+                            {__('Learning Hub')}
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{__('My Courses')}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-2xl">{__('Track your progress, continue where you left off, and download your certificate once you finish a course successfully.')}</p>
                     </div>
-                    <AppLink
-                        to="/courses"
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-200 hover:border-brand-400 transition-colors"
-                    >
-                        <BookOpen className="w-4 h-4" />
-                        {__('Browse Courses')}
-                    </AppLink>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="min-w-[120px] rounded-xl border border-gray-100 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-900/40 px-4 py-3">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{__('Enrolled')}</p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{courses.length}</p>
+                        </div>
+                        <div className="min-w-[120px] rounded-xl border border-emerald-100 dark:border-emerald-800/60 bg-emerald-50/70 dark:bg-emerald-900/20 px-4 py-3">
+                            <p className="text-xs text-emerald-700 dark:text-emerald-300">{__('Completed')}</p>
+                            <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-200 mt-1">{completedCoursesCount}</p>
+                        </div>
+                        <div className="min-w-[120px] rounded-xl border border-amber-100 dark:border-amber-800/60 bg-amber-50/70 dark:bg-amber-900/20 px-4 py-3">
+                            <p className="text-xs text-amber-700 dark:text-amber-300">{__('Certificates')}</p>
+                            <p className="text-2xl font-bold text-amber-700 dark:text-amber-200 mt-1">{readyCertificatesCount}</p>
+                        </div>
+                        <AppLink
+                            to="/courses"
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-200 hover:border-brand-400 transition-colors"
+                        >
+                            <BookOpen className="w-4 h-4" />
+                            {__('Browse Courses')}
+                        </AppLink>
+                    </div>
                 </div>
 
                 {coursesLoading ? (
@@ -367,14 +387,13 @@ const DashboardPage: React.FC = () => {
                         <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
                     </div>
                 ) : courses.length > 0 ? (
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-5">
                         {courses.map((course) => (
-                            <AppLink
+                            <div
                                 key={course.id}
-                                to={`/courses/${course.slug}`}
-                                className="group block overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-700/50 bg-gray-50 dark:bg-gray-900/30 hover:border-brand-300 dark:hover:border-brand-700 hover:shadow-lg transition-all"
+                                className="group overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-700/50 bg-gray-50 dark:bg-gray-900/30 hover:border-brand-300 dark:hover:border-brand-700 hover:shadow-xl hover:-translate-y-0.5 transition-all"
                             >
-                                <div className="aspect-[16/9] overflow-hidden bg-gray-100 dark:bg-gray-700">
+                                <div className="relative aspect-[16/9] overflow-hidden bg-gray-100 dark:bg-gray-700">
                                     {course.image ? (
                                         <img
                                             src={course.image}
@@ -386,34 +405,100 @@ const DashboardPage: React.FC = () => {
                                             <BookOpen className="w-10 h-10" />
                                         </div>
                                     )}
-                                </div>
-
-                                <div className="p-5">
-                                    <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 mb-4">
-                                        <CheckCircle2 className="w-4 h-4" />
-                                        {__('Enrolled')}
-                                    </div>
-
-                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2">
-                                        {course.title ? t(course.title) : __('Untitled course')}
-                                    </h4>
-
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                                        {course.instructor?.name ? t(course.instructor.name) : __('Instructor')}
-                                    </p>
-
-                                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                                        <span className="inline-flex items-center gap-2">
-                                            <Clock className="w-4 h-4" />
-                                            {course.duration_hours} {__('Hours')}
-                                        </span>
-                                        <span className="inline-flex items-center gap-2">
+                                    <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-gray-950/75 to-transparent" />
+                                    <div className="absolute top-4 inset-x-4 flex items-center justify-between gap-3">
+                                        <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50/95 dark:bg-emerald-900/85 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-200 shadow-sm">
                                             <CheckCircle2 className="w-4 h-4" />
-                                            {formatEnrollmentDate(course.enrolled_at)}
-                                        </span>
+                                            {__('Enrolled')}
+                                        </div>
+                                        <div className="rounded-xl bg-white/90 dark:bg-gray-950/80 px-3 py-1 text-xs font-bold text-brand-600 dark:text-brand-300">
+                                            {course.progress_percent ?? 0}% {__('Complete')}
+                                        </div>
+                                    </div>
+                                    {course.certificate_available && (
+                                        <div className="absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-full bg-amber-50/95 dark:bg-amber-900/85 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-200 shadow-sm">
+                                            <Award className="w-4 h-4" />
+                                            {__('Certificate Ready')}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="p-5 space-y-4">
+                                    <div>
+                                        <div className="flex items-center justify-between gap-3 text-xs text-gray-500 dark:text-gray-400 mb-3">
+                                            <span>{course.certificate_available ? __('Course completed successfully') : __('Continue where you left off')}</span>
+                                            <span>{course.completed_at ? formatEnrollmentDate(course.completed_at) : formatEnrollmentDate(course.enrolled_at)}</span>
+                                        </div>
+                                        <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2">
+                                            {course.title ? t(course.title) : __('Untitled course')}
+                                        </h4>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                                            {course.instructor?.name ? t(course.instructor.name) : __('Instructor')}
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 px-4 py-3">
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500">{__('Duration')}</p>
+                                            <p className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                                <Clock className="w-4 h-4 text-brand-500" />
+                                                {course.duration_hours} {__('Hours')}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 px-4 py-3">
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500">{__('Progress')}</p>
+                                            <p className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                                {course.progress_percent ?? 0}% {__('Complete')}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-xl bg-white/80 dark:bg-gray-900/70 border border-gray-100 dark:border-gray-800 px-4 py-4">
+                                        <div className="flex items-center justify-between gap-3 text-xs font-semibold mb-2">
+                                            <span className="text-gray-500 dark:text-gray-400">{__('Learning Progress')}</span>
+                                            <span className="text-brand-600 dark:text-brand-400">{course.progress_percent ?? 0}%</span>
+                                        </div>
+                                        <div className="h-2.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                                            <div
+                                                className="h-full rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-emerald-500"
+                                                style={{ width: `${course.progress_percent ?? 0}%` }}
+                                            />
+                                        </div>
+                                        {course.certificate_available ? (
+                                            <p className="mt-3 text-xs text-amber-700 dark:text-amber-300">{__('Your certificate is now ready to download.')}</p>
+                                        ) : (
+                                            <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">{__('Complete the lessons and pass the assessments to unlock your certificate.')}</p>
+                                        )}
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-3 pt-1">
+                                        <AppLink
+                                            to={course.continue_url || `/learn/${course.slug}`}
+                                            className="inline-flex flex-1 min-w-[180px] items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 text-white text-sm font-medium"
+                                        >
+                                            <PlayCircle className="w-4 h-4" />
+                                            {__('Continue Learning')}
+                                        </AppLink>
+                                        <AppLink
+                                            to={`/courses/${course.slug}`}
+                                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-200"
+                                        >
+                                            <BookOpen className="w-4 h-4" />
+                                            {__('Course Details')}
+                                        </AppLink>
+                                        {course.certificate_available && (
+                                            <a
+                                                href={course.certificate_url || dataService.getCourseCertificateUrl(course.id)}
+                                                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-sm font-medium text-amber-700 dark:text-amber-200"
+                                            >
+                                                <Award className="w-4 h-4" />
+                                                {__('Download Certificate')}
+                                            </a>
+                                        )}
                                     </div>
                                 </div>
-                            </AppLink>
+                            </div>
                         ))}
                     </div>
                 ) : (

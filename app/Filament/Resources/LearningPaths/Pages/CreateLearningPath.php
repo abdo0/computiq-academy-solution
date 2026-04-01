@@ -8,4 +8,9 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateLearningPath extends CreateRecord
 {
     protected static string $resource = LearningPathResource::class;
+
+    public function getTitle(): string
+    {
+        return __('Create Learning Path');
+    }
 }
