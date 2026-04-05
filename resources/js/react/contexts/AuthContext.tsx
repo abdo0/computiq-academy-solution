@@ -12,6 +12,8 @@ export interface User {
     real_name?: string | null;
     email: string;
     phone?: string;
+    country_code?: string | null;
+    avatar?: string | null;
     locale?: string;
     isVerified: boolean;
     purchasedCourseIds?: number[];
@@ -32,7 +34,7 @@ interface AuthContextType {
     resend2FA: () => Promise<void>;
     
     login: (email: string, password: string, remember?: boolean, turnstileToken?: string) => Promise<boolean>;
-    register: (data: { name: string; email: string; password: string; password_confirmation: string; phone?: string }) => Promise<{ success: boolean; errors?: any }>;
+    register: (data: { name: string; email: string; password: string; password_confirmation: string; phone?: string; country_code?: string; locale?: string; 'cf-turnstile-response'?: string }) => Promise<{ success: boolean; errors?: any }>;
     
     logout: () => Promise<void>;
     refreshUser: () => Promise<void>;

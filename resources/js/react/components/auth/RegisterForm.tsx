@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Mail, Lock, User, AlertCircle } from 'lucide-react';
-import PhoneInput from 'react-phone-input-2';
-import 'react-phone-input-2/lib/style.css';
 import { useTranslation } from '../../contexts/TranslationProvider';
+import PhoneNumberInput, { createPhoneFieldValue } from '../common/PhoneNumberInput';
 
 interface RegisterFormProps {
     onSuccess: () => void;
@@ -15,7 +14,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [passwordConfirmation, setPasswordConfirmation] = useState('');
-    const [phone, setPhone] = useState('');
+    const [phoneField, setPhoneField] = useState(() => createPhoneFieldValue());
     const [errors, setErrors] = useState<Record<string, string[]>>({});
     const [isLoading, setIsLoading] = useState(false);
 
@@ -38,7 +37,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
             email,
             password,
             password_confirmation: passwordConfirmation,
-            phone,
+            phone: phoneField.phone || undefined,
+            country_code: phoneField.phone ? phoneField.countryCode : undefined,
             locale: language,
         });
         setIsLoading(false);
@@ -109,18 +109,17 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
             </div>
 
             {/* Phone */}
-            <div dir="ltr">
+            <div>
                 <label className={`block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
                     {__('Form phone')}
                 </label>
-                <PhoneInput
-                    country={'iq'}
-                    value={phone}
-                    onChange={phone => setPhone(phone)}
-                    inputClass={`!w-full !py-2.5 !h-auto !border-gray-300 dark:!border-gray-600 !bg-white dark:!bg-gray-700 !text-gray-900 dark:!text-white !rounded-sm focus:!ring-brand-500 focus:!border-brand-500 !outline-none !transition-all !text-sm`}
-                    buttonClass={`!border-gray-300 dark:!border-gray-600 !bg-gray-50 dark:!bg-gray-700 !rounded-l-xl`}
-                    dropdownClass={`!bg-white dark:!bg-gray-800 !text-gray-900 dark:!text-white`}
-                    containerClass={`${getFieldError('phone') ? '!border-red-500' : ''}`}
+                <PhoneNumberInput
+                    value={phoneField.phone}
+                    countryCode={phoneField.countryCode}
+                    onChange={setPhoneField}
+                    variant="compact"
+                    invalid={Boolean(getFieldError('phone'))}
+                    placeholder={__('Enter phone number with country code')}
                 />
                 {getFieldError('phone') && (
                     <p className={`mt-1 text-xs text-red-500 flex items-center gap-1 ${dir === 'rtl' ? 'justify-end' : 'justify-start'}`}>

@@ -1,13 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2, Lock, Mail, User as UserIcon, LockKeyhole } from 'lucide-react';
 import { toast } from 'react-toastify';
-import PhoneInput from 'react-phone-input-2';
-import 'react-phone-input-2/lib/style.css';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from '../../contexts/TranslationProvider';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SocialAuthButtons from '../auth/SocialAuthButtons';
 import Turnstile from '../common/Turnstile';
+import PhoneNumberInput, { createPhoneFieldValue } from '../common/PhoneNumberInput';
 
 interface CheckoutAuthStepProps {
     onAuthenticated?: () => Promise<void> | void;
@@ -29,7 +28,7 @@ const CheckoutAuthStep: React.FC<CheckoutAuthStepProps> = ({ onAuthenticated }) 
     const [registerEmail, setRegisterEmail] = useState('');
     const [registerPassword, setRegisterPassword] = useState('');
     const [registerPasswordConfirmation, setRegisterPasswordConfirmation] = useState('');
-    const [registerPhone, setRegisterPhone] = useState('');
+    const [registerPhoneField, setRegisterPhoneField] = useState(() => createPhoneFieldValue());
     const [registerTurnstileToken, setRegisterTurnstileToken] = useState('');
     const [registerErrors, setRegisterErrors] = useState<Record<string, string[]>>({});
 
@@ -89,8 +88,8 @@ const CheckoutAuthStep: React.FC<CheckoutAuthStepProps> = ({ onAuthenticated }) 
         setSubmitError('');
         setRegisterErrors({});
 
-        if (!registerPhone) {
-            setRegisterErrors({ phone: [__('Auth error')] });
+        if (!registerPhoneField.phone) {
+            setRegisterErrors({ phone: [__('Phone number is required')] });
             return;
         }
 
@@ -99,7 +98,8 @@ const CheckoutAuthStep: React.FC<CheckoutAuthStepProps> = ({ onAuthenticated }) 
             email: registerEmail,
             password: registerPassword,
             password_confirmation: registerPasswordConfirmation,
-            phone: registerPhone,
+            phone: registerPhoneField.phone,
+            country_code: registerPhoneField.countryCode,
             locale: language,
             'cf-turnstile-response': registerTurnstileToken,
         });
@@ -288,17 +288,17 @@ const CheckoutAuthStep: React.FC<CheckoutAuthStepProps> = ({ onAuthenticated }) 
                             </div>
                         </div>
 
-                        <div dir="ltr">
+                        <div>
                             <label className={`mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
                                 {__('Phone number')}
                             </label>
-                            <PhoneInput
-                                country={'iq'}
-                                value={registerPhone}
-                                onChange={(phone) => setRegisterPhone(phone)}
-                                inputClass="!w-full !rounded-xl !border-gray-200 dark:!border-gray-600 !bg-gray-50/50 dark:!bg-gray-700/50 !py-3 !h-auto !text-gray-900 dark:!text-white focus:!border-brand-500 focus:!bg-white dark:focus:!bg-gray-700"
-                                buttonClass="!rounded-s-xl !border-gray-200 dark:!border-gray-600 !bg-gray-50/50 dark:!bg-gray-700/50"
-                                dropdownClass="!bg-white dark:!bg-gray-800 !text-gray-900 dark:!text-white"
+                            <PhoneNumberInput
+                                value={registerPhoneField.phone}
+                                countryCode={registerPhoneField.countryCode}
+                                onChange={setRegisterPhoneField}
+                                variant="auth"
+                                invalid={Boolean(getFieldError('phone'))}
+                                placeholder={__('Enter phone number with country code')}
                             />
                             {getFieldError('phone') && (
                                 <p className={`mt-1 text-sm text-red-500 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>

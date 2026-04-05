@@ -218,8 +218,8 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
   return (
     <nav
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled
-        ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm py-2'
-        : 'bg-[#f4f7fb] dark:bg-gray-900 py-3 border-b border-[#eef2fc] dark:border-gray-800'
+        ? 'bg-white/92 dark:bg-slate-950/94 backdrop-blur-xl shadow-sm py-2 border-b border-[#dbeaff]/80 dark:border-slate-800'
+        : 'bg-[#edf6ff] dark:bg-slate-950 py-3 border-b border-[#d9e9ff] dark:border-slate-800'
         }`}
     >
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -386,10 +386,10 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearch}
-                className="w-full bg-white dark:bg-gray-900 border border-[#b4c8f0] dark:border-gray-700 focus:border-brand-500 dark:focus:border-brand-700 rounded-xl px-5 py-2.5 text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm placeholder-[#a3b1c6] dark:placeholder-gray-500 rtl:pl-10 ltr:pr-10"
+                className="w-full bg-white dark:bg-gray-900 border border-[#c6dcff] dark:border-gray-700 focus:border-brand-500 dark:focus:border-brand-700 rounded-xl px-5 py-2.5 text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm placeholder-[#8fa9cf] dark:placeholder-gray-500 rtl:pl-10 ltr:pr-10"
                 placeholder={__('Search courses')}
               />
-              <div className="absolute inset-y-0 rtl:left-0 ltr:right-0 flex items-center rtl:pl-4 ltr:pr-4 pointer-events-none text-[#93b0ef] group-focus-within:text-brand-500 transition-colors">
+              <div className="absolute inset-y-0 rtl:left-0 ltr:right-0 flex items-center rtl:pl-4 ltr:pr-4 pointer-events-none text-[#7ea9ea] group-focus-within:text-brand-500 transition-colors">
                 <Search size={18} />
               </div>
             </div>
@@ -402,7 +402,7 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
             <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-gray-400 hover:text-brand-600 dark:text-gray-500 transition-colors hidden sm:block">
               <ShoppingCart size={20} />
               {cartCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full border-2 border-white dark:border-gray-900 px-1">
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-brand-600 text-white text-[10px] font-bold rounded-full border-2 border-[#edf6ff] dark:border-slate-950 px-1">
                   {cartCount > 99 ? '99+' : cartCount}
                 </span>
               )}
@@ -416,9 +416,15 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
                     onClick={() => setIsUserDropdownOpen((current) => !current)}
                     className="flex items-center gap-2 text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-800 px-2 py-1.5 rounded-xl transition-all border border-transparent shadow-sm"
                   >
-                    <div className="w-8 h-8 bg-brand-600 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md">
-                      {user.name.charAt(0).toUpperCase()}
-                    </div>
+                    {(user as any).avatar ? (
+                      <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-brand-200 dark:border-gray-600 shadow-sm">
+                        <img src={resolveImage((user as any).avatar) || ''} alt={user.name} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 bg-brand-600 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md shrink-0">
+                        {user.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <ChevronDown size={13} className={`hidden sm:block transition-transform duration-200 opacity-70 ${isUserDropdownOpen ? 'rotate-180 text-brand-600' : ''}`} />
                   </button>
 
@@ -479,7 +485,7 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
                   <AppLink
                     to={'/login'}
                     state={{ from: location.pathname + location.search }}
-                    className="bg-brand-600 text-white hover:bg-brand-700 px-5 py-2.5 rounded-xl text-[15px] font-bold transition-all shadow-md active:scale-95 whitespace-nowrap"
+                    className="bg-brand-600 text-white hover:bg-brand-700 px-5 py-2.5 rounded-xl text-[15px] font-bold transition-all shadow-md shadow-brand-500/20 active:scale-95 whitespace-nowrap"
                   >
                     {__('Login')}
                   </AppLink>
@@ -566,7 +572,7 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
 
       {/* Mobile Menu Overlay */}
       {isOpen && (
-        <div className="xl:hidden bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 absolute w-full shadow-2xl animate-fade-in-down max-h-[85vh] overflow-y-auto z-50">
+        <div className="xl:hidden bg-white dark:bg-slate-950 border-t border-[#d9e9ff] dark:border-slate-800 absolute w-full shadow-2xl animate-fade-in-down max-h-[85vh] overflow-y-auto z-50">
           <div className="p-4 flex flex-col gap-4">
             <div className="relative w-full">
               <input
@@ -574,7 +580,7 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearch}
-                className="w-full bg-white border border-[#b4c8f0] focus:border-brand-500 rounded-xl px-5 py-3 text-sm focus:outline-none"
+                className="w-full bg-white border border-[#c6dcff] focus:border-brand-500 rounded-xl px-5 py-3 text-sm focus:outline-none"
                 placeholder={__('Search courses')}
               />
             </div>
@@ -600,7 +606,7 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
               <button onClick={() => {
                   setIsOpen(false);
                   navigate('/login', { state: { from: location.pathname + location.search } });
-              }} className="w-full bg-brand-600 text-white font-bold py-3 rounded-xl text-sm shadow-sm">{__('Login')}</button>
+              }} className="w-full bg-brand-600 text-white font-bold py-3 rounded-xl text-sm shadow-sm shadow-brand-500/20">{__('Login')}</button>
             </div>
           </div>
         </div>

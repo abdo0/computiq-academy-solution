@@ -1,7 +1,6 @@
 import React from 'react';
-import { useSettings } from '../../contexts/SettingsContext';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useTranslation } from '../../contexts/TranslationProvider';
+import Logo from '../Logo';
 
 interface FullScreenLoaderProps {
     label?: string;
@@ -13,68 +12,32 @@ interface FullScreenLoaderProps {
     }>;
 }
 
-const FullScreenLoader: React.FC<FullScreenLoaderProps> = ({ label, progress = 0, steps = [] }) => {
-    const { settings } = useSettings();
-    const { theme } = useTheme();
-    const { language } = useLanguage();
-
-    const fallbackLogo =
-        language === 'ar'
-            ? (theme === 'dark' ? '/images/PNG/image_1124.png' : '/images/PNG/2T.png')
-            : (theme === 'dark' ? '/images/SVG/MainLogo_01_PNG.svg' : '/images/SVG/MainLogo_03_PNG.svg');
-
-    const logoSrc = settings.logoUrl || fallbackLogo;
-    const logoAlt = settings.siteName || 'Computiq Academy';
+const FullScreenLoader: React.FC<FullScreenLoaderProps> = ({ progress = 0 }) => {
+    const { __ } = useTranslation();
+    const normalizedProgress = Math.min(Math.max(progress, 0), 100);
+    const progressBackground = `conic-gradient(from 180deg, #61d79a 0%, #2d8cff ${Math.max(normalizedProgress * 0.55, 8)}%, #1d66db ${normalizedProgress}%, rgba(148, 163, 184, 0.18) ${normalizedProgress}%, rgba(148, 163, 184, 0.18) 100%)`;
 
     return (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-white dark:bg-gray-900">
-            <div className="flex w-full max-w-sm flex-col items-center gap-8 px-6 text-center animate-fade-in">
-                <img
-                    src={logoSrc}
-                    alt={logoAlt}
-                    className="h-14 sm:h-16 w-auto max-w-[240px] object-contain"
-                />
-
-                <div className="w-full">
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-                        <div
-                            className="h-full rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-brand-700 transition-[width] duration-300 ease-out opacity-95"
-                            style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }}
+            <div className="flex w-full max-w-sm flex-col items-center gap-6 px-6 text-center animate-fade-in">
+                <div
+                    className="inline-flex rounded-[1.2rem] p-[3px] shadow-[0_20px_44px_rgba(31,123,242,0.18)]"
+                    style={{ background: progressBackground }}
+                >
+                    <div
+                        className="inline-flex items-center justify-center rounded-[1.02rem] border border-white/70 bg-white px-4 py-2.5 dark:border-gray-800/90 dark:bg-gray-900"
+                    >
+                        <Logo
+                            className="gap-1"
+                            textClassName="text-[1.2rem] sm:text-[1.35rem] font-black text-gray-900 dark:text-white leading-none"
+                            imageClassName="h-7 sm:h-8 w-auto"
                         />
                     </div>
-                    <div className="mt-4 flex items-center justify-between gap-4 text-sm">
-                        <p className="font-medium text-gray-500 dark:text-gray-400">{label || 'Loading...'}</p>
-                        <span className="font-semibold text-brand-600 dark:text-brand-400">{Math.min(Math.max(progress, 0), 100)}%</span>
-                    </div>
-                    {steps.length > 0 ? (
-                        <div className="mt-5 space-y-2 text-start">
-                            {steps.map((step) => (
-                                <div key={step.key} className="flex items-center gap-3 text-xs">
-                                    <span
-                                        className={`h-2 w-2 rounded-full ${
-                                            step.status === 'done'
-                                                ? 'bg-green-500'
-                                                : step.status === 'active'
-                                                    ? 'bg-brand-600 dark:bg-brand-400'
-                                                    : 'bg-gray-300 dark:bg-gray-700'
-                                        }`}
-                                    />
-                                    <span
-                                        className={
-                                            step.status === 'active'
-                                                ? 'font-semibold text-gray-700 dark:text-gray-200'
-                                                : step.status === 'done'
-                                                    ? 'text-gray-500 dark:text-gray-400'
-                                                    : 'text-gray-400 dark:text-gray-500'
-                                        }
-                                    >
-                                        {step.label}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    ) : null}
                 </div>
+
+                <p className="text-base font-semibold text-gray-600 dark:text-gray-300">
+                    {__('Loading')}
+                </p>
             </div>
         </div>
     );

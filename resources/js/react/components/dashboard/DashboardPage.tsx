@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from '../../contexts/TranslationProvider';
@@ -13,8 +13,11 @@ import NProgress from 'nprogress';
 import {
     User, Settings, Shield, LayoutDashboard, BookOpen, Award, Clock,
     Camera, Save, Eye, EyeOff, LogOut, Globe, Moon, Sun, ChevronLeft, ChevronRight, ChevronDown, PlayCircle,
-    CheckCircle2, Loader2, X, ShoppingCart
+    CheckCircle2, Loader2, X, ShoppingCart, Building2, Briefcase, CalendarDays,
+    Folder, Github, GraduationCap, IdCard, Link as LinkIcon, Linkedin, Mail, MapPin, FileText, Printer
 } from 'lucide-react';
+import PhoneNumberInput, { createPhoneFieldValue } from '../common/PhoneNumberInput';
+import OrderInvoiceModal from './OrderInvoiceModal';
 
 type TabKey = 'overview' | 'courses' | 'certificates' | 'orders' | 'profile' | 'security' | 'settings';
 type BannerState = { type: 'success' | 'info' | 'error'; message: string } | null;
@@ -39,6 +42,16 @@ type StudentProfileForm = {
     skills: string[];
     projects: string[];
 };
+
+type AccountProfileSnapshot = {
+    name: string;
+    real_name: string;
+    phone: string;
+    country_code: string;
+};
+
+const AVATAR_MAX_SIZE_BYTES = 5 * 1024 * 1024;
+const AVATAR_ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
 const createEmptyStudentProfile = (): StudentProfileForm => ({
     university: '',
@@ -87,6 +100,17 @@ const mapStudentProfile = (profile: any): StudentProfileForm => ({
 
 const stringifyList = (items: string[]): string => items.join('\n');
 const parseList = (value: string): string[] => value.split(/\r?\n/).map(item => item.trim()).filter(Boolean);
+const createAccountProfileSnapshot = (user: any): AccountProfileSnapshot => {
+    const phoneField = createPhoneFieldValue(user?.phone, user?.country_code);
+
+    return {
+        name: user?.name || '',
+        real_name: user?.real_name || '',
+        phone: phoneField.phone,
+        country_code: phoneField.countryCode,
+    };
+};
+const classNames = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(' ');
 
 const resolveDashboardTab = (search: string): TabKey => {
     const rawTab = new URLSearchParams(search).get('tab');
@@ -113,9 +137,15 @@ const DashboardPage: React.FC = () => {
     const [banner, setBanner] = useState<BannerState>(null);
 
     // Profile form
-    const [profileName, setProfileName] = useState('');
-    const [profileRealName, setProfileRealName] = useState('');
-    const [profilePhone, setProfilePhone] = useState('');
+    const [profileName, setProfileName] = useState(() => createAccountProfileSnapshot(user).name);
+    const [profileRealName, setProfileRealName] = useState(() => createAccountProfileSnapshot(user).real_name);
+    const [profilePhone, setProfilePhone] = useState(() => createAccountProfileSnapshot(user).phone);
+    const [profilePhoneCountryCode, setProfilePhoneCountryCode] = useState(() => createAccountProfileSnapshot(user).country_code);
+    const [profileAvatarFile, setProfileAvatarFile] = useState<File | null>(null);
+    const [profileAvatarPreview, setProfileAvatarPreview] = useState<string | null>(() => (user as any)?.avatar || null);
+    const [profileAvatarDragActive, setProfileAvatarDragActive] = useState(false);
+    const [savedProfileSnapshot, setSavedProfileSnapshot] = useState<AccountProfileSnapshot>(() => createAccountProfileSnapshot(user));
+    const [profileSavedOnce, setProfileSavedOnce] = useState(false);
     const [profileSaving, setProfileSaving] = useState(false);
 
     // Password form
@@ -147,21 +177,58 @@ const DashboardPage: React.FC = () => {
     const [ordersLoading, setOrdersLoading] = useState(false);
     const [ordersLoaded, setOrdersLoaded] = useState(false);
     const [verifyingOrderId, setVerifyingOrderId] = useState<number | null>(null);
+    const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState<any>(null);
+    const [invoiceShouldAutoPrint, setInvoiceShouldAutoPrint] = useState(false);
+    const [verifyCooldowns, setVerifyCooldowns] = useState<Record<number, number>>({});
     
     const [localeSaving, setLocaleSaving] = useState(false);
     const [roleSwitching, setRoleSwitching] = useState(false);
     const [studentProfile, setStudentProfile] = useState<StudentProfileForm>(() => mapStudentProfile(initialBootstrap?.studentProfile));
     const [skillsText, setSkillsText] = useState<string>(() => stringifyList(mapStudentProfile(initialBootstrap?.studentProfile).skills));
     const [projectsText, setProjectsText] = useState<string>(() => stringifyList(mapStudentProfile(initialBootstrap?.studentProfile).projects));
+    const [savedStudentProfile, setSavedStudentProfile] = useState<StudentProfileForm>(() => mapStudentProfile(initialBootstrap?.studentProfile));
+    const [savedSkillsText, setSavedSkillsText] = useState<string>(() => stringifyList(mapStudentProfile(initialBootstrap?.studentProfile).skills));
+    const [savedProjectsText, setSavedProjectsText] = useState<string>(() => stringifyList(mapStudentProfile(initialBootstrap?.studentProfile).projects));
+    const [studentProfileSavedOnce, setStudentProfileSavedOnce] = useState(false);
     const [studentProfileLoading, setStudentProfileLoading] = useState(false);
     const [studentProfileLoaded, setStudentProfileLoaded] = useState<boolean>(() => Boolean(initialBootstrap?.studentProfile));
     const [studentProfileSaving, setStudentProfileSaving] = useState(false);
+    const profileAvatarInputRef = useRef<HTMLInputElement | null>(null);
+    const profileAvatarObjectUrlRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setVerifyCooldowns(prev => {
+                let changed = false;
+                const next = { ...prev };
+                const now = Date.now();
+                for (const key in next) {
+                    if (now >= next[key]) {
+                        delete next[key];
+                        changed = true;
+                    }
+                }
+                return changed ? next : prev;
+            });
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         if (user) {
-            setProfileName(user.name || '');
-            setProfileRealName((user as any).real_name || '');
-            setProfilePhone((user as any).phone || '');
+            const snapshot = createAccountProfileSnapshot(user);
+            setProfileName(snapshot.name);
+            setProfileRealName(snapshot.real_name);
+            setProfilePhone(snapshot.phone);
+            setProfilePhoneCountryCode(snapshot.country_code);
+            setSavedProfileSnapshot(snapshot);
+            setProfileSavedOnce(false);
+            if (profileAvatarObjectUrlRef.current) {
+                URL.revokeObjectURL(profileAvatarObjectUrlRef.current);
+                profileAvatarObjectUrlRef.current = null;
+            }
+            setProfileAvatarFile(null);
+            setProfileAvatarPreview((user as any).avatar || null);
             if (initialBootstrap?.dashboardStats) {
                 setStats(initialBootstrap.dashboardStats);
                 return;
@@ -172,6 +239,12 @@ const DashboardPage: React.FC = () => {
                 .catch(() => {});
         }
     }, [initialBootstrap, user]);
+
+    useEffect(() => () => {
+        if (profileAvatarObjectUrlRef.current) {
+            URL.revokeObjectURL(profileAvatarObjectUrlRef.current);
+        }
+    }, []);
 
     useEffect(() => {
         setActiveTab(resolveDashboardTab(location.search));
@@ -200,6 +273,10 @@ const DashboardPage: React.FC = () => {
         setStudentProfile(mappedProfile);
         setSkillsText(stringifyList(mappedProfile.skills));
         setProjectsText(stringifyList(mappedProfile.projects));
+        setSavedStudentProfile(mappedProfile);
+        setSavedSkillsText(stringifyList(mappedProfile.skills));
+        setSavedProjectsText(stringifyList(mappedProfile.projects));
+        setStudentProfileSavedOnce(false);
         setStudentProfileLoaded(true);
     }, [initialBootstrap]);
 
@@ -348,6 +425,10 @@ const DashboardPage: React.FC = () => {
                 setStudentProfile(mappedProfile);
                 setSkillsText(stringifyList(mappedProfile.skills));
                 setProjectsText(stringifyList(mappedProfile.projects));
+                setSavedStudentProfile(mappedProfile);
+                setSavedSkillsText(stringifyList(mappedProfile.skills));
+                setSavedProjectsText(stringifyList(mappedProfile.projects));
+                setStudentProfileSavedOnce(false);
                 setStudentProfileLoaded(true);
             })
             .catch(() => {
@@ -359,6 +440,10 @@ const DashboardPage: React.FC = () => {
                 setStudentProfile(mappedProfile);
                 setSkillsText('');
                 setProjectsText('');
+                setSavedStudentProfile(mappedProfile);
+                setSavedSkillsText('');
+                setSavedProjectsText('');
+                setStudentProfileSavedOnce(false);
                 setStudentProfileLoaded(true);
             })
             .finally(() => {
@@ -387,6 +472,21 @@ const DashboardPage: React.FC = () => {
 
         const newUrl = `${location.pathname}?${params.toString()}`;
         window.history.replaceState(null, '', newUrl);
+    };
+
+    const openInvoicePreview = (order: any) => {
+        setInvoiceShouldAutoPrint(false);
+        setSelectedOrderForInvoice(order);
+    };
+
+    const openInvoicePrint = (order: any) => {
+        setInvoiceShouldAutoPrint(true);
+        setSelectedOrderForInvoice(order);
+    };
+
+    const closeInvoiceModal = () => {
+        setInvoiceShouldAutoPrint(false);
+        setSelectedOrderForInvoice(null);
     };
 
     const formatEnrollmentDate = (value?: string | null) => {
@@ -419,15 +519,66 @@ const DashboardPage: React.FC = () => {
         const formData = new FormData();
         formData.append('name', profileName);
         formData.append('real_name', profileRealName);
-        if (profilePhone) formData.append('phone', profilePhone);
+        formData.append('phone', profilePhone);
+        formData.append('country_code', profilePhoneCountryCode);
+        if (profileAvatarFile) formData.append('avatar', profileAvatarFile);
         const result = await userAuthService.updateProfile(formData);
         if (result.success) {
+            const nextSnapshot = createAccountProfileSnapshot(result.data);
+            setProfileName(nextSnapshot.name);
+            setProfileRealName(nextSnapshot.real_name);
+            setProfilePhone(nextSnapshot.phone);
+            setProfilePhoneCountryCode(nextSnapshot.country_code);
+            setSavedProfileSnapshot(nextSnapshot);
+            if (profileAvatarObjectUrlRef.current) {
+                URL.revokeObjectURL(profileAvatarObjectUrlRef.current);
+                profileAvatarObjectUrlRef.current = null;
+            }
+            setProfileAvatarFile(null);
+            setProfileAvatarPreview(result.data?.avatar || (user as any)?.avatar || null);
+            setProfileSavedOnce(true);
             toast.success(result.message || __('Your profile has been updated successfully.'));
             await refreshUser();
         } else {
             toast.error(result.error || __('Something went wrong. Please try again.'));
         }
         setProfileSaving(false);
+    };
+
+    const handleProfileAvatarSelection = (file: File | null | undefined) => {
+        if (!file) {
+            return;
+        }
+
+        if (!AVATAR_ACCEPTED_TYPES.includes(file.type)) {
+            toast.error(__('Please upload a JPG, PNG, GIF, or WebP image.'));
+            return;
+        }
+
+        if (file.size > AVATAR_MAX_SIZE_BYTES) {
+            toast.error(__('Profile image must be 5 MB or smaller.'));
+            return;
+        }
+
+        if (profileAvatarObjectUrlRef.current) {
+            URL.revokeObjectURL(profileAvatarObjectUrlRef.current);
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        profileAvatarObjectUrlRef.current = objectUrl;
+        setProfileAvatarFile(file);
+        setProfileAvatarPreview(objectUrl);
+    };
+
+    const handleProfileAvatarInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        handleProfileAvatarSelection(e.target.files?.[0]);
+        e.target.value = '';
+    };
+
+    const handleProfileAvatarDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setProfileAvatarDragActive(false);
+        handleProfileAvatarSelection(e.dataTransfer.files?.[0]);
     };
 
     const handleRoleSwitch = async (role: string) => {
@@ -470,9 +621,15 @@ const DashboardPage: React.FC = () => {
 
         if (result.success) {
             const mappedProfile = mapStudentProfile(result.data);
+            const nextSkillsText = stringifyList(mappedProfile.skills);
+            const nextProjectsText = stringifyList(mappedProfile.projects);
             setStudentProfile(mappedProfile);
-            setSkillsText(stringifyList(mappedProfile.skills));
-            setProjectsText(stringifyList(mappedProfile.projects));
+            setSkillsText(nextSkillsText);
+            setProjectsText(nextProjectsText);
+            setSavedStudentProfile(mappedProfile);
+            setSavedSkillsText(nextSkillsText);
+            setSavedProjectsText(nextProjectsText);
+            setStudentProfileSavedOnce(true);
             setStudentProfileLoaded(true);
             toast.success(result.message || __('Profile updated successfully.'));
         } else {
@@ -597,11 +754,211 @@ const DashboardPage: React.FC = () => {
     const readyCertificatesCount = certificateCardsLoaded
         ? certificateCards.filter((card) => !!card?.certificate?.available).length
         : courses.filter((course) => !!course.certificate_available).length;
+    const profileHasChanges = profileName !== savedProfileSnapshot.name
+        || profileRealName !== savedProfileSnapshot.real_name
+        || profilePhone !== savedProfileSnapshot.phone
+        || profilePhoneCountryCode !== savedProfileSnapshot.country_code
+        || Boolean(profileAvatarFile);
+    const studentProfileHasChanges = JSON.stringify(studentProfile) !== JSON.stringify(savedStudentProfile)
+        || skillsText !== savedSkillsText
+        || projectsText !== savedProjectsText;
+
+    type ProfileSectionStatusProps = {
+        isSaving: boolean;
+        isDirty: boolean;
+        hasSavedOnce?: boolean;
+    };
+
+    const ProfileSectionStatus = ({ isSaving, isDirty, hasSavedOnce = false }: ProfileSectionStatusProps) => {
+        if (!isSaving && !isDirty && !hasSavedOnce) {
+            return null;
+        }
+
+        const tone = isSaving
+            ? 'bg-brand-50 text-brand-700 border-brand-100 dark:bg-brand-500/10 dark:text-brand-200 dark:border-brand-500/20'
+            : isDirty
+                ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-200 dark:border-amber-500/20'
+                : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-200 dark:border-emerald-500/20';
+        const label = isSaving
+            ? __('Saving...')
+            : isDirty
+                ? __('You have unsaved changes')
+                : __('All changes saved');
+
+        return (
+            <div className={classNames('inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold', tone)}>
+                {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : isDirty ? <Clock className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                <span>{label}</span>
+            </div>
+        );
+    };
+
+    type ProfileSectionHeaderProps = {
+        icon: React.ReactNode;
+        title: string;
+        description: string;
+        status: React.ReactNode;
+    };
+
+    const ProfileSectionHeader = ({ icon, title, description, status }: ProfileSectionHeaderProps) => (
+        <div className="mb-7 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="flex items-start gap-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-brand-100 bg-brand-50 text-brand-600 dark:border-brand-500/20 dark:bg-brand-500/10 dark:text-brand-200">
+                    {icon}
+                </div>
+                <div className="space-y-1">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h3>
+                    <p className="max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400">{description}</p>
+                </div>
+            </div>
+            {status}
+        </div>
+    );
+
+    type ProfileFieldShellProps = {
+        label: string;
+        icon: React.ReactNode;
+        helper?: string;
+        children: React.ReactNode;
+        iconAlign?: 'center' | 'top';
+    };
+
+    const ProfileFieldShell = ({ label, icon, helper, children, iconAlign = 'center' }: ProfileFieldShellProps) => (
+        <div className="space-y-2.5">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200">{label}</label>
+            <div className="relative">
+                <span className={classNames(
+                    'pointer-events-none absolute z-10 text-brand-500/85 dark:text-brand-300',
+                    iconAlign === 'top' ? 'start-4 top-4' : 'start-4 top-1/2 -translate-y-1/2'
+                )}>
+                    {icon}
+                </span>
+                {children}
+            </div>
+            {helper ? <p className="text-xs leading-5 text-gray-500 dark:text-gray-400">{helper}</p> : null}
+        </div>
+    );
+
+    type ProfileInputFieldProps = {
+        label: string;
+        icon: React.ReactNode;
+        value: string;
+        onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+        helper?: string;
+        placeholder?: string;
+        type?: string;
+        disabled?: boolean;
+        inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+        min?: string;
+        max?: string;
+    };
+
+    const ProfileInputField = ({
+        label,
+        icon,
+        value,
+        onChange,
+        helper,
+        placeholder,
+        type = 'text',
+        disabled = false,
+        inputMode,
+        min,
+        max,
+    }: ProfileInputFieldProps) => (
+        <ProfileFieldShell label={label} icon={icon} helper={helper}>
+            <input
+                type={type}
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                disabled={disabled}
+                inputMode={inputMode}
+                min={min}
+                max={max}
+                className={classNames(
+                    'block w-full rounded-2xl border px-4 py-3.5 text-sm text-gray-900 transition-all outline-none',
+                    'ltr:pl-12 ltr:pr-4 rtl:pr-12 rtl:pl-4',
+                    disabled
+                        ? 'border-gray-200 bg-gray-100/90 text-gray-500 shadow-inner dark:border-gray-600 dark:bg-gray-700/50 dark:text-gray-400'
+                        : 'border-gray-200 bg-gray-50/80 hover:border-brand-200 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/15 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:border-brand-400/40 dark:focus:border-brand-400 dark:focus:bg-gray-700',
+                    'placeholder:text-gray-400 dark:placeholder:text-gray-500'
+                )}
+            />
+        </ProfileFieldShell>
+    );
+
+    type ProfileTextareaFieldProps = {
+        label: string;
+        icon: React.ReactNode;
+        value: string;
+        onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+        helper?: string;
+        placeholder?: string;
+        rows?: number;
+    };
+
+    const ProfileTextareaField = ({
+        label,
+        icon,
+        value,
+        onChange,
+        helper,
+        placeholder,
+        rows = 4,
+    }: ProfileTextareaFieldProps) => (
+        <ProfileFieldShell label={label} icon={icon} helper={helper} iconAlign="top">
+            <textarea
+                value={value}
+                onChange={onChange}
+                rows={rows}
+                placeholder={placeholder}
+                className="block w-full rounded-2xl border border-gray-200 bg-gray-50/80 px-4 py-3.5 text-sm text-gray-900 transition-all outline-none ltr:pl-12 ltr:pr-4 rtl:pr-12 rtl:pl-4 placeholder:text-gray-400 hover:border-brand-200 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/15 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-500 dark:hover:border-brand-400/40 dark:focus:border-brand-400 dark:focus:bg-gray-700"
+            />
+        </ProfileFieldShell>
+    );
+
+    type ProfileToggleCardProps = {
+        label: string;
+        description: string;
+        icon: React.ReactNode;
+        checked: boolean;
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    };
+
+    const ProfileToggleCard = ({ label, description, icon, checked, onChange }: ProfileToggleCardProps) => (
+        <label className={classNames(
+            'flex items-center gap-4 rounded-2xl border px-4 py-4 transition-all',
+            checked
+                ? 'border-brand-200 bg-brand-50/70 dark:border-brand-500/25 dark:bg-brand-500/10'
+                : 'border-gray-200 bg-gray-50/70 hover:border-brand-200 dark:border-gray-700 dark:bg-gray-900/30 dark:hover:border-brand-500/25'
+        )}>
+            <div className={classNames(
+                'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border',
+                checked
+                    ? 'border-brand-200 bg-white text-brand-600 dark:border-brand-500/20 dark:bg-gray-900/50 dark:text-brand-200'
+                    : 'border-gray-200 bg-white text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300'
+            )}>
+                {icon}
+            </div>
+            <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{label}</p>
+                <p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">{description}</p>
+            </div>
+            <input
+                type="checkbox"
+                checked={checked}
+                onChange={onChange}
+                className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+            />
+        </label>
+    );
 
     // ── Tab Content Renderers ──
 
-    const handleVerifyOrder = async (transactionId: number) => {
+    const handleVerifyOrder = async (transactionId: number, orderId: number) => {
         setVerifyingOrderId(transactionId);
+        setVerifyCooldowns(p => ({...p, [orderId]: Date.now() + 60000}));
         try {
             const res = await userAuthService.verifyPayment(transactionId);
             if (res.success) {
@@ -629,79 +986,123 @@ const DashboardPage: React.FC = () => {
 
     const renderOrders = () => (
         <div className="space-y-6 animate-fade-in">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{__('Order History')}</h2>
-            
-            {(ordersLoading && !ordersLoaded) ? (
-                <div className="flex justify-center items-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/50 p-5 sm:p-6 shadow-[0_20px_70px_-48px_rgba(15,23,42,0.42)]">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-700 dark:text-gray-300">
+                        <ShoppingCart className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{__('Order History')}</h2>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{__('Review your previous orders and transactions')}</p>
+                    </div>
                 </div>
-            ) : (!ordersLoaded && !ordersLoading) ? (
-                <div className="flex justify-center items-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
-                </div>
-            ) : orders.length === 0 ? (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-100 dark:border-gray-700/50 text-center text-gray-500 dark:text-gray-400">
-                    <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>{__('You have no orders yet.')}</p>
-                </div>
-            ) : (
-                <div className="grid gap-4">
-                    {orders.map((order) => {
-                        const isPending = order.status === 'pending';
-                        const orderDate = new Date(order.created_at);
-                        const isLessThenAnHour = (Date.now() - orderDate.getTime()) < 3600000;
-                        // Need transaction_id to reverify
-                        const showReverify = isPending && isLessThenAnHour && order.transaction_id;
-
-                        // simple formatting for numbers
-                        const amt = new Intl.NumberFormat().format(order.total_amount);
-
-                        return (
-                            <div key={order.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/50 p-5 sm:p-6 flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center hover:shadow-sm transition-shadow">
-                                <div className="space-y-2 flex-grow">
+                
+                {!ordersLoaded || ordersLoading ? (
+                    <div className="grid gap-4">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="bg-gray-50 dark:bg-gray-900/30 rounded-2xl border border-gray-100 dark:border-gray-700/50 p-5 sm:p-6 flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center animate-pulse">
+                                <div className="space-y-4 flex-grow w-full">
                                     <div className="flex items-center gap-3">
-                                        <span className="font-mono text-sm text-gray-500 dark:text-gray-400">#{order.order_ref}</span>
-                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                            order.status === 'paid' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' :
-                                            order.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' :
-                                            'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'
-                                        }`}>
-                                            {__(order.status.charAt(0).toUpperCase() + order.status.slice(1))}
-                                        </span>
+                                        <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                                        <div className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
                                     </div>
-                                    <div className="text-gray-900 dark:text-white font-medium">
-                                        {Array.isArray(order.items) ? order.items.map((i: any) => {
-                                            const rawTitle = i.course?.title || i.title;
-                                            if (!rawTitle) return '';
-                                            if (typeof rawTitle === 'string') return rawTitle;
-                                            return rawTitle[language] || rawTitle['en'] || rawTitle['ar'] || Object.values(rawTitle)[0] || '';
-                                        }).filter(Boolean).join(', ') : ''}
-                                    </div>
-                                    <div className="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap gap-4">
-                                        <span>{new Intl.DateTimeFormat(language === 'ar' ? 'ar-EG' : language === 'ku' ? 'ku' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(orderDate)}</span>
-                                        {order.payment_method && <span className="capitalize">{order.payment_method}</span>}
+                                    <div className="h-5 w-3/4 max-w-[300px] bg-gray-200 dark:bg-gray-700 rounded"></div>
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                                        <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
                                     </div>
                                 </div>
-                                <div className="flex flex-col sm:items-end gap-3 w-full sm:w-auto">
-                                    <div className="text-xl font-bold text-gray-900 dark:text-white shrink-0">
-                                        {amt} {__('IQD')}
-                                    </div>
-                                    {showReverify && (
-                                        <button 
-                                            disabled={verifyingOrderId === order.transaction_id}
-                                            onClick={() => handleVerifyOrder(order.transaction_id)}
-                                            className="px-4 py-2 bg-brand-50 hover:bg-brand-100 text-brand-600 dark:bg-brand-900/30 dark:hover:bg-brand-900/50 dark:text-brand-400 rounded-lg text-sm font-medium transition-colors m-auto sm:m-0 w-full sm:w-auto flex items-center justify-center gap-2 disabled:opacity-50"
-                                        >
-                                            {verifyingOrderId === order.transaction_id && <Loader2 className="w-4 h-4 animate-spin" />}
-                                            {__('Re-verify')}
-                                        </button>
-                                    )}
+                                <div className="flex flex-col sm:items-end gap-3 w-full sm:w-auto mt-4 sm:mt-0">
+                                    <div className="h-7 w-28 bg-gray-200 dark:bg-gray-700 rounded"></div>
                                 </div>
                             </div>
-                        );
-                    })}
-                </div>
-            )}
+                        ))}
+                    </div>
+                ) : orders.length === 0 ? (
+                    <div className="bg-gray-50 dark:bg-gray-900/30 rounded-2xl p-8 border border-dashed border-gray-200 dark:border-gray-700/50 text-center text-gray-500 dark:text-gray-400">
+                        <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                        <p className="font-medium text-gray-700 dark:text-gray-300">{__('You have no orders yet.')}</p>
+                        <p className="text-sm mt-1">{__('Orders you place will appear here.')}</p>
+                    </div>
+                ) : (
+                    <div className="grid gap-4">
+                        {orders.map((order) => {
+                            const isPending = order.status === 'pending';
+                            const orderDate = new Date(order.created_at);
+                            const isLessThenAnHour = (Date.now() - orderDate.getTime()) < 3600000;
+                            // Need transaction_id to reverify
+                            const showReverify = isPending && isLessThenAnHour && order.transaction_id;
+
+                            // simple formatting for numbers
+                            const amt = new Intl.NumberFormat().format(order.total_amount);
+
+                            return (
+                                <div key={order.id} className="bg-gray-50 dark:bg-gray-900/30 rounded-2xl border border-gray-100 dark:border-gray-700/50 p-5 sm:p-6 flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center hover:bg-white dark:hover:bg-gray-800 transition-colors">
+                                    <div className="space-y-2 flex-grow">
+                                        <div className="flex items-center gap-3">
+                                            <span className="font-mono text-sm text-gray-500 dark:text-gray-400">#{order.order_ref}</span>
+                                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                order.status === 'paid' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' :
+                                                order.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' :
+                                                'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'
+                                            }`}>
+                                                {__(order.status.charAt(0).toUpperCase() + order.status.slice(1))}
+                                            </span>
+                                        </div>
+                                        <div className="text-gray-900 dark:text-white font-medium">
+                                            {Array.isArray(order.items) ? order.items.map((i: any) => {
+                                                const rawTitle = i.course?.title || i.title;
+                                                if (!rawTitle) return '';
+                                                if (typeof rawTitle === 'string') return rawTitle;
+                                                return rawTitle[language] || rawTitle['en'] || rawTitle['ar'] || Object.values(rawTitle)[0] || '';
+                                            }).filter(Boolean).join(', ') : ''}
+                                        </div>
+                                        <div className="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap gap-4">
+                                            <span>{new Intl.DateTimeFormat(language === 'ar' ? 'ar-EG' : language === 'ku' ? 'ku' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(orderDate)}</span>
+                                            {order.payment_method && <span className="capitalize">{order.payment_method}</span>}
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col sm:items-end gap-3 w-full sm:w-auto">
+                                        <div className="text-xl font-bold text-gray-900 dark:text-white shrink-0">
+                                            {amt} {__('IQD')}
+                                        </div>
+                                        <div className="flex flex-wrap sm:flex-nowrap items-center justify-end gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
+                                            <button
+                                                onClick={() => openInvoicePreview(order)}
+                                                className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium transition-colors border border-gray-200 dark:border-gray-700 flex items-center justify-center gap-2"
+                                                title={__('View Invoice')}
+                                            >
+                                                <FileText className="w-4 h-4" />
+                                                <span className="hidden xl:inline">{__('View')}</span>
+                                            </button>
+                                            <button
+                                                onClick={() => openInvoicePrint(order)}
+                                                className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium transition-colors border border-gray-200 dark:border-gray-700 flex items-center justify-center gap-2"
+                                                title={__('Print Invoice')}
+                                            >
+                                                <Printer className="w-4 h-4" />
+                                                <span className="hidden xl:inline">{__('Print')}</span>
+                                            </button>
+                                            {showReverify && (
+                                                <button 
+                                                    disabled={verifyingOrderId === order.transaction_id || verifyCooldowns[order.id] > Date.now()}
+                                                    onClick={() => handleVerifyOrder(order.transaction_id, order.id)}
+                                                    className="px-4 py-2 bg-brand-50 hover:bg-brand-100 text-brand-600 dark:bg-brand-900/30 dark:hover:bg-brand-900/50 dark:text-brand-400 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 border border-brand-100 dark:border-brand-800"
+                                                >
+                                                    {verifyingOrderId === order.transaction_id && <Loader2 className="w-4 h-4 animate-spin" />}
+                                                    {verifyCooldowns[order.id] > Date.now() 
+                                                        ? `${__('Wait')} ${Math.ceil((verifyCooldowns[order.id] - Date.now()) / 1000)}s` 
+                                                        : __('Re-verify')}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
         </div>
     );
 
@@ -852,8 +1253,28 @@ const DashboardPage: React.FC = () => {
                 </div>
 
                 {certificateCardsLoading ? (
-                    <div className="flex items-center justify-center py-20">
-                        <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
+                    <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-5">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-700/50 bg-gray-50 dark:bg-gray-900/30 animate-pulse">
+                                <div className="p-4">
+                                    <div className="relative aspect-[16/10] overflow-hidden rounded-xl bg-gray-200 dark:bg-gray-800"></div>
+                                </div>
+                                <div className="px-5 pb-5 space-y-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="h-6 w-20 bg-gray-200 dark:bg-gray-800 rounded-full"></div>
+                                        <div className="h-4 w-8 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                                        <div className="h-4 w-1/2 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-3 pt-2">
+                                        <div className="h-11 flex-1 min-w-[180px] bg-gray-200 dark:bg-gray-800 rounded-xl"></div>
+                                        <div className="h-11 w-36 bg-gray-200 dark:bg-gray-800 rounded-xl"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : certificateCards.length > 0 ? (
                     <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-5">
@@ -984,8 +1405,31 @@ const DashboardPage: React.FC = () => {
                 </div>
 
                 {coursesLoading ? (
-                    <div className="flex items-center justify-center py-20">
-                        <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
+                    <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-5">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-700/50 bg-gray-50 dark:bg-gray-900/30 animate-pulse">
+                                <div className="relative aspect-[16/9] bg-gray-200 dark:bg-gray-800"></div>
+                                <div className="p-5 space-y-4">
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="h-4 w-32 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                                            <div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                                        </div>
+                                        <div className="h-6 w-4/5 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                                        <div className="h-4 w-1/3 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3 pb-2 pt-1">
+                                        <div className="h-[76px] bg-gray-200 dark:bg-gray-800 rounded-xl"></div>
+                                        <div className="h-[76px] bg-gray-200 dark:bg-gray-800 rounded-xl"></div>
+                                    </div>
+                                    <div className="h-[96px] bg-gray-200 dark:bg-gray-800 rounded-xl"></div>
+                                    <div className="flex flex-wrap gap-3 pt-1">
+                                        <div className="h-11 flex-1 min-w-[180px] bg-gray-200 dark:bg-gray-800 rounded-xl"></div>
+                                        <div className="h-11 w-36 bg-gray-200 dark:bg-gray-800 rounded-xl"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : courses.length > 0 ? (
                     <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-5">
@@ -1141,283 +1585,195 @@ const DashboardPage: React.FC = () => {
 
     const renderProfile = () => (
         <div className="space-y-6 animate-fade-in">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/50 p-6 sm:p-8">
-                <div className="flex items-center gap-4 mb-8 pb-6 border-b border-gray-100 dark:border-gray-700">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold border-4 border-white dark:border-gray-700 shadow-lg">
-                        {userInitials}
+            <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-700/50 dark:bg-gray-800 sm:p-8">
+                <div className="mb-8 flex flex-col gap-5 border-b border-gray-100 pb-6 sm:flex-row sm:items-center dark:border-gray-700">
+                    <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 to-indigo-600 text-2xl font-bold text-white shadow-lg shadow-brand-500/20">
+                        {profileAvatarPreview ? (
+                            <img src={profileAvatarPreview} alt={user.name} className="h-full w-full object-cover" />
+                        ) : (
+                            userInitials
+                        )}
                     </div>
-                    <div>
-                        <p className="font-semibold text-gray-900 dark:text-white text-lg">{user.name}</p>
+                    <div className="space-y-1">
+                        <p className="text-lg font-semibold text-gray-900 dark:text-white">{user.name}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
                     </div>
                 </div>
 
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">{__('Account Information')}</h3>
+                <ProfileSectionHeader
+                    icon={<User className="h-5 w-5" />}
+                    title={__('Account Information')}
+                    description={__('Keep your name and contact details up to date.')}
+                    status={<ProfileSectionStatus isSaving={profileSaving} isDirty={profileHasChanges} hasSavedOnce={profileSavedOnce} />}
+                />
 
-                <div className="space-y-5">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('Full Name')}</label>
-                        <input
-                            type="text"
-                            value={profileName}
-                            onChange={e => setProfileName(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                        />
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+                        <div className="space-y-4">
+                            <div className="flex flex-col items-center gap-4 lg:items-start">
+                                <div
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => profileAvatarInputRef.current?.click()}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            profileAvatarInputRef.current?.click();
+                                        }
+                                    }}
+                                    onDragEnter={e => { e.preventDefault(); setProfileAvatarDragActive(true); }}
+                                    onDragOver={e => { e.preventDefault(); setProfileAvatarDragActive(true); }}
+                                    onDragLeave={e => { e.preventDefault(); setProfileAvatarDragActive(false); }}
+                                    onDrop={handleProfileAvatarDrop}
+                                    className={classNames(
+                                        'group relative flex h-40 w-40 cursor-pointer items-center justify-center overflow-hidden rounded-full border-4 text-4xl font-bold text-white shadow-xl outline-none transition-all',
+                                        profileAvatarDragActive
+                                            ? 'scale-[1.02] border-brand-300 ring-4 ring-brand-500/20 dark:border-brand-300'
+                                            : 'border-white dark:border-gray-700',
+                                        'bg-gradient-to-br from-brand-500 to-indigo-600 shadow-brand-500/20'
+                                    )}
+                                >
+                                    <input
+                                        ref={profileAvatarInputRef}
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/gif,image/webp"
+                                        onChange={handleProfileAvatarInputChange}
+                                        className="hidden"
+                                    />
+                                    {profileAvatarPreview ? (
+                                        <img src={profileAvatarPreview} alt={user.name} className="h-full w-full object-cover" />
+                                    ) : (
+                                        userInitials
+                                    )}
+                                    <div className={classNames(
+                                        'pointer-events-none absolute inset-[7px] rounded-full border-2 border-dashed transition-colors',
+                                        profileAvatarDragActive
+                                            ? 'border-white/95'
+                                            : 'border-white/70 group-hover:border-white/95 dark:border-white/55 dark:group-hover:border-white/85'
+                                    )} />
+                                    <div className="pointer-events-none absolute bottom-3 end-3 flex h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-slate-950/60 text-white shadow-lg backdrop-blur-sm">
+                                        <Camera className="h-4.5 w-4.5" />
+                                    </div>
+                                    <div className={classNames(
+                                        'absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-950/45 text-center text-white transition-opacity',
+                                        profileAvatarDragActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100'
+                                    )}>
+                                        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/18 backdrop-blur-sm">
+                                            <Camera className="h-5 w-5" />
+                                        </span>
+                                        <span className="px-4 text-xs font-semibold leading-5">{__('Drag and drop your profile photo here')}</span>
+                                    </div>
+                                </div>
+
+                                <div className="text-center lg:text-start">
+                                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{__('Choose profile photo')}</p>
+                                    <p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">{__('You can also browse from your device. JPG, PNG, GIF, or WebP up to 5 MB.')}</p>
+                                    {profileAvatarFile ? <p className="mt-2 text-xs font-medium text-brand-700 dark:text-brand-300">{profileAvatarFile.name}</p> : null}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                                <ProfileInputField label={__('Full Name')} icon={<User className="h-4 w-4" />} value={profileName} onChange={e => setProfileName(e.target.value)} />
+                                <ProfileInputField
+                                    label={__('Real Name')}
+                                    icon={<IdCard className="h-4 w-4" />}
+                                    value={profileRealName}
+                                    onChange={e => setProfileRealName(e.target.value)}
+                                    placeholder={__('Enter the exact name that should appear on your certificates')}
+                                    helper={__('This formal name will be rendered on your course certificates when you download them.')}
+                                />
+                                <ProfileInputField label={__('Email')} icon={<Mail className="h-4 w-4" />} value={user.email} type="email" disabled helper={__('To change your email, go to the Security tab.')} />
+                                <div className="space-y-2.5">
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200">{__('Phone Number')}</label>
+                                    <PhoneNumberInput
+                                        value={profilePhone}
+                                        countryCode={profilePhoneCountryCode}
+                                        onChange={({ phone, countryCode }) => {
+                                            setProfilePhone(phone);
+                                            setProfilePhoneCountryCode(countryCode);
+                                        }}
+                                        variant="dashboard"
+                                        placeholder={__('Enter phone number with country code')}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={handleProfileSave}
+                                    disabled={profileSaving || !profileHasChanges}
+                                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-600 to-brand-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 transition-all hover:from-brand-700 hover:to-brand-800 hover:shadow-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                                >
+                                    <Save className="h-4 w-4" />
+                                    {profileSaving ? __('Saving...') : __('Save Account')}
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('Real Name')}</label>
-                        <input
-                            type="text"
-                            value={profileRealName}
-                            onChange={e => setProfileRealName(e.target.value)}
-                            placeholder={__('Enter the exact name that should appear on your certificates')}
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                        />
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{__('This formal name will be rendered on your course certificates when you download them.')}</p>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('Email')}</label>
-                        <input
-                            type="email"
-                            value={user.email}
-                            disabled
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                        />
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{__('To change your email, go to the Security tab.')}</p>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('Phone Number')}</label>
-                        <input
-                            type="tel"
-                            value={profilePhone}
-                            onChange={e => setProfilePhone(e.target.value)}
-                            placeholder={__('Enter your phone number')}
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                        />
-                    </div>
-                    <button
-                        onClick={handleProfileSave}
-                        disabled={profileSaving}
-                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-600 to-brand-700 text-white rounded-xl font-medium hover:from-brand-700 hover:to-brand-800 transition-all disabled:opacity-50 shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40"
-                    >
-                        <Save className="w-4 h-4" />
-                        {profileSaving ? __('Saving...') : __('Save Account')}
-                    </button>
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/50 p-6 sm:p-8">
-                <div className="flex items-start justify-between gap-4 mb-6">
-                    <div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">{__('Student Profile')}</h3>
-                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{__('Add the academic, career, and portfolio details that should travel with your student account.')}</p>
-                    </div>
-                    {studentProfileLoading ? <Loader2 className="w-5 h-5 animate-spin text-brand-600" /> : null}
-                </div>
+            <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-700/50 dark:bg-gray-800 sm:p-8">
+                <ProfileSectionHeader
+                    icon={<Briefcase className="h-5 w-5" />}
+                    title={__('Student Profile')}
+                    description={__('Add the academic, career, and portfolio details that should travel with your student account.')}
+                    status={(
+                        <div className="flex items-center gap-2 self-start md:self-auto">
+                            {studentProfileLoading ? <Loader2 className="h-4 w-4 animate-spin text-brand-600" /> : null}
+                            <ProfileSectionStatus isSaving={studentProfileSaving} isDirty={studentProfileHasChanges} hasSavedOnce={studentProfileSavedOnce} />
+                        </div>
+                    )}
+                />
 
-                <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('University')}</label>
-                            <input
-                                type="text"
-                                value={studentProfile.university}
-                                onChange={e => handleStudentProfileChange('university', e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('Department')}</label>
-                            <input
-                                type="text"
-                                value={studentProfile.department}
-                                onChange={e => handleStudentProfileChange('department', e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('Degree')}</label>
-                            <input
-                                type="text"
-                                value={studentProfile.degree}
-                                onChange={e => handleStudentProfileChange('degree', e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('Academic Status')}</label>
-                            <input
-                                type="text"
-                                value={studentProfile.academic_status}
-                                onChange={e => handleStudentProfileChange('academic_status', e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('Start Year')}</label>
-                            <input
-                                type="number"
-                                min="1950"
-                                max="2100"
-                                value={studentProfile.start_year}
-                                onChange={e => handleStudentProfileChange('start_year', e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('Graduation Year')}</label>
-                            <input
-                                type="number"
-                                min="1950"
-                                max="2100"
-                                value={studentProfile.graduation_year}
-                                onChange={e => handleStudentProfileChange('graduation_year', e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                            />
-                        </div>
+                <div className="space-y-7">
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                        <ProfileInputField label={__('University')} icon={<GraduationCap className="h-4 w-4" />} value={studentProfile.university} onChange={e => handleStudentProfileChange('university', e.target.value)} placeholder={__('Your university or institute')} />
+                        <ProfileInputField label={__('Department')} icon={<Building2 className="h-4 w-4" />} value={studentProfile.department} onChange={e => handleStudentProfileChange('department', e.target.value)} placeholder={__('Your major or department')} />
+                        <ProfileInputField label={__('Degree')} icon={<Award className="h-4 w-4" />} value={studentProfile.degree} onChange={e => handleStudentProfileChange('degree', e.target.value)} placeholder={__('Bachelor, Diploma, or Master')} />
+                        <ProfileInputField label={__('Academic Status')} icon={<BookOpen className="h-4 w-4" />} value={studentProfile.academic_status} onChange={e => handleStudentProfileChange('academic_status', e.target.value)} placeholder={__('Example: Final-year student')} />
+                        <ProfileInputField label={__('Start Year')} icon={<CalendarDays className="h-4 w-4" />} value={studentProfile.start_year} onChange={e => handleStudentProfileChange('start_year', e.target.value)} type="number" inputMode="numeric" min="1950" max="2100" placeholder="2024" helper={__('Use 4 digits, for example 2026')} />
+                        <ProfileInputField label={__('Graduation Year')} icon={<CalendarDays className="h-4 w-4" />} value={studentProfile.graduation_year} onChange={e => handleStudentProfileChange('graduation_year', e.target.value)} type="number" inputMode="numeric" min="1950" max="2100" placeholder="2028" helper={__('Use 4 digits, for example 2026')} />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('Headline')}</label>
-                            <input
-                                type="text"
-                                value={studentProfile.headline}
-                                onChange={e => handleStudentProfileChange('headline', e.target.value)}
-                                placeholder={__('Example: Frontend Developer in Training')}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('Preferred Role')}</label>
-                            <input
-                                type="text"
-                                value={studentProfile.preferred_role}
-                                onChange={e => handleStudentProfileChange('preferred_role', e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('City')}</label>
-                            <input
-                                type="text"
-                                value={studentProfile.city}
-                                onChange={e => handleStudentProfileChange('city', e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('Country')}</label>
-                            <input
-                                type="text"
-                                value={studentProfile.country}
-                                onChange={e => handleStudentProfileChange('country', e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('Preferred City')}</label>
-                            <input
-                                type="text"
-                                value={studentProfile.preferred_city}
-                                onChange={e => handleStudentProfileChange('preferred_city', e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                            />
-                        </div>
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                        <ProfileInputField label={__('Headline')} icon={<FileText className="h-4 w-4" />} value={studentProfile.headline} onChange={e => handleStudentProfileChange('headline', e.target.value)} placeholder={__('Example: Frontend Developer in Training')} helper={__('Show the role or focus you are preparing for.')} />
+                        <ProfileInputField label={__('Preferred Role')} icon={<Briefcase className="h-4 w-4" />} value={studentProfile.preferred_role} onChange={e => handleStudentProfileChange('preferred_role', e.target.value)} placeholder={__('Example: Junior Frontend Developer')} />
+                        <ProfileInputField label={__('City')} icon={<MapPin className="h-4 w-4" />} value={studentProfile.city} onChange={e => handleStudentProfileChange('city', e.target.value)} />
+                        <ProfileInputField label={__('Country')} icon={<Globe className="h-4 w-4" />} value={studentProfile.country} onChange={e => handleStudentProfileChange('country', e.target.value)} />
+                        <ProfileInputField label={__('Preferred City')} icon={<MapPin className="h-4 w-4" />} value={studentProfile.preferred_city} onChange={e => handleStudentProfileChange('preferred_city', e.target.value)} placeholder={__('Where you would like to work')} />
+                        <ProfileInputField label={__('Portfolio URL')} icon={<LinkIcon className="h-4 w-4" />} value={studentProfile.portfolio_url} onChange={e => handleStudentProfileChange('portfolio_url', e.target.value)} type="url" placeholder="https://yourportfolio.com" helper={__('Paste the full public profile link')} />
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('Short Bio')}</label>
-                        <textarea
-                            value={studentProfile.short_bio}
-                            onChange={e => handleStudentProfileChange('short_bio', e.target.value)}
-                            rows={4}
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                        />
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                        <ProfileInputField label={__('LinkedIn URL')} icon={<Linkedin className="h-4 w-4" />} value={studentProfile.linkedin_url} onChange={e => handleStudentProfileChange('linkedin_url', e.target.value)} type="url" placeholder="https://linkedin.com/in/username" helper={__('Paste the full public profile link')} />
+                        <ProfileInputField label={__('GitHub URL')} icon={<Github className="h-4 w-4" />} value={studentProfile.github_url} onChange={e => handleStudentProfileChange('github_url', e.target.value)} type="url" placeholder="https://github.com/username" helper={__('Paste the full public profile link')} />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('LinkedIn URL')}</label>
-                            <input
-                                type="url"
-                                value={studentProfile.linkedin_url}
-                                onChange={e => handleStudentProfileChange('linkedin_url', e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('GitHub URL')}</label>
-                            <input
-                                type="url"
-                                value={studentProfile.github_url}
-                                onChange={e => handleStudentProfileChange('github_url', e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('Portfolio URL')}</label>
-                            <input
-                                type="url"
-                                value={studentProfile.portfolio_url}
-                                onChange={e => handleStudentProfileChange('portfolio_url', e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                            />
-                        </div>
+                    <ProfileTextareaField label={__('Short Bio')} icon={<FileText className="h-4 w-4" />} value={studentProfile.short_bio} onChange={e => handleStudentProfileChange('short_bio', e.target.value)} rows={4} placeholder={__('Write 2 to 4 lines about your goals and strengths.')} />
+
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                        <ProfileTextareaField label={__('Skills')} icon={<Award className="h-4 w-4" />} value={skillsText} onChange={e => setSkillsText(e.target.value)} rows={5} placeholder={__('One skill per line')} helper={__('Add one skill per line to keep your profile easy to scan.')} />
+                        <ProfileTextareaField label={__('Projects')} icon={<Folder className="h-4 w-4" />} value={projectsText} onChange={e => setProjectsText(e.target.value)} rows={5} placeholder={__('One project per line')} helper={__('Add one project per line with concise names.')} />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('Skills')}</label>
-                            <textarea
-                                value={skillsText}
-                                onChange={e => setSkillsText(e.target.value)}
-                                rows={5}
-                                placeholder={__('One skill per line')}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{__('Projects')}</label>
-                            <textarea
-                                value={projectsText}
-                                onChange={e => setProjectsText(e.target.value)}
-                                rows={5}
-                                placeholder={__('One project per line')}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                            />
-                        </div>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <ProfileToggleCard label={__('Open to full-time jobs')} description={__('Helpful for employers browsing student profiles.')} icon={<Briefcase className="h-5 w-5" />} checked={studentProfile.job_available} onChange={e => handleStudentProfileChange('job_available', e.target.checked)} />
+                        <ProfileToggleCard label={__('Open to internships')} description={__('Useful for internship and academy partner opportunities.')} icon={<BookOpen className="h-5 w-5" />} checked={studentProfile.internship_available} onChange={e => handleStudentProfileChange('internship_available', e.target.checked)} />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <label className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/30 px-4 py-3">
-                            <input
-                                type="checkbox"
-                                checked={studentProfile.job_available}
-                                onChange={e => handleStudentProfileChange('job_available', e.target.checked)}
-                                className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
-                            />
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{__('Open to full-time jobs')}</span>
-                        </label>
-                        <label className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/30 px-4 py-3">
-                            <input
-                                type="checkbox"
-                                checked={studentProfile.internship_available}
-                                onChange={e => handleStudentProfileChange('internship_available', e.target.checked)}
-                                className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
-                            />
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{__('Open to internships')}</span>
-                        </label>
+                    <div className="flex justify-end">
+                        <button
+                            onClick={handleStudentProfileSave}
+                            disabled={studentProfileSaving || !studentProfileHasChanges}
+                            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-600 to-brand-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 transition-all hover:from-brand-700 hover:to-brand-800 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                        >
+                            <Save className="h-4 w-4" />
+                            {studentProfileSaving ? __('Saving...') : __('Save Student Profile')}
+                        </button>
                     </div>
-
-                    <button
-                        onClick={handleStudentProfileSave}
-                        disabled={studentProfileSaving}
-                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-600 to-brand-700 text-white rounded-xl font-medium hover:from-brand-700 hover:to-brand-800 transition-all disabled:opacity-50 shadow-lg shadow-brand-500/25"
-                    >
-                        <Save className="w-4 h-4" />
-                        {studentProfileSaving ? __('Saving...') : __('Save Student Profile')}
-                    </button>
                 </div>
             </div>
         </div>
@@ -1738,6 +2094,13 @@ const DashboardPage: React.FC = () => {
                     </div>
                 </div>
             </div>
+            <OrderInvoiceModal
+                order={selectedOrderForInvoice}
+                isOpen={!!selectedOrderForInvoice}
+                autoPrint={invoiceShouldAutoPrint}
+                onAutoPrintHandled={() => setInvoiceShouldAutoPrint(false)}
+                onClose={closeInvoiceModal}
+            />
         </div>
     );
 };

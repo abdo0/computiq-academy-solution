@@ -11,7 +11,7 @@
             color: #333;
             margin: 0;
             padding: 0;
-            background-color: #f7f7f7;
+            background-color: #f5f9ff;
         }
         .container {
             max-width: 600px;
@@ -26,7 +26,7 @@
             text-align: center;
             padding: 30px 20px;
             border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-            background: linear-gradient(135deg, #e5a523 0%, #d4941f 100%);
+            background: linear-gradient(135deg, #2d8cff 0%, #1d66db 100%);
             color: white;
             position: relative;
         }
@@ -76,14 +76,14 @@
         .content h2 {
             font-size: 22px;
             margin-bottom: 20px;
-            border-bottom: 2px solid #e5a523;
+            border-bottom: 2px solid #2d8cff;
             padding-bottom: 10px;
         }
         .content p {
             margin-bottom: 15px;
         }
         .content a {
-            color: #e5a523;
+            color: #1f7bf2;
             text-decoration: none;
         }
         .content a:hover {
@@ -103,25 +103,25 @@
         }
         .btn {
             display: inline-block;
-            background: linear-gradient(135deg, #e5a523 0%, #d4941f 100%);
+            background: linear-gradient(135deg, #2d8cff 0%, #1d66db 100%);
             color: #ffffff !important;
             text-decoration: none;
             padding: 14px 30px;
             border-radius: 6px;
             margin: 20px 0;
             font-weight: 600;
-            box-shadow: 0 4px 6px rgba(229, 165, 35, 0.3);
+            box-shadow: 0 4px 6px rgba(45, 140, 255, 0.28);
             transition: all 0.3s ease;
         }
         .btn:hover {
-            box-shadow: 0 6px 12px rgba(229, 165, 35, 0.4);
+            box-shadow: 0 6px 12px rgba(45, 140, 255, 0.38);
             transform: translateY(-2px);
         }
         .text-center {
             text-align: center;
         }
         .highlight {
-            color: #e5a523;
+            color: #1f7bf2;
             font-weight: bold;
         }
         .social-icons {
@@ -138,7 +138,7 @@
             transition: color 0.3s ease;
         }
         .social-icons a:hover {
-            color: #e5a523;
+            color: #1f7bf2;
         }
         @media only screen and (max-width: 600px) {
             .container {

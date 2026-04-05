@@ -69,7 +69,7 @@ const LayoutWrapper: React.FC<{ onLoginClick: () => void; routeKey: string }> = 
   const { dir } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 dark:text-white font-sans text-gray-900 flex flex-col transition-all duration-300" dir={dir}>
+    <div className="min-h-screen bg-[#f8fbff] dark:bg-slate-950 dark:text-white font-sans text-[#22314d] flex flex-col transition-all duration-300" dir={dir}>
       <LocaleSync />
       <SeoWrapper>
         <Header onLoginClick={onLoginClick} />

@@ -160,16 +160,23 @@
         // homeData is no longer pre-fetched to allow skeletons to show
         $homeData = null;
 
+        $authUser = Auth::guard('student')->user();
+
         $initialData = [
-            'user' => Auth::guard('student')->check()
+            'user' => $authUser
                 ? [
-                    'id' => (string) Auth::guard('student')->user()->id,
-                    'name' => Auth::guard('student')->user()->name,
-                    'email' => Auth::guard('student')->user()->email,
-                    'phone' => Auth::guard('student')->user()->phone,
-                    'locale' => Auth::guard('student')->user()->locale,
-                    'isVerified' => ! is_null(Auth::guard('student')->user()->email_verified_at),
-                    'purchasedCourseIds' => \App\Models\CourseEnrollment::where('user_id', Auth::guard('student')->id())->pluck('course_id')->all(),
+                    'id' => (string) $authUser->id,
+                    'name' => $authUser->name,
+                    'real_name' => $authUser->real_name,
+                    'email' => $authUser->email,
+                    'phone' => $authUser->phone,
+                    'country_code' => $authUser->country_code,
+                    'avatar' => $authUser->getFirstMediaUrl('avatar', 'thumb') ?: $authUser->getFirstMediaUrl('avatar'),
+                    'locale' => $authUser->locale,
+                    'isVerified' => ! is_null($authUser->email_verified_at),
+                    'purchasedCourseIds' => \App\Models\CourseEnrollment::where('user_id', $authUser->id)->pluck('course_id')->all(),
+                    'active_role' => $authUser->resolvedActiveRole(),
+                    'available_roles' => $authUser->availableAppRoles(),
                 ]
                 : null,
             'settings' => $formattedSettings,

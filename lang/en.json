@@ -1581,5 +1581,18 @@
   "إجمالي التبرعات": "إجمالي التبرعات",
   "الحملات النشطة": "الحملات النشطة",
   "المتبرعين": "المتبرعين",
-  "المنظمات": "المنظمات"
+  "المنظمات": "المنظمات",
+  "Review your previous orders and transactions": "Review your previous orders and transactions",
+  "Invoice Details": "Invoice Details",
+  "Invoice": "Invoice",
+  "INVOICE": "INVOICE",
+  "Print Invoice": "Print Invoice",
+  "Print": "Print",
+  "Processing": "Processing",
+  "Cancelled": "Cancelled",
+  "Search country or dial code...": "Search country or dial code...",
+  "No countries found for \":query\"": "No countries found for \":query\"",
+  "View Invoice": "View Invoice",
+  "No items": "No items",
+  "Thank you for choosing Computiq Academy": "Thank you for choosing Computiq Academy"
 }

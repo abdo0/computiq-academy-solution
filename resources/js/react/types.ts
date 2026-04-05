@@ -61,6 +61,8 @@ export interface User {
   name: string;
   email: string;
   isVerified: boolean;
+  phone?: string | null;
+  country_code?: string | null;
   avatar?: string;
 }
 

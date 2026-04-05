@@ -26,10 +26,10 @@
                     },
                     colors: {
                         primary: {
-                            50: '#eff6ff',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
+                            50: '#eff7ff',
+                            500: '#2d8cff',
+                            600: '#1f7bf2',
+                            700: '#1d66db',
                         }
                     }
                 }
@@ -41,6 +41,8 @@
     <style>
         body {
             font-family: '{{ app()->getLocale() == "ar" || app()->getLocale() == "ku" ? "Noto Sans Arabic" : "Inter" }}', 'Tajawal', sans-serif;
+            background: linear-gradient(180deg, #f8fbff 0%, #ffffff 30%, #f8fbff 100%);
+            color: #22314d;
         }
         
         @if(app()->getLocale() == 'ar' || app()->getLocale() == 'ku')
@@ -113,9 +115,9 @@
     
     @stack('styles')
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-[#f8fbff] min-h-screen">
     <!-- Header -->
-    <header class="bg-white shadow-sm border-b border-gray-200">
+    <header class="bg-[#edf6ff] shadow-sm border-b border-[#d9e9ff]">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center">
@@ -124,7 +126,7 @@
                              alt="{{ settings('app_name', config('app.name')) }}" 
                              class="h-10 w-auto object-contain me-1.5">
                     @endif
-                    <h1 class="text-xl font-semibold text-gray-900">
+                    <h1 class="text-xl font-semibold text-[#22314d]">
                         {{ settings('app_name', config('app.name')) }}
                     </h1>
                 </div>
@@ -132,7 +134,7 @@
                 <!-- Language Switcher -->
                 <div class="flex items-center space-x-4">
                     <div class="relative">
-                        <select onchange="changeLanguage(this.value)" class="appearance-none bg-gray-100 border border-gray-300 rounded-md px-3 py-1 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <select onchange="changeLanguage(this.value)" class="appearance-none bg-white border border-[#c8dcff] rounded-md px-3 py-1 text-sm text-[#22314d] focus:outline-none focus:ring-2 focus:ring-primary-500">
                             <option value="en" {{ app()->getLocale() == 'en' ? 'selected' : '' }}>English</option>
                             <option value="ar" {{ app()->getLocale() == 'ar' ? 'selected' : '' }}>العربية</option>
                             <option value="ku" {{ app()->getLocale() == 'ku' ? 'selected' : '' }}>کوردی</option>
@@ -149,9 +151,9 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 mt-16">
+    <footer class="bg-[#0d57c6] border-t border-[#0d57c6] mt-16 text-white">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="text-center text-sm text-gray-600">
+            <div class="text-center text-sm text-blue-50">
                 <p>&copy; {{ date('Y') }} {{ settings('company_name', config('app.name')) }}. {{ __('All rights reserved.') }}</p>
                 @if(settings('copyright_text'))
                     <p class="mt-2">{{ settings('copyright_text') }}</p>

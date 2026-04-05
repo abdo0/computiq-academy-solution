@@ -64,15 +64,20 @@ class UserAuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'phone' => 'nullable|string|max:20',
+            'phone' => 'nullable|string|max:32',
+            'country_code' => 'nullable|string|size:2',
             'locale' => 'nullable|string|in:ar,en,ku',
         ]);
+
+        $phone = $this->normalizePhone($request->input('phone'));
+        $countryCode = $phone ? $this->normalizeCountryCode($request->input('country_code')) : null;
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'phone' => $request->phone,
+            'phone' => $phone,
+            'country_code' => $countryCode,
             'locale' => $request->locale ?? 'ar',
             'active_role' => 'student',
             'is_active' => true,
@@ -134,13 +139,27 @@ class UserAuthController extends Controller
         $request->validate([
             'name' => 'sometimes|string|max:255',
             'real_name' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:20',
+            'phone' => 'nullable|string|max:32',
+            'country_code' => 'nullable|string|size:2',
+            'avatar' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:5120',
         ]);
 
-        $user->update($request->only(['name', 'real_name', 'phone']));
+        $phone = $this->normalizePhone($request->input('phone'));
+        $countryCode = $phone ? $this->normalizeCountryCode($request->input('country_code')) : null;
+
+        $user->fill($request->only(['name', 'real_name']));
+        $user->phone = $phone;
+        $user->country_code = $countryCode;
+        $user->save();
+
+        if ($request->hasFile('avatar')) {
+            $user
+                ->addMediaFromRequest('avatar')
+                ->toMediaCollection('avatar');
+        }
 
         return response()->json([
-            'data' => $user->fresh(),
+            'data' => $this->formatUser($user->fresh()),
             'message' => __('Your profile has been updated successfully.'),
         ]);
     }
@@ -415,11 +434,27 @@ class UserAuthController extends Controller
             'real_name' => $user->real_name,
             'email' => $user->email,
             'phone' => $user->phone,
+            'country_code' => $user->country_code,
+            'avatar' => $user->getFirstMediaUrl('avatar', 'thumb') ?: $user->getFirstMediaUrl('avatar'),
             'locale' => $user->locale,
             'isVerified' => ! is_null($user->email_verified_at),
             'purchasedCourseIds' => $user->courseEnrollments()->pluck('course_id')->all(),
             'active_role' => $user->resolvedActiveRole(),
             'available_roles' => $user->availableAppRoles(),
         ];
+    }
+
+    protected function normalizePhone(?string $phone): ?string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $phone);
+
+        return $digits ? '+'.$digits : null;
+    }
+
+    protected function normalizeCountryCode(?string $countryCode): ?string
+    {
+        $normalized = strtoupper(substr(trim((string) $countryCode), 0, 2));
+
+        return strlen($normalized) === 2 ? $normalized : null;
     }
 }

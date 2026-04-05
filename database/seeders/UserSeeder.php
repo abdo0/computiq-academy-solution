@@ -18,7 +18,8 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Demo Student',
                 'password' => Hash::make('password'),
-                'phone' => '+964-1-234-5681',
+                'phone' => '+96412345681',
+                'country_code' => 'IQ',
                 'active_role' => 'student',
                 'is_active' => true,
                 'email_verified_at' => now(),

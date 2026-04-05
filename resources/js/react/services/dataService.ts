@@ -477,7 +477,7 @@ export const userAuthService = {
         }
     },
 
-    register: async (data: { name: string; email: string; password: string; password_confirmation: string; phone?: string; locale?: string; 'cf-turnstile-response'?: string }): Promise<{ success: boolean; user?: any; error?: string; errors?: any }> => {
+    register: async (data: { name: string; email: string; password: string; password_confirmation: string; phone?: string; country_code?: string; locale?: string; 'cf-turnstile-response'?: string }): Promise<{ success: boolean; user?: any; error?: string; errors?: any }> => {
         try {
             await initializeCsrf();
             const response = await api.post('/user/register', data);
@@ -804,4 +804,3 @@ export const userAuthService = {
         }
     },
 };
-

@@ -5,19 +5,18 @@ import { Mail, Lock, User, AlertCircle } from 'lucide-react';
 import AppLink from '../common/AppLink';
 import { useLocation } from 'react-router-dom';
 import { useAppNavigate } from '../../hooks/useAppNavigate';
-import PhoneInput from 'react-phone-input-2';
-import 'react-phone-input-2/lib/style.css';
 import { useTranslation } from '../../contexts/TranslationProvider';
 import AuthLayout from './AuthLayout';
 import SocialAuthButtons from './SocialAuthButtons';
 import Turnstile from '../common/Turnstile';
+import PhoneNumberInput, { createPhoneFieldValue } from '../common/PhoneNumberInput';
 
 const SignupPage: React.FC = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [passwordConfirmation, setPasswordConfirmation] = useState('');
-    const [phone, setPhone] = useState('');
+    const [phoneField, setPhoneField] = useState(() => createPhoneFieldValue());
     const [turnstileToken, setTurnstileToken] = useState('');
 
     const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -32,8 +31,8 @@ const SignupPage: React.FC = () => {
         setErrors({});
 
         // Validate phone
-        if (!phone) {
-            setErrors({ phone: [__('Auth error')] }); // You might want a specific error for phone required
+        if (!phoneField.phone) {
+            setErrors({ phone: [__('Phone number is required')] });
             return;
         }
 
@@ -42,7 +41,8 @@ const SignupPage: React.FC = () => {
             email,
             password,
             password_confirmation: passwordConfirmation,
-            phone,
+            phone: phoneField.phone,
+            country_code: phoneField.countryCode,
             locale: language,
             'cf-turnstile-response': turnstileToken,
         });
@@ -124,18 +124,17 @@ const SignupPage: React.FC = () => {
                     </div>
 
                     {/* Phone */}
-                    <div dir="ltr">
+                    <div>
                         <label className={`block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
                             {__('Phone number')}
                         </label>
-                        <PhoneInput
-                            country={'iq'}
-                            value={phone}
-                            onChange={phone => setPhone(phone)}
-                            inputClass={`!w-full !py-3 !h-auto !border-gray-200 dark:!border-gray-600 !bg-gray-50/50 dark:!bg-gray-700/50 !text-gray-900 dark:!text-white !rounded-xl focus:!ring-brand-500 focus:!border-brand-500 focus:!bg-white dark:focus:!bg-gray-700 !outline-none !transition-all`}
-                            buttonClass={`!border-gray-200 dark:!border-gray-600 !bg-gray-50/50 dark:!bg-gray-700/50 !rounded-l-xl`}
-                            dropdownClass={`!bg-white dark:!bg-gray-800 !text-gray-900 dark:!text-white`}
-                            containerClass={`${getFieldError('phone') ? '!border-red-500' : ''}`}
+                        <PhoneNumberInput
+                            value={phoneField.phone}
+                            countryCode={phoneField.countryCode}
+                            onChange={setPhoneField}
+                            variant="auth"
+                            invalid={Boolean(getFieldError('phone'))}
+                            placeholder={__('Enter phone number with country code')}
                         />
                         {getFieldError('phone') && (
                             <p className={`mt-1 text-sm text-red-500 flex items-center gap-1 ${dir === 'rtl' ? 'justify-end' : 'justify-start'}`}>
