@@ -180,15 +180,24 @@ class HomePageService
     private function getCourseCategories(): array
     {
         return Cache::remember('home_course_categories', 3600, function () {
-            return CourseCategory::where('is_active', true)
+            return CourseCategory::query()
+                ->where('is_active', true)
+                ->where('show_on_home', true)
+                ->whereHas('courses', fn ($query) => $query->where('is_active', true))
+                ->withCount([
+                    'courses as courses_count' => fn ($query) => $query->where('is_active', true),
+                ])
                 ->orderBy('sort_order')
                 ->get()
                 ->map(fn ($cat) => [
                     'id' => $cat->id,
                     'name' => $cat->getTranslations('name'),
                     'slug' => $cat->slug,
-                    'image' => $cat->image,
+                    'image' => $cat->getFirstMediaUrl('image') ?: $cat->image,
+                    'image_url' => $cat->getFirstMediaUrl('image') ?: $cat->image,
                     'parent_id' => $cat->parent_id,
+                    'show_on_home' => (bool) $cat->show_on_home,
+                    'courses_count' => (int) $cat->courses_count,
                 ])
                 ->toArray();
         });

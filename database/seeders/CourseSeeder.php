@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\CourseCategory;
 use App\Models\Instructor;
 use Illuminate\Database\Seeder;
+use RuntimeException;
 
 class CourseSeeder extends Seeder
 {
@@ -16,39 +17,52 @@ class CourseSeeder extends Seeder
             [
                 'name' => ['ar' => 'تطوير الذات', 'en' => 'Self Development', 'ku' => 'گەشەپێدانی خود'],
                 'slug' => 'self-development',
+                'image_fixture' => 'self-development.png',
             ],
             [
                 'name' => ['ar' => 'الأعمال والإدارة', 'en' => 'Business & Management', 'ku' => 'بازرگانی و بەڕێوەبردن'],
                 'slug' => 'business-management',
+                'image_fixture' => 'business-management.png',
             ],
             [
                 'name' => ['ar' => 'التكنولوجيا والبرمجة', 'en' => 'Technology & Programming', 'ku' => 'تەکنەلۆجیا و پرۆگرامینگ'],
                 'slug' => 'technology',
+                'image_fixture' => 'technology.png',
             ],
             [
                 'name' => ['ar' => 'التصميم والفنون', 'en' => 'Design & Arts', 'ku' => 'دیزاین و هونەر'],
                 'slug' => 'design-arts',
+                'image_fixture' => 'design-arts.png',
             ],
             [
                 'name' => ['ar' => 'التسويق الرقمي', 'en' => 'Digital Marketing', 'ku' => 'مارکێتنگی دیجیتاڵ'],
                 'slug' => 'digital-marketing',
+                'image_fixture' => 'digital-marketing.png',
             ],
             [
                 'name' => ['ar' => 'الذكاء الاصطناعي', 'en' => 'Artificial Intelligence', 'ku' => 'زیرەکی دەستکرد'],
                 'slug' => 'artificial-intelligence',
+                'image_fixture' => 'artificial-intelligence.png',
             ],
             [
                 'name' => ['ar' => 'اللغات', 'en' => 'Languages', 'ku' => 'زمانەکان'],
                 'slug' => 'languages',
+                'image_fixture' => 'languages.png',
             ],
         ];
 
         $catMap = [];
         foreach ($categories as $i => $cat) {
-            $catMap[$cat['slug']] = CourseCategory::updateOrCreate(
+            $imageFixture = $cat['image_fixture'] ?? null;
+            unset($cat['image_fixture']);
+
+            $category = CourseCategory::updateOrCreate(
                 ['slug' => $cat['slug']],
-                array_merge($cat, ['sort_order' => $i, 'is_active' => true])
+                array_merge($cat, ['sort_order' => $i, 'is_active' => true, 'show_on_home' => true])
             );
+
+            $this->syncCategoryImage($category, $imageFixture);
+            $catMap[$cat['slug']] = $category;
         }
 
         // Map instructor slugs for lookup
@@ -73,6 +87,10 @@ class CourseSeeder extends Seeder
                 'old_price' => 750,
                 'is_live' => false,
                 'is_best_seller' => false,
+                'promo_video' => [
+                    'source_type' => 'embed',
+                    'url' => 'https://www.youtube.com/watch?v=GoXwIVyNvX0',
+                ],
                 'sort_order' => 0,
             ],
             [
@@ -91,6 +109,9 @@ class CourseSeeder extends Seeder
                 'old_price' => 1200,
                 'is_live' => false,
                 'is_best_seller' => true,
+                'promo_video' => [
+                    'source_type' => 'upload',
+                ],
                 'sort_order' => 1,
             ],
 
@@ -111,6 +132,10 @@ class CourseSeeder extends Seeder
                 'old_price' => 300,
                 'is_live' => false,
                 'is_best_seller' => false,
+                'promo_video' => [
+                    'source_type' => 'embed',
+                    'url' => 'https://www.youtube.com/watch?v=aircAruvnKk',
+                ],
                 'sort_order' => 0,
             ],
             [
@@ -129,6 +154,10 @@ class CourseSeeder extends Seeder
                 'old_price' => 350,
                 'is_live' => true,
                 'is_best_seller' => true,
+                'promo_video' => [
+                    'source_type' => 'embed',
+                    'url' => 'https://www.youtube.com/watch?v=JTxsNm9IdYU',
+                ],
                 'sort_order' => 1,
             ],
 
@@ -149,6 +178,9 @@ class CourseSeeder extends Seeder
                 'old_price' => 400,
                 'is_live' => true,
                 'is_best_seller' => false,
+                'promo_video' => [
+                    'source_type' => 'upload',
+                ],
                 'sort_order' => 0,
             ],
             [
@@ -167,6 +199,10 @@ class CourseSeeder extends Seeder
                 'old_price' => 500,
                 'is_live' => false,
                 'is_best_seller' => false,
+                'promo_video' => [
+                    'source_type' => 'embed',
+                    'url' => 'https://www.youtube.com/watch?v=nU-IIXBWlS4',
+                ],
                 'sort_order' => 1,
             ],
 
@@ -187,6 +223,9 @@ class CourseSeeder extends Seeder
                 'old_price' => 900,
                 'is_live' => false,
                 'is_best_seller' => true,
+                'promo_video' => [
+                    'source_type' => 'upload',
+                ],
                 'sort_order' => 0,
             ],
 
@@ -207,6 +246,10 @@ class CourseSeeder extends Seeder
                 'old_price' => 200,
                 'is_live' => true,
                 'is_best_seller' => false,
+                'promo_video' => [
+                    'source_type' => 'embed',
+                    'url' => 'https://www.youtube.com/watch?v=HAnw168huqA',
+                ],
                 'sort_order' => 0,
             ],
         ];
@@ -214,10 +257,15 @@ class CourseSeeder extends Seeder
         foreach ($courses as $courseData) {
             $categorySlug = $courseData['category'];
             $instructorSlug = $courseData['instructor_slug'] ?? null;
-            unset($courseData['category'], $courseData['instructor_slug']);
+            $promoVideo = $courseData['promo_video'] ?? null;
+            unset($courseData['category'], $courseData['instructor_slug'], $courseData['promo_video']);
 
             $courseData['course_category_id'] = $catMap[$categorySlug]->id;
             $courseData['instructor_id'] = $instructorSlug ? ($instructorMap[$instructorSlug] ?? null) : null;
+            $courseData['promo_video_source_type'] = $promoVideo['source_type'] ?? null;
+            $courseData['promo_video_url'] = ($promoVideo['source_type'] ?? null) === 'embed'
+                ? ($promoVideo['url'] ?? null)
+                : null;
 
             // Keep backward-compatible instructor_name/image from instructor
             if ($courseData['instructor_id']) {
@@ -230,10 +278,59 @@ class CourseSeeder extends Seeder
 
             $courseData['is_active'] = true;
 
-            Course::updateOrCreate(
+            $course = Course::updateOrCreate(
                 ['slug' => $courseData['slug']],
                 $courseData
             );
+
+            $this->syncPromoVideo($course, $promoVideo);
         }
+    }
+
+    protected function syncPromoVideo(Course $course, ?array $promoVideo): void
+    {
+        if (($promoVideo['source_type'] ?? null) !== 'upload') {
+            $course->clearMediaCollection('promo_video');
+
+            return;
+        }
+
+        $fixturePath = $this->promoVideoFixturePath();
+
+        if (! is_file($fixturePath)) {
+            throw new RuntimeException("Missing promo video fixture at {$fixturePath}");
+        }
+
+        $course->clearMediaCollection('promo_video');
+        $course
+            ->addMedia($fixturePath)
+            ->usingFileName("{$course->slug}-promo.mp4")
+            ->preservingOriginal()
+            ->toMediaCollection('promo_video');
+    }
+
+    protected function promoVideoFixturePath(): string
+    {
+        return database_path('seeders/assets/videos/course-promo-upload.mp4');
+    }
+
+    protected function syncCategoryImage(CourseCategory $category, ?string $fixtureName): void
+    {
+        if (! $fixtureName) {
+            return;
+        }
+
+        $fixturePath = database_path('seeders/assets/course-categories/' . $fixtureName);
+
+        if (! is_file($fixturePath)) {
+            throw new RuntimeException("Missing category image fixture at {$fixturePath}");
+        }
+
+        $category->clearMediaCollection('image');
+        $category
+            ->addMedia($fixturePath)
+            ->preservingOriginal()
+            ->usingFileName($fixtureName)
+            ->toMediaCollection('image');
     }
 }

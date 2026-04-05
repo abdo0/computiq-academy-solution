@@ -33,11 +33,12 @@ return [
         'http://test.hr-system.test',
         'https://test.hr-system.test',
 
-        // Development
         'http://localhost:3000',
         'http://localhost:5173',
         'http://127.0.0.1:8000',
         'https://nakhwaa.test',
+        'http://computiq-academy.test',
+        'https://computiq-academy.test',
     ],
 
     'allowed_origins_patterns' => [
@@ -45,6 +46,8 @@ return [
         '/^https?:\/\/.*\.hr-system\.test$/',     // All local subdomains
         '/^https?:\/\/dws-hr-port\.com$/',        // Main production domain
         '/^https?:\/\/hr-system\.test$/',         // Main local domain
+        '/^https?:\/\/.*\.computiq-academy\.test$/', // All local computiq subdomains
+        '/^https?:\/\/computiq-academy\.test$/',     // Main local computiq domain
     ],
 
     'allowed_headers' => ['*'],

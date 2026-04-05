@@ -3,11 +3,11 @@
 namespace App\Services\Payment;
 
 use App\Models\PaymentGateway;
-use App\Models\CartItem;
 use App\Models\Currency;
 use App\Models\PromoCode;
 use App\Models\Transaction;
 use App\Models\User;
+use Illuminate\Support\Collection;
 use App\Services\Payment\Contracts\PaymentGatewayInterface;
 use Illuminate\Support\Facades\Log;
 
@@ -19,34 +19,28 @@ class PaymentService
         protected PromoCodeService $promoCodeService
     ) {}
 
-    public function quoteCheckout(User $user, ?PaymentGateway $gateway = null, ?string $promoCode = null): array
+    public function quoteCheckoutItems(Collection $cartItems, ?PaymentGateway $gateway = null, ?string $promoCode = null): array
     {
         try {
-            $cartItems = CartItem::with('course')
-                ->where('user_id', $user->id)
-                ->latest()
-                ->get()
-                ->filter(fn (CartItem $item) => $item->course !== null);
-
             if ($cartItems->isEmpty()) {
                 throw new \RuntimeException(__('Your cart is empty.'));
             }
 
             $resolvedPromoCode = $this->promoCodeService->resolve($promoCode);
-            $subtotal = (float) $cartItems->sum(fn (CartItem $item) => (float) $item->price);
+            $subtotal = (float) $cartItems->sum(fn (array $item) => (float) ($item['price'] ?? 0));
             $totals = $this->calculator->calculateCheckoutTotals($subtotal, $gateway, $resolvedPromoCode);
 
             return [
                 'success' => true,
-                'items' => $cartItems->map(fn (CartItem $item) => [
-                    'id' => (string) $item->id,
-                    'course_id' => (string) $item->course_id,
-                    'price' => $this->formatMoney((float) $item->price),
-                    'course' => $item->course ? [
-                        'id' => (string) $item->course->id,
-                        'title' => $item->course->title,
-                        'slug' => $item->course->slug,
-                        'image' => $item->course->image,
+                'items' => $cartItems->map(fn (array $item) => [
+                    'id' => (string) ($item['id'] ?? ''),
+                    'course_id' => (string) ($item['course_id'] ?? ''),
+                    'price' => $this->formatMoney((float) ($item['price'] ?? 0)),
+                    'course' => ($item['course'] ?? null) ? [
+                        'id' => (string) $item['course']->id,
+                        'title' => $item['course']->title,
+                        'slug' => $item['course']->slug,
+                        'image' => $item['course']->image,
                     ] : null,
                 ])->values()->all(),
                 'count' => $cartItems->count(),

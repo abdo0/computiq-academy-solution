@@ -12,6 +12,7 @@ class CourseReview extends Model
 
     protected $fillable = [
         'course_id',
+        'user_id',
         'user_name',
         'user_image',
         'rating',
@@ -25,5 +26,10 @@ class CourseReview extends Model
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

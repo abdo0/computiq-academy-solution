@@ -562,6 +562,49 @@ export const userAuthService = {
         return response.data?.data?.course_ids || [];
     },
 
+    getOrders: async (): Promise<any[]> => {
+        try {
+            const response = await api.get('/user/orders');
+            return response.data?.data || [];
+        } catch (error) {
+            console.error('Failed to fetch orders', error);
+            return [];
+        }
+    },
+
+    verifyPayment: async (transactionId: number): Promise<{ success: boolean; transaction?: any; status?: string; message?: string; error?: string }> => {
+        try {
+            const response = await api.get(`/payments/verify/${transactionId}`);
+            return {
+                success: true,
+                transaction: response.data?.data?.transaction,
+                status: response.data?.data?.status,
+                message: response.data?.message,
+            };
+        } catch (error: any) {
+            return {
+                success: false,
+                status: error.response?.data?.data?.status,
+                error: error.response?.data?.message || 'Payment verification failed',
+            };
+        }
+    },
+
+    getSocialRedirect: async (provider: string, redirectTo?: string | null, popup = false): Promise<{ url: string; error?: string } | null> => {
+        try {
+            await initializeCsrf();
+            const urlQuery = new URLSearchParams();
+            if (redirectTo) urlQuery.set('redirect_to', redirectTo);
+            if (popup) urlQuery.set('popup', '1');
+            const qs = urlQuery.toString() ? `?${urlQuery.toString()}` : '';
+            const response = await api.get(`/auth/${provider}/redirect${qs}`);
+            return response.data?.data || response.data;
+        } catch (error: any) {
+            console.error('Failed to get social redirect', error);
+            return { url: '', error: error.response?.data?.message || 'Failed' };
+        }
+    },
+
     getDonationHistory: async (params?: { page?: number; status?: string }): Promise<any> => {
         const response = await api.get('/user/dashboard/history', { params });
         return response.data;
@@ -579,9 +622,7 @@ export const userAuthService = {
         }
     },
 
-    verifyPayment: async (transactionId: number): Promise<{ success: boolean; transaction?: any; status?: string; message?: string; error?: string }> => {
-        return dataService.verifyPayment(transactionId);
-    },
+
 
     getVerificationStatus: async (): Promise<any> => {
         const response = await api.get('/user/verification/status');
@@ -611,6 +652,48 @@ export const userAuthService = {
             return {
                 success: false,
                 error: error.response?.data?.message || 'Verification submission failed',
+            };
+        }
+    },
+
+    getMyCertificates: async (): Promise<any[]> => {
+        try {
+            const response = await api.get('/user/certificates');
+            return response.data?.data || [];
+        } catch (error) {
+            return [];
+        }
+    },
+
+    getStudentProfile: async (): Promise<any> => {
+        try {
+            const response = await api.get('/user/student-profile');
+            return response.data?.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    updateStudentProfile: async (payload: any): Promise<{ success: boolean; data?: any; error?: string; message?: string }> => {
+        try {
+            const response = await api.post('/user/student-profile', payload);
+            return { success: true, data: response.data?.data, message: response.data?.message };
+        } catch (error: any) {
+            return {
+                success: false,
+                error: error.response?.data?.message || 'Update failed',
+            };
+        }
+    },
+
+    switchRole: async (role: string): Promise<{ success: boolean; error?: string }> => {
+        try {
+            await api.post('/user/roles/switch', { role });
+            return { success: true };
+        } catch (error: any) {
+            return {
+                success: false,
+                error: error.response?.data?.message || 'Role switch failed',
             };
         }
     },
@@ -687,13 +770,13 @@ export const userAuthService = {
     // ── Cart ──
 
     getCart: async (): Promise<any> => {
-        const response = await api.get('/user/cart');
+        const response = await api.get('/cart');
         return response.data.data;
     },
 
     addToCart: async (courseId: number): Promise<{ success: boolean; count?: number; already_exists?: boolean; message?: string; error?: string }> => {
         try {
-            const response = await api.post('/user/cart', { course_id: courseId });
+            const response = await api.post('/cart', { course_id: courseId });
             return { success: true, count: response.data.data?.count, message: response.data.message };
         } catch (error: any) {
             if (error.response?.status === 409) {
@@ -705,7 +788,7 @@ export const userAuthService = {
 
     removeFromCart: async (courseId: number): Promise<{ success: boolean; count?: number; message?: string; error?: string }> => {
         try {
-            const response = await api.delete(`/user/cart/${courseId}`);
+            const response = await api.delete(`/cart/${courseId}`);
             return { success: true, count: response.data.data?.count, message: response.data.message };
         } catch (error: any) {
             return { success: false, error: error.response?.data?.message || 'Failed to remove from cart' };
@@ -714,7 +797,7 @@ export const userAuthService = {
 
     clearCart: async (): Promise<{ success: boolean; message?: string; error?: string }> => {
         try {
-            const response = await api.delete('/user/cart');
+            const response = await api.delete('/cart');
             return { success: true, message: response.data.message };
         } catch (error: any) {
             return { success: false, error: error.response?.data?.message || 'Failed to clear cart' };

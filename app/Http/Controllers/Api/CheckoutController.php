@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaymentGateway;
+use App\Services\Cart\CartService;
 use App\Services\Payment\PaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,7 +13,8 @@ use Illuminate\Support\Facades\Log;
 class CheckoutController extends Controller
 {
     public function __construct(
-        protected PaymentService $paymentService
+        protected PaymentService $paymentService,
+        protected CartService $cartService,
     ) {}
 
     public function quote(Request $request): JsonResponse
@@ -32,8 +34,8 @@ class CheckoutController extends Controller
             }
         }
 
-        $result = $this->paymentService->quoteCheckout(
-            $request->user(),
+        $result = $this->paymentService->quoteCheckoutItems(
+            $this->cartService->checkoutItems($request),
             $gateway,
             $validated['promo_code'] ?? null,
         );

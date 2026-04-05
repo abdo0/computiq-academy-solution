@@ -80,8 +80,10 @@ class ContentController extends Controller
                     'id' => (string) $cat->id,
                     'name' => $cat->getTranslations('name'),
                     'slug' => $cat->slug,
-                    'image' => $cat->image,
+                    'image' => $cat->getFirstMediaUrl('image') ?: $cat->image,
+                    'image_url' => $cat->getFirstMediaUrl('image') ?: $cat->image,
                     'parent_id' => $cat->parent_id,
+                    'show_on_home' => (bool) $cat->show_on_home,
                 ]);
         });
 

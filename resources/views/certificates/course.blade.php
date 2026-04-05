@@ -8,128 +8,107 @@
         body {
             margin: 0;
             font-family: DejaVu Sans, sans-serif;
-            background: #0f172a;
-            color: #f8fafc;
+            color: #0f172a;
         }
         .page {
             width: 100%;
             height: 100%;
             box-sizing: border-box;
-            padding: 48px;
-            background:
-                radial-gradient(circle at top right, rgba(37, 99, 235, .28), transparent 28%),
-                radial-gradient(circle at bottom left, rgba(220, 38, 38, .20), transparent 32%),
-                linear-gradient(135deg, #0f172a 0%, #111827 45%, #172033 100%);
+            padding: 22px;
+            background: #f8fafc;
         }
-        .frame {
-            height: 100%;
-            border: 2px solid rgba(248, 250, 252, .16);
-            border-radius: 28px;
-            padding: 34px 42px;
-            box-sizing: border-box;
+        .canvas {
             position: relative;
-            background: rgba(15, 23, 42, .55);
-        }
-        .badge {
-            display: inline-block;
-            padding: 8px 14px;
-            border-radius: 999px;
-            color: #fecaca;
-            background: rgba(220, 38, 38, .15);
-            font-size: 14px;
-            letter-spacing: .08em;
-            text-transform: uppercase;
-        }
-        .title {
-            margin: 28px 0 6px;
-            font-size: 42px;
-            font-weight: 700;
-        }
-        .subtitle {
-            font-size: 18px;
-            color: #cbd5e1;
-            margin-bottom: 34px;
-        }
-        .student {
-            font-size: 40px;
-            font-weight: 700;
-            margin: 24px 0 14px;
-            color: #fff7ed;
-        }
-        .course {
-            font-size: 30px;
-            font-weight: 700;
-            color: #93c5fd;
-            margin: 12px 0 18px;
-        }
-        .copy {
-            max-width: 760px;
-            line-height: 1.8;
-            font-size: 17px;
-            color: #cbd5e1;
-        }
-        .meta {
-            position: absolute;
-            left: 42px;
-            right: 42px;
-            bottom: 34px;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
             overflow: hidden;
+            border-radius: 20px;
+            background: #ffffff;
+            border: 1px solid #dbe4f2;
+        }
+        .template-image {
+            width: 100%;
+            display: block;
+        }
+        .student-name {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            overflow: hidden;
+            white-space: nowrap;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        .meta-strip {
+            position: absolute;
+            left: 32px;
+            right: 32px;
+            bottom: 24px;
+            display: table;
+            table-layout: fixed;
+            width: calc(100% - 64px);
+            border-collapse: separate;
+            border-spacing: 14px 0;
         }
         .meta-box {
-            width: 32%;
-            float: left;
-            margin-right: 2%;
-            padding: 14px 16px;
-            border-radius: 18px;
-            background: rgba(255, 255, 255, .05);
-            border: 1px solid rgba(255, 255, 255, .08);
-            box-sizing: border-box;
-        }
-        .meta-box:last-child {
-            margin-right: 0;
+            display: table-cell;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #dbe4f2;
+            border-radius: 14px;
+            vertical-align: middle;
         }
         .meta-label {
-            font-size: 12px;
-            color: #94a3b8;
+            font-size: 11px;
+            color: #64748b;
+            margin-bottom: 4px;
             text-transform: uppercase;
             letter-spacing: .08em;
-            margin-bottom: 6px;
         }
         .meta-value {
-            font-size: 16px;
-            color: #f8fafc;
-            font-weight: 600;
+            font-size: 14px;
+            color: #0f172a;
+            font-weight: 700;
         }
     </style>
 </head>
 <body>
     <div class="page">
-        <div class="frame">
-            <div class="badge">Computiq Academy</div>
-            <div class="title">Certificate of Completion</div>
-            <div class="subtitle">This document certifies that the learner below has successfully completed the course and passed its required assessments.</div>
+        <div class="canvas">
+            @if ($templateImageDataUri)
+                <img class="template-image" src="{{ $templateImageDataUri }}" alt="Certificate Template">
+            @endif
 
-            <div style="font-size: 16px; color: #94a3b8;">Presented to</div>
-            <div class="student">{{ $certificate->student_name }}</div>
-
-            <div style="font-size: 16px; color: #94a3b8;">For successfully completing</div>
-            <div class="course">{{ data_get($course->getTranslations('title'), $user->locale) ?: data_get($course->getTranslations('title'), 'ar') ?: data_get($course->getTranslations('title'), 'en') ?: $course->slug }}</div>
-
-            <div class="copy">
-                This certificate was issued by Computiq Academy as a record of successful course completion and assessment achievement.
+            <div
+                class="student-name"
+                style="
+                    left: {{ $nameAreaStyle['left'] }}%;
+                    top: {{ $nameAreaStyle['top'] }}%;
+                    width: {{ $nameAreaStyle['width'] }}%;
+                    height: {{ $nameAreaStyle['height'] }}%;
+                    color: {{ $nameAreaStyle['text_color'] }};
+                    font-size: {{ $nameAreaStyle['font_size'] }}px;
+                    font-family: '{{ $nameAreaStyle['font_family'] }}', DejaVu Sans, sans-serif;
+                    text-align: {{ $nameAreaStyle['text_align'] }};
+                "
+            >
+                {{ $resolvedStudentName }}
             </div>
 
-            <div class="meta">
+            <div class="meta-strip">
+                <div class="meta-box">
+                    <div class="meta-label">Course</div>
+                    <div class="meta-value">{{ $resolvedCourseTitle }}</div>
+                </div>
                 <div class="meta-box">
                     <div class="meta-label">Issued At</div>
-                    <div class="meta-value">{{ optional($certificate->issued_at)->format('F j, Y') }}</div>
+                    <div class="meta-value">{{ optional($certificate->issued_at)->format('Y-m-d') }}</div>
                 </div>
                 <div class="meta-box">
-                    <div class="meta-label">Certificate Number</div>
-                    <div class="meta-value">{{ $certificate->certificate_number }}</div>
-                </div>
-                <div class="meta-box">
-                    <div class="meta-label">Verification Code</div>
+                    <div class="meta-label">Verification</div>
                     <div class="meta-value">{{ $certificate->verification_code }}</div>
                 </div>
             </div>

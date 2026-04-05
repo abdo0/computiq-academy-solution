@@ -4,14 +4,21 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Services\Learning\VideoPayloadService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class CourseController extends Controller
 {
+    public function __construct(
+        protected VideoPayloadService $videoPayloadService,
+    ) {
+    }
+
     /**
      * Get paginated list of courses with filters.
      */
-    public function index(\Illuminate\Http\Request $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $query = Course::where('is_active', true)
             ->with(['category', 'instructor']);
@@ -19,13 +26,13 @@ class CourseController extends Controller
         // Filter by Category Slug
         if ($request->has('category') && $request->filled('category')) {
             $query->whereHas('category', function ($q) use ($request) {
-                $q->where('slug', $request->input('Category'));
+                $q->where('slug', $request->input('category'));
             });
         }
 
         // Search by Title/Description
         if ($request->has('search') && $request->filled('search')) {
-            $searchTerm = '%' . $request->input('Search') . '%';
+            $searchTerm = '%' . $request->input('search') . '%';
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('title', 'like', $searchTerm)
                   ->orWhere('description', 'like', $searchTerm)
@@ -33,8 +40,12 @@ class CourseController extends Controller
             });
         }
 
+        if ($request->filled('delivery_type')) {
+            $query->where('delivery_type', $request->input('delivery_type'));
+        }
+
         // Sorting
-        $sort = $request->input('Sort', 'newest');
+        $sort = $request->input('sort', 'newest');
         switch ($sort) {
             case 'popular':
                 $query->orderBy('students_count', 'desc');
@@ -51,7 +62,7 @@ class CourseController extends Controller
                 break;
         }
 
-        $courses = $query->paginate($request->input('Per page', 12));
+        $courses = $query->paginate($request->integer('per_page', 12));
 
         $data = $courses->map(function ($course) {
             return [
@@ -66,6 +77,7 @@ class CourseController extends Controller
                 'price' => (float) $course->price,
                 'old_price' => $course->old_price ? (float) $course->old_price : null,
                 'is_live' => $course->is_live,
+                'delivery_type' => $course->delivery_type,
                 'is_best_seller' => $course->is_best_seller,
                 'category' => $course->category ? [
                     'id' => $course->category->id,
@@ -108,7 +120,10 @@ class CourseController extends Controller
             ->with([
                 'category',
                 'instructor',
-                'modules.lessons',
+                'modules' => fn ($query) => $query->orderBy('sort_order'),
+                'modules.lessons' => fn ($query) => $query
+                    ->where('is_active', true)
+                    ->orderBy('sort_order'),
                 'reviews',
             ])
             ->firstOrFail();
@@ -120,6 +135,8 @@ class CourseController extends Controller
             'short_description' => $course->getTranslations('short_description'),
             'description' => $course->getTranslations('description'),
             'image' => $course->image,
+            'has_promo_video' => $this->hasPromoVideo($course),
+            'promo_video' => $this->buildPromoVideoPayload($course),
             'rating' => (float) $course->rating,
             'review_count' => $course->review_count,
             'duration_hours' => $course->duration_hours,
@@ -127,6 +144,7 @@ class CourseController extends Controller
             'price' => (float) $course->price,
             'old_price' => $course->old_price ? (float) $course->old_price : null,
             'is_live' => $course->is_live,
+            'delivery_type' => $course->delivery_type,
             'is_best_seller' => $course->is_best_seller,
             'category' => $course->category ? [
                 'id' => $course->category->id,
@@ -158,6 +176,7 @@ class CourseController extends Controller
                     'title' => $l->getTranslations('title'),
                     'duration_minutes' => $l->duration_minutes,
                     'is_free' => $l->is_free,
+                    'is_preview_available' => $l->is_free,
                 ])->toArray(),
             ])->toArray(),
             'reviews' => $course->reviews->take(20)->map(fn ($r) => [
@@ -171,5 +190,22 @@ class CourseController extends Controller
         ];
 
         return response()->success($data, 'Course details retrieved successfully');
+    }
+
+    protected function hasPromoVideo(Course $course): bool
+    {
+        return $this->buildPromoVideoPayload($course) !== null;
+    }
+
+    protected function buildPromoVideoPayload(Course $course): ?array
+    {
+        return $this->videoPayloadService->buildPayload(
+            $course,
+            'promo_video',
+            $course->promo_video_source_type,
+            $course->promo_video_provider,
+            $course->promo_video_url,
+            $course->promo_embed_url,
+        );
     }
 }

@@ -51,9 +51,16 @@ export const resolveRouteBootstrapData = async (path: string): Promise<any> => {
     }
 
     if (pathname === '/courses') {
+        const coursesParams = {
+            category: searchParams.get('category') || undefined,
+            search: searchParams.get('search') || searchParams.get('q') || undefined,
+            sort: searchParams.get('sort') || undefined,
+            delivery_type: searchParams.get('delivery_type') || undefined,
+        };
+
         const [seo, courses, categories] = await Promise.all([
             seoPromise,
-            dataService.getCourses().catch(() => null),
+            dataService.getCourses(coursesParams).catch(() => null),
             dataService.getCategories().catch(() => null),
         ]);
 
@@ -221,16 +228,21 @@ export const resolveRouteBootstrapData = async (path: string): Promise<any> => {
     }
 
     if (pathname === '/dashboard') {
-        const shouldLoadDashboardCourses = searchParams.get('tab') === 'courses' || searchParams.get('payment') === 'success';
+        const dashboardTab = searchParams.get('tab');
+        const shouldLoadDashboardCourses = dashboardTab === 'courses' || searchParams.get('payment') === 'success';
+        const shouldLoadDashboardCertificates = dashboardTab === 'certificates';
+        const shouldLoadStudentProfile = dashboardTab === 'profile';
 
-        const [seo, dashboardStats, cart, dashboardCourses] = await Promise.all([
+        const [seo, dashboardStats, cart, dashboardCourses, dashboardCertificates, studentProfile] = await Promise.all([
             seoPromise,
             userAuthService.getDashboardStats().catch(() => null),
             userAuthService.getCart().catch(() => null),
             shouldLoadDashboardCourses ? userAuthService.getMyCourses().catch(() => null) : Promise.resolve(null),
+            shouldLoadDashboardCertificates ? userAuthService.getMyCertificates().catch(() => null) : Promise.resolve(null),
+            shouldLoadStudentProfile ? userAuthService.getStudentProfile().catch(() => null) : Promise.resolve(null),
         ]);
 
-        return { path: fullPath, seo, dashboardStats, cart, dashboardCourses };
+        return { path: fullPath, seo, dashboardStats, cart, dashboardCourses, dashboardCertificates, studentProfile };
     }
 
     return {

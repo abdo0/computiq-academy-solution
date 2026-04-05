@@ -41,7 +41,7 @@ import { TranslationProvider, useTranslation } from './contexts/TranslationProvi
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { WhitelistProvider } from './contexts/WhitelistContext';
-import { CartProvider, useCart } from './contexts/CartContext';
+import { CartProvider } from './contexts/CartContext';
 import { RouteBootstrapProvider, useRouteBootstrap } from './contexts/RouteBootstrapContext';
 import { ToastContainer } from 'react-toastify';
 import { HelmetProvider } from 'react-helmet-async';
@@ -101,11 +101,24 @@ const CustomCloseButton = ({ closeToast }: { closeToast?: (e: React.MouseEvent<H
   </button>
 );
 
+/**
+ * Determines which routes require authentication before rendering.
+ *
+ * ⚠️  IMPORTANT: /cart must NOT be listed here.
+ *
+ * When a route is "protected", the navigation flow in AppContent skips
+ * `commitRenderedRoute()` for unauthenticated users.  This means
+ * `waitForRenderedRoute()` inside useAppNavigate never resolves,
+ * so NProgress.done() never fires and the progress bar hangs forever.
+ *
+ * /cart is accessible to guests (they can browse and add courses before
+ * logging in).  The cart page itself handles the empty/guest state.
+ * /checkout is protected because payment requires authentication.
+ */
 const isProtectedRoute = (pathname: string): boolean => {
   const normalized = normalizeRouteTarget(pathname.replace(/\/+$/, '') || '/').pathname;
 
   return normalized === '/dashboard'
-    || normalized === '/cart'
     || normalized === '/checkout'
     || normalized.startsWith('/learn/');
 };
@@ -118,7 +131,6 @@ const AppContent: React.FC = () => {
   const { __, isLoading: isTranslationsLoading } = useTranslation();
   const { isLoading: isSettingsLoading } = useSettings();
   const { user, isInitialized: isAuthInitialized, show2FAModal, setShow2FAModal, verify2FA, resend2FA, isLoading, dev2FACode, refreshUser } = useAuth();
-  const { isInitialized: isCartInitialized } = useCart();
   const { state: routeBootstrapState, prepareRoute, commitRenderedRoute, getPreparedPayloadForPath } = useRouteBootstrap();
   const [isRouteReady, setIsRouteReady] = useState(false);
   const [hasCompletedInitialBoot, setHasCompletedInitialBoot] = useState(false);
@@ -148,8 +160,11 @@ const AppContent: React.FC = () => {
 
       if (requiresAuth && !user) {
         if (isMounted) {
-          setDisplayLocation(location);
-          setIsRouteReady(true);
+          flushSync(() => {
+            commitRenderedRoute(currentTarget);
+            setDisplayLocation(location);
+            setIsRouteReady(true);
+          });
         }
         return;
       }
@@ -193,7 +208,6 @@ const AppContent: React.FC = () => {
 
   const currentTarget = `${location.pathname}${location.search}`;
   const currentBootstrapPath = normalizeRouteTarget(currentTarget).fullPath;
-  const shouldWaitForCart = Boolean(user);
   const bootstrapTrackedPath = routeBootstrapState.pendingTargetPath || routeBootstrapState.renderedPath;
 
   const loaderSteps = [
@@ -216,12 +230,6 @@ const AppContent: React.FC = () => {
       active: !isTranslationsLoading && !isSettingsLoading && !isAuthInitialized,
     },
     {
-      key: 'cart',
-      label: __('Loading cart...'),
-      done: !shouldWaitForCart || isCartInitialized,
-      active: !isTranslationsLoading && !isSettingsLoading && isAuthInitialized && shouldWaitForCart && !isCartInitialized,
-    },
-    {
       key: 'route-module',
       label: __('Preparing page...'),
       done: bootstrapTrackedPath === currentBootstrapPath && routeBootstrapState.moduleStatus === 'ready',
@@ -239,7 +247,25 @@ const AppContent: React.FC = () => {
   const loaderProgress = Math.round((completedSteps / loaderSteps.length) * 100);
   const activeStep = loaderSteps.find((step) => !step.done);
   const loaderLabel = activeStep?.label || __('Almost ready...');
-  const shouldBlockForInitialBoot = isTranslationsLoading || isSettingsLoading || !isAuthInitialized || (shouldWaitForCart && !isCartInitialized) || !isRouteReady;
+  /**
+   * shouldBlockForInitialBoot — controls the FullScreenLoader visibility.
+   *
+   * ⚠️  DO NOT add cart initialization here.
+   *
+   * Previously, this included `(shouldWaitForCart && !isCartInitialized)`.
+   * That caused a cascading bug:
+   *   1. CartContext's useEffect set `isInitialized = false` on every
+   *      `user` change (even null → null).
+   *   2. During SPA navigation the cart would briefly flicker to
+   *      uninitialized, causing the FullScreenLoader to reappear.
+   *   3. The NProgress bar would hang because the loader blocked the
+   *      route commit.
+   *
+   * The cart fetches data in the background via CartContext and does NOT
+   * need to block the initial page render.  Route-specific cart data is
+   * pre-fetched by routeBootstrap for /cart and /checkout pages.
+   */
+  const shouldBlockForInitialBoot = isTranslationsLoading || isSettingsLoading || !isAuthInitialized || !isRouteReady;
 
   useEffect(() => {
     if (!shouldBlockForInitialBoot && !hasCompletedInitialBoot) {
@@ -266,6 +292,7 @@ const AppContent: React.FC = () => {
     // Fast path: auth redirect or data already prepared — commit immediately
     if (requiresAuth && !user) {
       flushSync(() => {
+        commitRenderedRoute(actualTarget);
         setDisplayLocation(location);
       });
       return;

@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useTranslation } from '../../contexts/TranslationProvider';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -9,7 +7,6 @@ import AppLink from '../common/AppLink';
 import { useCurrency } from '../../utils/currency';
 
 const CartPage: React.FC = () => {
-    const { user } = useAuth();
     const { cartItems, cartCount, cartTotal, removeFromCart, clearCart } = useCart();
     const { __, t } = useTranslation();
     const { dir } = useLanguage();
@@ -21,10 +18,6 @@ const CartPage: React.FC = () => {
         await removeFromCart(courseId);
         setRemovingItems(prev => prev.filter(id => id !== courseId));
     };
-
-    if (!user) {
-        return <Navigate to="/login" replace />;
-    }
 
     const ArrowIcon = dir === 'rtl' ? ArrowLeft : ArrowRight;
 

@@ -62,6 +62,19 @@ class CoursesTable
                 IconColumn::make('is_live')
                     ->label(__('Live'))
                     ->boolean(),
+                TextColumn::make('delivery_type')
+                    ->label(__('Delivery'))
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state) => match ($state) {
+                        'onsite' => __('On-site'),
+                        'hybrid' => __('Hybrid'),
+                        default => __('Online'),
+                    })
+                    ->color(fn (?string $state) => match ($state) {
+                        'onsite' => 'warning',
+                        'hybrid' => 'info',
+                        default => 'success',
+                    }),
                 IconColumn::make('is_best_seller')
                     ->label(__('Best'))
                     ->boolean(),
@@ -76,6 +89,13 @@ class CoursesTable
                 SelectFilter::make('course_category_id')
                     ->label(__('Category'))
                     ->relationship('category', 'name'),
+                SelectFilter::make('delivery_type')
+                    ->label(__('Delivery Type'))
+                    ->options([
+                        'online' => __('Online'),
+                        'onsite' => __('On-site'),
+                        'hybrid' => __('Hybrid'),
+                    ]),
             ])
             ->recordActions([
                 EditAction::make(),

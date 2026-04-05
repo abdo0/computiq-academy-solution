@@ -6,19 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\User;
+use App\Services\Cart\CartService;
 use App\Services\Learning\LearningService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 
 class UserAuthController extends Controller
 {
     public function __construct(
         protected LearningService $learningService,
+        protected CartService $cartService,
     ) {
     }
 
@@ -44,10 +44,12 @@ class UserAuthController extends Controller
         $request->session()->regenerate();
 
         $user = Auth::guard('student')->user();
+        $cartMerge = $this->cartService->mergeGuestCartIntoUser($request, $user);
 
         return response()->json([
             'data' => [
                 'user' => $this->formatUser($user),
+                'cart_merge' => $cartMerge,
             ],
             'message' => __('Welcome back! You have logged in successfully.'),
         ]);
@@ -72,15 +74,19 @@ class UserAuthController extends Controller
             'password' => Hash::make($request->password),
             'phone' => $request->phone,
             'locale' => $request->locale ?? 'ar',
+            'active_role' => 'student',
             'is_active' => true,
         ]);
+        $user->ensureDefaultAppRole();
 
         Auth::guard('student')->login($user, true);
         $request->session()->regenerate();
+        $cartMerge = $this->cartService->mergeGuestCartIntoUser($request, $user);
 
         return response()->json([
             'data' => [
                 'user' => $this->formatUser($user),
+                'cart_merge' => $cartMerge,
             ],
             'message' => __('Your account has been created successfully. Welcome!'),
         ], 201);
@@ -127,10 +133,11 @@ class UserAuthController extends Controller
 
         $request->validate([
             'name' => 'sometimes|string|max:255',
+            'real_name' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
         ]);
 
-        $user->update($request->only(['name', 'phone']));
+        $user->update($request->only(['name', 'real_name', 'phone']));
 
         return response()->json([
             'data' => $user->fresh(),
@@ -377,16 +384,42 @@ class UserAuthController extends Controller
         ]);
     }
 
+    /**
+     * Get orders history for the user.
+     */
+    public function orders(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $orders = \App\Models\Order::query()
+            ->where('user_id', $user->id)
+            ->with([
+                'items.course:id,title,slug,image,price',
+                'transactions.paymentGateway:id,name,code'
+            ])
+            ->orderByDesc('created_at')
+            ->get();
+
+        return response()->json([
+            'data' => $orders,
+        ]);
+    }
+
     protected function formatUser(User $user): array
     {
+        $user->loadMissing('roles');
+
         return [
             'id' => (string) $user->id,
             'name' => $user->name,
+            'real_name' => $user->real_name,
             'email' => $user->email,
             'phone' => $user->phone,
             'locale' => $user->locale,
             'isVerified' => ! is_null($user->email_verified_at),
             'purchasedCourseIds' => $user->courseEnrollments()->pluck('course_id')->all(),
+            'active_role' => $user->resolvedActiveRole(),
+            'available_roles' => $user->availableAppRoles(),
         ];
     }
 }

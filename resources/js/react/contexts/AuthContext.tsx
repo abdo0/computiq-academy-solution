@@ -1,18 +1,22 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { useNavigate as useRawNavigate } from 'react-router-dom';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { userAuthService } from '../services/dataService';
 import { toast } from 'react-toastify';
 import { useLanguage } from './LanguageContext';
 import { useTranslation } from '../contexts/TranslationProvider';
+import { useAppNavigate } from '../hooks/useAppNavigate';
+import NProgress from 'nprogress';
 
 export interface User {
     id: string;
     name: string;
+    real_name?: string | null;
     email: string;
     phone?: string;
     locale?: string;
     isVerified: boolean;
     purchasedCourseIds?: number[];
+    active_role?: string;
+    available_roles?: string[];
 }
 
 interface AuthContextType {
@@ -45,7 +49,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [dev2FACode, setDev2FACode] = useState<string | null>(null);
     const { setLanguage } = useLanguage();
     const { __ } = useTranslation();
-    const navigate = useRawNavigate();
+    const navigate = useAppNavigate();
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -123,9 +127,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 setShow2FAModal(true);
                 return false;
             }
-            throw new Error('Login failed');
+            setError(response.error || __('Auth error'));
+            return false;
         } catch (err: any) {
-            setError(err.message || 'Login failed');
+            setError(err.message || __('Auth error'));
             return false;
         } finally {
             setIsLoading(false);
@@ -140,10 +145,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (response.success) {
                 if (response.user) setUser(response.user);
                 toast.success(__('Registration successful'));
+            } else if (response.error) {
+                setError(response.error);
             }
             return response;
         } catch (err: any) {
-            setError(err.message || 'Registration failed');
+            setError(err.message || __('Registration failed'));
             return { success: false, errors: err.errors };
         } finally {
             setIsLoading(false);
@@ -156,13 +163,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const logout = async () => {
         setIsLoading(true);
+        NProgress.start();
+
         try {
             await userAuthService.logout();
+            try {
+                await navigate('/login', { replace: true });
+            } catch (navigationError) {
+                console.error('Logout navigation error:', navigationError);
+                window.location.assign('/login');
+            }
+
             setUser(null);
-            navigate('/login');
+            window.dispatchEvent(new CustomEvent('auth:logout'));
             toast.info(__('Logged out successfully'));
         } catch (err: any) {
             console.error('Logout error:', err);
+            NProgress.done();
         } finally {
             setIsLoading(false);
         }

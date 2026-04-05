@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Learning\VideoEmbedService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,11 +10,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Translatable\HasTranslations;
 
-class Course extends Model
+class Course extends Model implements HasMedia
 {
-    use HasFactory, SoftDeletes, HasTranslations;
+    use HasFactory, SoftDeletes, HasTranslations, InteractsWithMedia;
 
     protected $fillable = [
         'course_category_id',
@@ -23,6 +28,10 @@ class Course extends Model
         'short_description',
         'description',
         'image',
+        'promo_video_source_type',
+        'promo_video_provider',
+        'promo_video_url',
+        'promo_embed_url',
         'instructor_name',
         'instructor_image',
         'rating',
@@ -33,6 +42,7 @@ class Course extends Model
         'old_price',
         'is_active',
         'is_live',
+        'delivery_type',
         'is_best_seller',
         'sort_order',
     ];
@@ -51,6 +61,33 @@ class Course extends Model
         'is_live' => 'boolean',
         'is_best_seller' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $course) {
+            if ($course->promo_video_source_type === 'embed') {
+                $normalized = VideoEmbedService::normalize($course->promo_video_url);
+                $course->promo_video_provider = $normalized['provider'];
+                $course->promo_video_url = $normalized['video_url'];
+                $course->promo_embed_url = $normalized['embed_url'];
+
+                return;
+            }
+
+            if ($course->promo_video_source_type === 'upload') {
+                $course->promo_video_provider = null;
+                $course->promo_video_url = null;
+                $course->promo_embed_url = null;
+
+                return;
+            }
+
+            $course->promo_video_source_type = null;
+            $course->promo_video_provider = null;
+            $course->promo_video_url = null;
+            $course->promo_embed_url = null;
+        });
+    }
 
     public function category(): BelongsTo
     {
@@ -80,6 +117,16 @@ class Course extends Model
     public function certificates(): HasMany
     {
         return $this->hasMany(CourseCertificate::class);
+    }
+
+    public function certificateTemplate(): HasOne
+    {
+        return $this->hasOne(CourseCertificateTemplate::class);
+    }
+
+    public function certificateTemplates(): HasMany
+    {
+        return $this->hasMany(CourseCertificateTemplate::class);
     }
 
     public function exams(): HasManyThrough
@@ -115,5 +162,23 @@ class Course extends Model
         return $this->belongsToMany(User::class, 'course_enrollments')
             ->withPivot(['order_id', 'transaction_id', 'enrolled_at'])
             ->withTimestamps();
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('promo_video')
+            ->singleFile()
+            ->acceptsMimeTypes([
+                'video/mp4',
+                'video/quicktime',
+                'video/webm',
+                'video/x-msvideo',
+                'video/x-matroska',
+            ]);
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        //
     }
 }

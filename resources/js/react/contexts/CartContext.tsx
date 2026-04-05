@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import { useTranslation } from './TranslationProvider';
 
 interface CartItemData {
-    id: number;
+    id: number | string;
     course_id: number;
     price: string;
     added_at: string;
@@ -36,6 +36,26 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+/**
+ * CartProvider — manages cart state for the entire React app.
+ *
+ * ## Initialization
+ * Fetches cart from the API once on mount, then re-fetches whenever `user`
+ * changes (login / logout / registration).  This single useEffect is
+ * intentionally simple.
+ *
+ * ## ⚠️  DO NOT add `setIsInitialized(false)` at the top of the useEffect.
+ * That was a past bug. It causes `isInitialized` to briefly flip to false
+ * on every dependency change, which can:
+ *   - Make `shouldBlockForInitialBoot` in App.tsx re-trigger the
+ *     FullScreenLoader during SPA navigation.
+ *   - Cause CartPage to flash "empty cart" before data arrives.
+ *
+ * ## ⚠️  DO NOT add this context to the FullScreenLoader's blocking condition.
+ * The cart loads in the background.  Route-specific cart data is already
+ * pre-fetched by `routeBootstrap.ts` for /cart and /checkout pages.
+ * Adding cart to the blocker creates circular timing issues with NProgress.
+ */
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [cartItems, setCartItems] = useState<CartItemData[]>([]);
     const [cartCount, setCartCount] = useState(0);
@@ -52,11 +72,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, []);
 
     const refreshCart = useCallback(async () => {
-        if (!user) {
-            applyCartState(null);
-            setIsInitialized(true);
-            return;
-        }
         try {
             setIsLoading(true);
             const data = await userAuthService.getCart();
@@ -67,21 +82,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setIsLoading(false);
             setIsInitialized(true);
         }
-    }, [applyCartState, user]);
+    }, [applyCartState]);
 
+    // Fetch cart on mount and whenever `user` changes (login/logout).
+    // See class-level doc for why we must NOT reset isInitialized here.
     useEffect(() => {
         let isMounted = true;
 
         const initializeCart = async () => {
-            if (!user) {
-                applyCartState(null);
-                if (isMounted) {
-                    setIsInitialized(true);
-                    setIsLoading(false);
-                }
-                return;
-            }
-
             if (isMounted) {
                 setIsLoading(true);
             }
@@ -103,7 +111,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
         };
 
-        setIsInitialized(false);
         void initializeCart();
 
         return () => {
@@ -112,14 +119,15 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [applyCartState, user]);
 
     const addToCart = useCallback(async (courseId: number): Promise<boolean> => {
-        if (!user) {
-            toast.error(__('Please log in to add items to your cart.'));
-            return false;
-        }
         const result = await userAuthService.addToCart(courseId);
         if (result.success) {
             toast.success(result.message || __('Course added to cart successfully.'));
-            await refreshCart();
+            if (result.cart) {
+                applyCartState(result.cart);
+                setIsInitialized(true);
+            } else {
+                await refreshCart();
+            }
             return true;
         } else {
             if (result.already_exists) {
@@ -129,27 +137,31 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
             return false;
         }
-    }, [user, refreshCart, __]);
+    }, [applyCartState, refreshCart, __]);
 
     const removeFromCart = useCallback(async (courseId: number) => {
         const result = await userAuthService.removeFromCart(courseId);
         if (result.success) {
             toast.success(result.message || __('Course removed from cart.'));
-            await refreshCart();
+            if (result.cart) {
+                applyCartState(result.cart);
+                setIsInitialized(true);
+            } else {
+                await refreshCart();
+            }
         } else {
             toast.error(result.error || __('Something went wrong. Please try again.'));
         }
-    }, [refreshCart, __]);
+    }, [applyCartState, refreshCart, __]);
 
     const clearCart = useCallback(async () => {
         const result = await userAuthService.clearCart();
         if (result.success) {
             toast.success(result.message || __('Your cart has been cleared.'));
-            setCartItems([]);
-            setCartCount(0);
-            setCartTotal('0.00');
+            applyCartState(result.cart || null);
+            setIsInitialized(true);
         }
-    }, [__]);
+    }, [applyCartState, __]);
 
     const isInCart = useCallback((courseId: number) => {
         return cartItems.some(item => item.course_id === courseId);

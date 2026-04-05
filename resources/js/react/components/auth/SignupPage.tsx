@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Mail, Lock, User, UserPlus, Building2, MapPin, AlertCircle } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { Mail, Lock, User, AlertCircle } from 'lucide-react';
 import AppLink from '../common/AppLink';
+import { useLocation } from 'react-router-dom';
 import { useAppNavigate } from '../../hooks/useAppNavigate';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 import { useTranslation } from '../../contexts/TranslationProvider';
 import AuthLayout from './AuthLayout';
+import SocialAuthButtons from './SocialAuthButtons';
 import Turnstile from '../common/Turnstile';
 
 const SignupPage: React.FC = () => {
@@ -21,7 +22,7 @@ const SignupPage: React.FC = () => {
 
     const [errors, setErrors] = useState<Record<string, string[]>>({});
 
-    const { register, isLoading } = useAuth();
+    const { register, isLoading, refreshUser } = useAuth();
     const { dir, language } = useLanguage();
     const { __ } = useTranslation();
     const navigate = useAppNavigate();
@@ -47,7 +48,7 @@ const SignupPage: React.FC = () => {
         });
 
         if (result.success) {
-            navigate('/dashboard');
+            navigate((location as any).state?.from || '/dashboard');
         } else if (result.errors) {
             setErrors(result.errors);
         }
@@ -63,6 +64,14 @@ const SignupPage: React.FC = () => {
             subtitle={__('Join our learning platform today')}
         >
             <form className="space-y-6" onSubmit={handleSubmit}>
+                <SocialAuthButtons 
+                    redirectTo={(location as any).state?.from} 
+                    onSuccess={async () => {
+                        await refreshUser();
+                        navigate((location as any).state?.from || '/dashboard');
+                    }}
+                />
+
                 <div className="space-y-4">
                     {/* Name */}
                     <div>
@@ -198,6 +207,7 @@ const SignupPage: React.FC = () => {
                     {__('Already have an account?')} {' '}
                     <AppLink
                         to={'/login'}
+                        state={{ from: (location as any).state?.from }}
                         className="font-bold text-brand-600 hover:text-brand-500 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
                     >
                         {__('Log in')}

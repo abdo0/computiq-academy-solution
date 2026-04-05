@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\ManifestController;
 use App\Http\Controllers\ReactAppController;
 use App\Http\Controllers\LocaleController;
@@ -22,6 +23,10 @@ Route::get('/site.webmanifest', [ManifestController::class, 'show'])->name('mani
 
 // Reports Export Route
 // Route::get('/reports/export', [\App\Http\Controllers\ReportController::class, 'export'])->name('reports.export');
+
+Route::get('/api/v1/auth/{provider}/callback', [SocialAuthController::class, 'callback'])
+    ->where('provider', 'google|github')
+    ->name('api.v1.auth.social.callback');
 
 // Payment callback route (for gateway redirects)
 // Route::get('/payment/callback/{transactionRef}', [\App\Http\Controllers\PaymentController::class, 'callback'])

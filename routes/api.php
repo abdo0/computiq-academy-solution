@@ -1,16 +1,22 @@
 <?php
 
 use App\Http\Controllers\Api\ArticleController;
+use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\ContentController;
 use App\Http\Controllers\Api\CourseCertificateController;
 use App\Http\Controllers\Api\CourseController;
+use App\Http\Controllers\Api\CourseLessonPreviewController;
+use App\Http\Controllers\Api\CourseReviewController;
 use App\Http\Controllers\Api\LearningPathController;
 use App\Http\Controllers\Api\LearningController;
 use App\Http\Controllers\Api\InstructorController;
+use App\Http\Controllers\Api\RoleSwitchController;
 use App\Http\Controllers\Api\SeoController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\SocialAuthController;
+use App\Http\Controllers\Api\StudentProfileController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\TranslationController;
@@ -49,6 +55,29 @@ Route::prefix('v1')->group(function () {
     // Courses
     Route::get('/courses', [CourseController::class, 'index'])->name('api.v1.courses.index');
     Route::get('/courses/{slug}', [CourseController::class, 'show'])->name('api.v1.courses.show');
+    Route::get('/courses/{slug}/lessons/{lesson}/preview', [CourseLessonPreviewController::class, 'show'])->name('api.v1.courses.lessons.preview');
+    Route::get('/courses/{slug}/reviews', [CourseReviewController::class, 'index'])->name('api.v1.courses.reviews.index');
+
+    // ── Cart ──────────────────────────────────────────────────────────────
+    // These routes are accessible to both guests and authenticated users.
+    // Guest carts are stored in the Laravel session.
+    //
+    // ⚠️  DO NOT wrap these routes with ->middleware('web').
+    //     Sanctum's `statefulApi()` (configured in bootstrap/app.php)
+    //     already runs the full web middleware pipeline for requests
+    //     from stateful origins (via EnsureFrontendRequestsAreStateful).
+    //     Adding `middleware('web')` manually causes DOUBLE session
+    //     handling — the API creates a different session than the web
+    //     page, so the guest cart appears empty on full page refresh.
+    //
+    // ⚠️  DO NOT add `auth:sanctum` middleware here.
+    //     Guests must be able to add/view/remove cart items without
+    //     being authenticated.
+    // ──────────────────────────────────────────────────────────────────────
+    Route::get('/cart', [CartController::class, 'index'])->name('api.v1.cart.index');
+    Route::post('/cart', [CartController::class, 'store'])->name('api.v1.cart.store');
+    Route::delete('/cart/{courseId}', [CartController::class, 'destroy'])->name('api.v1.cart.destroy');
+    Route::delete('/cart', [CartController::class, 'clear'])->name('api.v1.cart.clear');
 
     // Instructor Profile
     Route::get('/instructors/{slug}', [InstructorController::class, 'show'])->name('api.v1.instructors.show');
@@ -92,6 +121,12 @@ Route::prefix('v1')->group(function () {
     // Newsletter Subscription (public)
     Route::post('/subscribe', [\App\Http\Controllers\Api\SubscriberController::class, 'store'])->name('api.v1.subscribe')->middleware('turnstile');
 
+    // Social auth (web middleware is implicitly attached to Sanctum stateful domains,
+    // but explicit web is required for the callback flow redirection)
+    Route::middleware('web')->get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
+        ->where('provider', 'google|github')
+        ->name('api.v1.auth.social.redirect');
+
     // ========================================================================
     // User Auth Routes
     // ========================================================================
@@ -110,22 +145,25 @@ Route::prefix('v1')->group(function () {
             Route::post('/profile/email', [\App\Http\Controllers\Api\UserAuthController::class, 'updateEmail'])->name('api.v1.user.profile.email');
             Route::post('/profile/email/verify-otp', [\App\Http\Controllers\Api\UserAuthController::class, 'verifyEmailOTP'])->name('api.v1.user.profile.email.verify');
             Route::post('/profile/password', [\App\Http\Controllers\Api\UserAuthController::class, 'updatePassword'])->name('api.v1.user.profile.password');
+            Route::get('/roles', [RoleSwitchController::class, 'roles'])->name('api.v1.user.roles');
+            Route::post('/roles/switch', [RoleSwitchController::class, 'switchRole'])->name('api.v1.user.roles.switch');
+            Route::get('/student-profile', [StudentProfileController::class, 'show'])->name('api.v1.user.student-profile.show');
+            Route::post('/student-profile', [StudentProfileController::class, 'update'])->name('api.v1.user.student-profile.update');
             Route::post('/locale', [\App\Http\Controllers\Api\UserAuthController::class, 'updateLocale'])->name('api.v1.user.locale');
             Route::get('/dashboard/stats', [\App\Http\Controllers\Api\UserAuthController::class, 'dashboardStats'])->name('api.v1.user.dashboard.stats');
+            Route::get('/orders', [\App\Http\Controllers\Api\UserAuthController::class, 'orders'])->name('api.v1.user.orders');
             Route::get('/enrollments', [\App\Http\Controllers\Api\UserAuthController::class, 'enrollments'])->name('api.v1.user.enrollments');
             Route::get('/courses', [\App\Http\Controllers\Api\UserAuthController::class, 'courses'])->name('api.v1.user.courses');
+            Route::get('/certificates', [CourseCertificateController::class, 'index'])->name('api.v1.user.certificates.index');
             Route::get('/certificates/{course}', [CourseCertificateController::class, 'download'])->name('api.v1.user.certificates.download');
 
-            // Cart routes
-            Route::get('/cart', [\App\Http\Controllers\Api\CartController::class, 'index'])->name('api.v1.user.cart.index');
-            Route::post('/cart', [\App\Http\Controllers\Api\CartController::class, 'store'])->name('api.v1.user.cart.store');
-            Route::delete('/cart/{courseId}', [\App\Http\Controllers\Api\CartController::class, 'destroy'])->name('api.v1.user.cart.destroy');
-            Route::delete('/cart', [\App\Http\Controllers\Api\CartController::class, 'clear'])->name('api.v1.user.cart.clear');
         });
     });
 
+    Route::post('/checkout/quote', [CheckoutController::class, 'quote'])->name('api.v1.checkout.quote');
+
     Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/checkout/quote', [CheckoutController::class, 'quote'])->name('api.v1.checkout.quote');
+        Route::post('/courses/{slug}/reviews', [CourseReviewController::class, 'store'])->name('api.v1.courses.reviews.store');
         Route::post('/checkout/initiate', [CheckoutController::class, 'initiate'])->name('api.v1.checkout.initiate');
         Route::get('/payments/verify/{transaction}', [PaymentController::class, 'verify'])->name('api.v1.payments.verify');
         Route::get('/learning/courses/{slug}', [LearningController::class, 'showCourse'])->name('api.v1.learning.courses.show');

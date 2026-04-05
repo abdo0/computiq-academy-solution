@@ -4,10 +4,12 @@ namespace App\Filament\Resources\Courses\Schemas;
 
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 
 class CourseForm
@@ -97,6 +99,16 @@ class CourseForm
                     ->schema([
                         Toggle::make('is_active')->label(__('Active'))->default(true),
                         Toggle::make('is_live')->label(__('Live Course (Instructor-Led)')),
+                        Select::make('delivery_type')
+                            ->label(__('Delivery Type'))
+                            ->options([
+                                'online' => __('Online'),
+                                'onsite' => __('On-site'),
+                                'hybrid' => __('Hybrid'),
+                            ])
+                            ->default('online')
+                            ->native(false)
+                            ->required(),
                         Toggle::make('is_best_seller')->label(__('Best Seller')),
                     ]),
                 Section::make(__('Image'))
@@ -110,6 +122,38 @@ class CourseForm
                             ->directory('courses')
                             ->imageEditor()
                             ->columnSpanFull(),
+                    ]),
+                Section::make(__('Promotional Video'))
+                    ->compact()
+                    ->columnSpan(6)
+                    ->columns(1)
+                    ->schema([
+                        Select::make('promo_video_source_type')
+                            ->label(__('Video Source'))
+                            ->options([
+                                'upload' => __('Uploaded Video'),
+                                'embed' => __('External Embed'),
+                            ])
+                            ->native(false)
+                            ->live(),
+                        TextInput::make('promo_video_url')
+                            ->label(__('External Video URL'))
+                            ->url()
+                            ->helperText(__('Supported: YouTube, Vimeo, Loom, Wistia'))
+                            ->visible(fn (Get $get) => $get('promo_video_source_type') === 'embed')
+                            ->required(fn (Get $get) => $get('promo_video_source_type') === 'embed'),
+                        SpatieMediaLibraryFileUpload::make('promo_video_file')
+                            ->collection('promo_video')
+                            ->label(__('Uploaded Video'))
+                            ->acceptedFileTypes([
+                                'video/mp4',
+                                'video/quicktime',
+                                'video/webm',
+                                'video/x-msvideo',
+                                'video/x-matroska',
+                            ])
+                            ->maxSize(512000)
+                            ->visible(fn (Get $get) => $get('promo_video_source_type') === 'upload'),
                     ]),
             ]);
     }

@@ -1,8 +1,32 @@
 import axios from 'axios';
-import { useTranslation } from '../contexts/TranslationProvider';
 
-// Use relative URL for same-origin requests (Sanctum SPA mode)
-const API_URL = '/api/v1';
+const trimTrailingSlash = (value: string): string => value.replace(/\/+$/, '');
+
+const resolveBackendOrigin = (): string => {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  // When the frontend is opened directly from the Vite dev server, API calls
+  // still need to target the Laravel app origin rather than :5173.
+  if (window.location.port === '5173') {
+    return `${window.location.protocol}//${window.location.hostname}`;
+  }
+
+  return trimTrailingSlash(window.location.origin);
+};
+
+const resolveBackendUrl = (path: string): string => {
+  const backendOrigin = resolveBackendOrigin();
+
+  if (!backendOrigin) {
+    return path;
+  }
+
+  return `${backendOrigin}${path.startsWith('/') ? path : `/${path}`}`;
+};
+
+const API_URL = resolveBackendUrl('/api/v1');
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -22,7 +46,7 @@ export const initializeCsrf = async (): Promise<void> => {
   if (csrfInitialized) return;
   
   try {
-    await axios.get('/sanctum/csrf-cookie', { withCredentials: true });
+    await axios.get(resolveBackendUrl('/sanctum/csrf-cookie'), { withCredentials: true });
     csrfInitialized = true;
   } catch (error) {
     console.error('Failed to initialize CSRF token:', error);

@@ -41,6 +41,10 @@ class CourseCategoriesTable
                 IconColumn::make('is_active')
                     ->label(__('Active'))
                     ->boolean(),
+                IconColumn::make('show_on_home')
+                    ->label(__('Show on Home'))
+                    ->icon(Heroicon::Home)
+                    ->boolean(),
                 TextColumn::make('created_at')
                     ->label(__('Created At'))
                     ->icon(Heroicon::Clock)

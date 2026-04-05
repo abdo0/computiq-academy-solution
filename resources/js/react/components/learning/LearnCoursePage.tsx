@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { ArrowLeft, Award, BookOpen, CheckCircle2, ChevronDown, ChevronUp, Clock, FileText, Loader2, Lock, PlayCircle, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Award, BookOpen, CheckCircle2, ChevronDown, ChevronUp, Clock, FileText, Loader2, Lock, PlayCircle, ShieldCheck, User } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from '../../contexts/TranslationProvider';
@@ -487,7 +487,7 @@ const LearnCoursePage: React.FC = () => {
                                 </div>
                                 <p className="text-sm text-emerald-800 dark:text-emerald-200">{__('Best Score')}: {exam.best_score ?? exam.latest_score ?? exam.pass_mark}%</p>
                             </div>
-                            {course?.certificate?.available && course?.certificate?.download_url && (
+                            {course?.certificate?.available && course?.certificate?.download_url ? (
                                 <a
                                     href={course.certificate.download_url}
                                     className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-gray-950 text-sm font-semibold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
@@ -495,7 +495,15 @@ const LearnCoursePage: React.FC = () => {
                                     <Award className="w-4 h-4" />
                                     {__('Download Certificate')}
                                 </a>
-                            )}
+                            ) : course?.certificate?.status === 'locked_real_name' ? (
+                                <AppLink
+                                    to="/dashboard?tab=profile"
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-gray-950 text-sm font-semibold text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800"
+                                >
+                                    <User className="w-4 h-4" />
+                                    {__('Set Real Name')}
+                                </AppLink>
+                            ) : null}
                         </div>
                     </div>
                 ) : exam.attempts_exhausted ? (
@@ -604,21 +612,30 @@ const LearnCoursePage: React.FC = () => {
                                 </p>
                             </div>
 
-                            {course.certificate?.available && (
+                            {(course.certificate?.available || course.certificate?.status === 'locked_real_name') && (
                                 <div className="mt-3 rounded-xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/80 dark:bg-amber-900/20 p-3.5">
                                     <div className="flex items-start gap-3">
                                         <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-amber-700 dark:text-amber-300 shrink-0">
                                             <Award className="w-5 h-5" />
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="font-semibold text-amber-800 dark:text-amber-200">{__('Certificate Ready')}</p>
-                                            <p className="text-xs text-amber-700/90 dark:text-amber-300/90 mt-1">{__('Download your course certificate with your account name once you finish successfully.')}</p>
-                                            {course.certificate?.download_url && (
+                                            <p className="font-semibold text-amber-800 dark:text-amber-200">
+                                                {course.certificate?.available ? __('Certificate Ready') : __('Certificate Name Required')}
+                                            </p>
+                                            <p className="text-xs text-amber-700/90 dark:text-amber-300/90 mt-1">
+                                                {course.certificate?.locked_reason || __('Download your course certificate with your account name once you finish successfully.')}
+                                            </p>
+                                            {course.certificate?.download_url ? (
                                                 <a href={course.certificate.download_url} className="inline-flex items-center gap-2 text-sm font-semibold text-amber-800 dark:text-amber-200 mt-3">
                                                     <Award className="w-4 h-4" />
                                                     {__('Download Certificate')}
                                                 </a>
-                                            )}
+                                            ) : course.certificate?.status === 'locked_real_name' ? (
+                                                <AppLink to="/dashboard?tab=profile" className="inline-flex items-center gap-2 text-sm font-semibold text-amber-800 dark:text-amber-200 mt-3">
+                                                    <User className="w-4 h-4" />
+                                                    {__('Set Real Name')}
+                                                </AppLink>
+                                            ) : null}
                                         </div>
                                     </div>
                                 </div>

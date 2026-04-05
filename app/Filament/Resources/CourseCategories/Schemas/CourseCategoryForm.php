@@ -2,9 +2,8 @@
 
 namespace App\Filament\Resources\CourseCategories\Schemas;
 
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
@@ -45,18 +44,28 @@ class CourseCategoryForm
                         Toggle::make('is_active')
                             ->label(__('Active'))
                             ->default(true)
-                            ->columnSpan(2),
+                            ->inline(false)
+                            ->columnSpan(1),
+                        Toggle::make('show_on_home')
+                            ->label(__('Show on Home'))
+                            ->helperText(__('Enable this category to appear in the home page course sections and tabs.'))
+                            ->default(true)
+                            ->inline(false)
+                            ->columnSpan(1),
                     ]),
 
-                Section::make(__('Image'))
+                Section::make(__('Images & Display'))
+                    ->columns(1)
                     ->schema([
-                        FileUpload::make('image')
+                        SpatieMediaLibraryFileUpload::make('category_image')
                             ->label(__('Category Image'))
+                            ->helperText(__('This image is used in the courses navigation menu and home page category presentation.'))
+                            ->collection('image')
                             ->image()
-                            ->directory('course-categories')
                             ->imageResizeMode('cover')
                             ->imageCropAspectRatio('16:9')
-                            ->nullable(),
+                            ->nullable()
+                            ->columnSpanFull(),
                     ]),
             ]);
     }

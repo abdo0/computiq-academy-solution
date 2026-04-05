@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTranslation } from '../contexts/TranslationProvider';
 import { dataService } from '../services/dataService';
@@ -34,12 +35,24 @@ const CourseCardSkeleton = () => (
 const CoursesPage: React.FC = () => {
     const { language, dir } = useLanguage();
     const { __ } = useTranslation();
+    const location = useLocation();
     const initialBootstrap = useCurrentRouteBootstrap<any>();
     const initialCoursesResponse = initialBootstrap?.courses;
     const initialCourses = initialCoursesResponse?.data || [];
     const initialMeta = initialCoursesResponse?.meta || { current_page: 1, last_page: 1 };
     const initialCategories = initialBootstrap?.categories || [];
-    const skipInitialListingFetch = useRef(initialCourses.length > 0);
+    const initialSearchParams = new URLSearchParams(location.search);
+    const initialCategoryParam = initialSearchParams.get('category') || 'all';
+    const initialSearchParam = initialSearchParams.get('search') || initialSearchParams.get('q') || '';
+    const initialSortParam = initialSearchParams.get('sort') || 'newest';
+    const initialDeliveryTypeParam = initialSearchParams.get('delivery_type') || 'all';
+    const skipInitialListingFetch = useRef(
+        initialCourses.length > 0
+        && initialCategoryParam === 'all'
+        && initialSearchParam === ''
+        && initialSortParam === 'newest'
+        && initialDeliveryTypeParam === 'all'
+    );
     
     const [courses, setCourses] = useState<any[]>(() => initialCourses);
     const [categories, setCategories] = useState<any[]>(() => initialCategories);
@@ -49,9 +62,10 @@ const CoursesPage: React.FC = () => {
     // Pagination and Filters State
     const [currentPage, setCurrentPage] = useState(initialMeta.current_page || 1);
     const [hasMore, setHasMore] = useState((initialMeta.current_page || 1) < (initialMeta.last_page || 1));
-    const [searchQuery, setSearchQuery] = useState('');
-    const [activeCategory, setActiveCategory] = useState<string>('all');
-    const [sort, setSort] = useState('newest');
+    const [searchQuery, setSearchQuery] = useState(initialSearchParam);
+    const [activeCategory, setActiveCategory] = useState<string>(initialCategoryParam);
+    const [sort, setSort] = useState(initialSortParam);
+    const [deliveryType, setDeliveryType] = useState(initialDeliveryTypeParam);
 
     useEffect(() => {
         if (initialCourses.length === 0 && initialCategories.length === 0) {
@@ -75,6 +89,19 @@ const CoursesPage: React.FC = () => {
         dataService.getCategories().then(cats => setCategories(cats || []));
     }, [initialCategories.length]);
 
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const nextCategory = params.get('category') || 'all';
+        const nextSearch = params.get('search') || params.get('q') || '';
+        const nextSort = params.get('sort') || 'newest';
+        const nextDeliveryType = params.get('delivery_type') || 'all';
+
+        setActiveCategory(nextCategory);
+        setSearchQuery(nextSearch);
+        setSort(nextSort);
+        setDeliveryType(nextDeliveryType);
+    }, [location.search]);
+
     const fetchCourses = async (page: number, append = false) => {
         try {
             if (!append) setIsLoading(true);
@@ -86,6 +113,7 @@ const CoursesPage: React.FC = () => {
                 search: searchQuery || undefined,
                 category: activeCategory !== 'all' ? activeCategory : undefined,
                 sort,
+                delivery_type: deliveryType !== 'all' ? deliveryType : undefined,
             };
 
             const response = await dataService.getCourses(params);
@@ -116,7 +144,7 @@ const CoursesPage: React.FC = () => {
         }
 
         fetchCourses(1, false);
-    }, [activeCategory, sort, language]);
+    }, [activeCategory, sort, deliveryType, language]);
 
     // Handle Search Submit
     const handleSearchSubmit = (e: React.FormEvent) => {
@@ -242,6 +270,37 @@ const CoursesPage: React.FC = () => {
                             </div>
                         </div>
 
+                        <div className="bg-white dark:bg-slate-900 rounded-md p-5 border border-gray-100 dark:border-slate-800 shadow-sm">
+                            <h3 className="font-bold text-gray-900 dark:text-white mb-4">
+                                {__('Delivery type')}
+                            </h3>
+                            <div className="space-y-2">
+                                {[
+                                    { id: 'all', label: __('All formats') },
+                                    { id: 'online', label: __('Online') },
+                                    { id: 'onsite', label: __('On-site') },
+                                    { id: 'hybrid', label: __('Hybrid') },
+                                ].map(option => (
+                                    <label key={option.id} className="flex items-center gap-3 cursor-pointer group">
+                                        <div className="relative flex items-center justify-center w-5 h-5">
+                                            <input
+                                                type="radio"
+                                                name="delivery_type"
+                                                value={option.id}
+                                                checked={deliveryType === option.id}
+                                                onChange={(e) => setDeliveryType(e.target.value)}
+                                                className="peer appearance-none w-5 h-5 border-2 border-gray-300 dark:border-slate-600 rounded-full checked:border-brand-500 checked:bg-brand-50 transition-colors"
+                                            />
+                                            <div className="absolute w-2.5 h-2.5 bg-brand-500 rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+                                        </div>
+                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                                            {option.label}
+                                        </span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
                     </div>
 
                     {/* Main Courses Grid */}
@@ -265,6 +324,7 @@ const CoursesPage: React.FC = () => {
                                             instructorSlug={course.instructor?.slug}
                                             rating={course.rating}
                                             reviewCount={course.review_count}
+                                            deliveryType={course.delivery_type}
                                             hours={course.duration_hours}
                                             students={course.students_count}
                                             price={course.price}
@@ -311,7 +371,8 @@ const CoursesPage: React.FC = () => {
                                     onClick={() => {
                                         setSearchQuery('');
                                         setActiveCategory('all');
-                                        setSort('Newest');
+                                        setSort('newest');
+                                        setDeliveryType('all');
                                     }}
                                     className="px-6 py-2.5 bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 font-bold rounded-md hover:bg-brand-100 dark:hover:bg-brand-900/40 transition-colors"
                                 >

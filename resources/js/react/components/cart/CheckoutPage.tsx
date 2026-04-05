@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useTranslation } from '../../contexts/TranslationProvider';
@@ -12,6 +12,7 @@ import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock, CreditCard, Loade
 import { formatCurrencyAmount, useCurrency } from '../../utils/currency';
 import { useCurrentRouteBootstrap } from '../../contexts/RouteBootstrapContext';
 import { buildCheckoutBootstrap } from '../../services/routeBootstrap';
+import CheckoutAuthStep from './CheckoutAuthStep';
 
 const CheckoutPage: React.FC = () => {
     const { user, refreshUser } = useAuth();
@@ -22,13 +23,13 @@ const CheckoutPage: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const routeBootstrap = useCurrentRouteBootstrap<any>();
-    const initialCheckoutBootstrap = user ? routeBootstrap?.checkout : undefined;
+    const initialCheckoutBootstrap = routeBootstrap?.checkout;
     const bootstrapCart = initialCheckoutBootstrap?.cart;
 
     const [removingItems, setRemovingItems] = useState<number[]>([]);
     const [gateways, setGateways] = useState<any[]>(() => initialCheckoutBootstrap?.gateways || []);
-    const [loadingGateways, setLoadingGateways] = useState<boolean>(() => !!user && !initialCheckoutBootstrap);
-    const [loadingQuote, setLoadingQuote] = useState<boolean>(() => !!user && !initialCheckoutBootstrap?.quote && !!initialCheckoutBootstrap?.selectedGatewayId);
+    const [loadingGateways, setLoadingGateways] = useState<boolean>(() => !initialCheckoutBootstrap);
+    const [loadingQuote, setLoadingQuote] = useState<boolean>(() => !initialCheckoutBootstrap?.quote && !!initialCheckoutBootstrap?.selectedGatewayId);
     const [applyingPromo, setApplyingPromo] = useState(false);
     const [removingPromo, setRemovingPromo] = useState(false);
     const [selectedGatewayId, setSelectedGatewayId] = useState<number | null>(() => initialCheckoutBootstrap?.selectedGatewayId ?? null);
@@ -40,10 +41,6 @@ const CheckoutPage: React.FC = () => {
     const [callbackBanner, setCallbackBanner] = useState<{ type: 'info' | 'error'; message: string } | null>(null);
 
     useEffect(() => {
-        if (!user) {
-            return;
-        }
-
         let isMounted = true;
 
         const loadCheckoutBootstrap = async () => {
@@ -82,7 +79,7 @@ const CheckoutPage: React.FC = () => {
         return () => {
             isMounted = false;
         };
-    }, [initialCheckoutBootstrap, user]);
+    }, [initialCheckoutBootstrap]);
 
     const loadQuote = async (gatewayId: number, promoCode?: string | null) => {
         setLoadingQuote(true);
@@ -111,7 +108,7 @@ const CheckoutPage: React.FC = () => {
     const effectiveCartCount = cartCount > 0 ? cartCount : Number(bootstrapCart?.count || 0);
 
     useEffect(() => {
-        if (!user || !selectedGatewayId || effectiveCartCount === 0) {
+        if (!selectedGatewayId || effectiveCartCount === 0) {
             return;
         }
 
@@ -134,7 +131,7 @@ const CheckoutPage: React.FC = () => {
         };
 
         void syncQuote();
-    }, [appliedPromoCode, effectiveCartCount, quote, selectedGatewayId, user]);
+    }, [appliedPromoCode, effectiveCartCount, quote, selectedGatewayId]);
 
     useEffect(() => {
         if (!user) {
@@ -220,9 +217,14 @@ const CheckoutPage: React.FC = () => {
         void finalize();
     }, [__, location.pathname, location.search, navigate, refreshCart, refreshUser, user]);
 
-    if (!user) {
-        return <Navigate to="/login" replace />;
-    }
+    const handleAuthenticated = async () => {
+        await Promise.all([refreshUser(), refreshCart()]);
+
+        if (selectedGatewayId) {
+            await loadQuote(selectedGatewayId, appliedPromoCode);
+            setLoadingQuote(false);
+        }
+    };
 
     const handleRemove = async (courseId: number) => {
         setRemovingItems(prev => [...prev, courseId]);
@@ -267,7 +269,7 @@ const CheckoutPage: React.FC = () => {
     };
 
     const handleCheckout = async () => {
-        if (!selectedGatewayId) return;
+        if (!user || !selectedGatewayId) return;
 
         setProcessingCheckout(true);
         const result = await dataService.initiateCheckout({
@@ -447,6 +449,10 @@ const CheckoutPage: React.FC = () => {
                             </div>
                         </div>
 
+                        {!user && (
+                            <CheckoutAuthStep onAuthenticated={handleAuthenticated} />
+                        )}
+
                         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/50 p-6">
                             <div className="flex items-center gap-2 mb-5 text-sm font-bold text-brand-600 dark:text-brand-400">
                                 <ShieldCheck className="w-4 h-4" />
@@ -591,10 +597,16 @@ const CheckoutPage: React.FC = () => {
                                 {__('You will be redirected to the selected payment provider to complete your purchase securely.')}
                             </p>
 
+                            {!user && (
+                                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
+                                    {__('Please log in or create an account to continue to payment.')}
+                                </div>
+                            )}
+
                             <button
                                 type="button"
                                 onClick={() => void handleCheckout()}
-                                disabled={!selectedGatewayId || processingCheckout || loadingQuote || hasUnappliedPromo}
+                                disabled={!user || !selectedGatewayId || processingCheckout || loadingQuote || hasUnappliedPromo}
                                 className="mt-5 w-full rounded-2xl bg-gradient-to-r from-brand-600 to-brand-700 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-brand-500/20 transition-all hover:from-brand-700 hover:to-brand-800 disabled:cursor-not-allowed disabled:opacity-70"
                             >
                                 {processingCheckout ? (
@@ -604,6 +616,8 @@ const CheckoutPage: React.FC = () => {
                                     </span>
                                 ) : loadingQuote ? (
                                     __('Updating total...')
+                                ) : !user ? (
+                                    __('Log in to continue')
                                 ) : selectedGateway ? (
                                     <span className="inline-flex items-center gap-2">
                                         {__('Complete Purchase with :gateway', { gateway: t(selectedGateway.name) })}

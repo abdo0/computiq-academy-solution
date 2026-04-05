@@ -75,12 +75,6 @@ const Home: React.FC = () => {
     fetchData();
   }, [initialHomeData, language]);
 
-  // Helper: filter courses by category slug
-  const getCoursesByCategory = (slug: string) =>
-    courses.filter((c: any) => c.category_slug === slug);
-
-
-
   // Map courses to CourseCard format
   const mapCourseToCard = (c: any) => ({
     image: c.image,
@@ -123,7 +117,11 @@ const Home: React.FC = () => {
       />
 
       {/* Category Cards */}
-      <FeaturesBand sectionData={sections.home_category_cards} isLoading={isLoading} />
+      <FeaturesBand
+        sectionData={sections.home_category_cards}
+        categories={courseCategories}
+        isLoading={isLoading}
+      />
 
       {/* Develop Your Team (Business) */}
       <BusinessBanner sectionData={sections.home_business_banner} />

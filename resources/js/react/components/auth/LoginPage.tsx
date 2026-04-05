@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { Mail, Lock, User, LogIn, Building2, AlertCircle } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import AppLink from '../common/AppLink';
 import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { useTranslation } from '../../contexts/TranslationProvider';
 import AuthLayout from './AuthLayout';
+import SocialAuthButtons from './SocialAuthButtons';
 import Turnstile from '../common/Turnstile';
 
 const LoginPage: React.FC = () => {
@@ -16,9 +16,33 @@ const LoginPage: React.FC = () => {
     const [error, setError] = useState('');
     const [turnstileToken, setTurnstileToken] = useState('');
 
-    const { login, isLoading } = useAuth();
+    const { login, isLoading, refreshUser } = useAuth();
     const { __ } = useTranslation();
     const navigate = useAppNavigate();
+    const location = useLocation();
+    const [searchParams] = useSearchParams();
+
+    const socialError = (() => {
+        const errorCode = searchParams.get('error');
+
+        if (errorCode === 'social_auth_failed') {
+            return __('We could not complete the social login. Please try again.');
+        }
+
+        if (errorCode === 'social_email_required') {
+            return __('Your social account must expose an email address before you can sign in.');
+        }
+
+        if (errorCode === 'unsupported_provider') {
+            return __('That social login provider is not supported.');
+        }
+
+        if (errorCode === 'social_provider_not_configured') {
+            return __('This social login provider is not configured yet.');
+        }
+
+        return '';
+    })();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,7 +50,7 @@ const LoginPage: React.FC = () => {
 
         const success = await login(email, password, remember, turnstileToken);
         if (success) {
-            navigate('/dashboard');
+            navigate((location as any).state?.from || '/dashboard');
         }
 
         if (!success) {
@@ -40,12 +64,27 @@ const LoginPage: React.FC = () => {
             subtitle={__('Welcome back!')}
         >
             <form className="space-y-6" onSubmit={handleSubmit}>
+                {socialError && (
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                        <AlertCircle size={16} />
+                        {socialError}
+                    </div>
+                )}
+
                 {error && (
                     <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
                         <AlertCircle size={16} />
                         {error}
                     </div>
                 )}
+
+                <SocialAuthButtons 
+                    redirectTo={(location as any).state?.from} 
+                    onSuccess={async () => {
+                        await refreshUser();
+                        navigate((location as any).state?.from || '/dashboard');
+                    }}
+                />
 
                 <div className="space-y-4">
                     <div>
@@ -126,6 +165,7 @@ const LoginPage: React.FC = () => {
                     {__('Don\'t have an account?')} {' '}
                     <AppLink
                         to={'/signup'}
+                        state={{ from: (location as any).state?.from }}
                         className="font-bold text-brand-600 hover:text-brand-500 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
                     >
                         {__('Create an account')}

@@ -10,6 +10,7 @@ interface CourseCardProps {
   image: string;
   badge?: string;
   badgeColor?: string;
+  deliveryType?: string;
   title: string;
   instructor: string;
   instructorImage?: string;
@@ -28,6 +29,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
   image,
   badge,
   badgeColor = 'bg-brand-600',
+  deliveryType,
   title,
   instructor,
   instructorImage,
@@ -46,6 +48,16 @@ const CourseCard: React.FC<CourseCardProps> = ({
   const { formatAmount } = useCurrency();
   const [isAdding, setIsAdding] = React.useState(false);
   const inCart = courseId ? isInCart(courseId) : false;
+  const deliveryTypeLabel = deliveryType === 'onsite'
+    ? __('On-site')
+    : deliveryType === 'hybrid'
+      ? __('Hybrid')
+      : __('Online');
+  const deliveryTypeClassName = deliveryType === 'onsite'
+    ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300'
+    : deliveryType === 'hybrid'
+      ? 'bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-300'
+      : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400';
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -120,9 +132,9 @@ const CourseCard: React.FC<CourseCardProps> = ({
             <Clock className="w-3.5 h-3.5 text-gray-400" />
             {hours} {__('Hours')}
           </span>
-          <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 rounded-md text-xs font-medium text-emerald-700 dark:text-emerald-400">
+          <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium ${deliveryTypeClassName}`}>
             <User className="w-3.5 h-3.5" />
-            {__('Certified')}
+            {deliveryTypeLabel}
           </span>
         </div>
 

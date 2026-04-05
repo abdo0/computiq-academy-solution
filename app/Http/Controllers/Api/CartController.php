@@ -3,49 +3,24 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\CartItem;
 use App\Models\Course;
+use App\Services\Cart\CartService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
 {
+    public function __construct(
+        protected CartService $cartService,
+    ) {}
+
     /**
-     * List the authenticated user's cart items with course details.
+     * List the current cart items with course details.
      */
     public function index(Request $request): JsonResponse
     {
-        $items = CartItem::with('course')
-            ->where('user_id', $request->user()->id)
-            ->latest()
-            ->get()
-            ->map(function (CartItem $item) {
-                return [
-                    'id' => $item->id,
-                    'course_id' => $item->course_id,
-                    'price' => $item->price,
-                    'added_at' => $item->created_at->toISOString(),
-                    'course' => $item->course ? [
-                        'id' => $item->course->id,
-                        'title' => $item->course->title,
-                        'slug' => $item->course->slug,
-                        'image' => $item->course->image,
-                        'price' => $item->course->price,
-                        'old_price' => $item->course->old_price,
-                        'instructor_name' => $item->course->instructor_name,
-                        'duration_hours' => $item->course->duration_hours,
-                    ] : null,
-                ];
-            });
-
-        $total = $items->sum('price');
-
         return response()->json([
-            'data' => [
-                'items' => $items,
-                'count' => $items->count(),
-                'total' => number_format($total, 2, '.', ''),
-            ],
+            'data' => $this->cartService->payload($request),
         ]);
     }
 
@@ -59,42 +34,26 @@ class CartController extends Controller
         ]);
 
         $course = Course::findOrFail($request->course_id);
-        $user = $request->user();
+        $result = $this->cartService->addCourse($request, $course);
 
-        if ($user->courseEnrollments()->where('course_id', $course->id)->exists()) {
+        if (! ($result['success'] ?? false)) {
             return response()->json([
-                'message' => __('You are already enrolled in this course.'),
-                'data' => ['already_enrolled' => true],
-            ], 409);
+                'message' => $result['message'] ?? __('Unable to add course to cart.'),
+                'data' => [
+                    'already_exists' => (bool) ($result['already_exists'] ?? false),
+                    'already_enrolled' => (bool) ($result['already_enrolled'] ?? false),
+                ],
+            ], $result['status'] ?? 409);
         }
-
-        // Check if already in cart
-        $existing = CartItem::where('user_id', $user->id)
-            ->where('course_id', $course->id)
-            ->first();
-
-        if ($existing) {
-            return response()->json([
-                'message' => __('This course is already in your cart.'),
-                'data' => ['already_exists' => true],
-            ], 409);
-        }
-
-        $item = CartItem::create([
-            'user_id' => $user->id,
-            'course_id' => $course->id,
-            'price' => $course->price,
-        ]);
-
-        $count = CartItem::where('user_id', $user->id)->count();
 
         return response()->json([
-            'message' => __('Course added to cart successfully.'),
+            'message' => $result['message'] ?? __('Course added to cart successfully.'),
             'data' => [
-                'item_id' => $item->id,
-                'count' => $count,
+                'item_id' => $result['item_id'] ?? null,
+                'count' => $result['count'] ?? $this->cartService->count($request),
+                'cart' => $this->cartService->payload($request),
             ],
-        ], 201);
+        ], $result['status'] ?? 201);
     }
 
     /**
@@ -102,9 +61,7 @@ class CartController extends Controller
      */
     public function destroy(Request $request, int $courseId): JsonResponse
     {
-        $deleted = CartItem::where('user_id', $request->user()->id)
-            ->where('course_id', $courseId)
-            ->delete();
+        $deleted = $this->cartService->removeCourse($request, $courseId);
 
         if (!$deleted) {
             return response()->json([
@@ -112,11 +69,12 @@ class CartController extends Controller
             ], 404);
         }
 
-        $count = CartItem::where('user_id', $request->user()->id)->count();
-
         return response()->json([
             'message' => __('Course removed from cart.'),
-            'data' => ['count' => $count],
+            'data' => [
+                'count' => $this->cartService->count($request),
+                'cart' => $this->cartService->payload($request),
+            ],
         ]);
     }
 
@@ -125,11 +83,14 @@ class CartController extends Controller
      */
     public function clear(Request $request): JsonResponse
     {
-        CartItem::where('user_id', $request->user()->id)->delete();
+        $this->cartService->clear($request);
 
         return response()->json([
             'message' => __('Your cart has been cleared.'),
-            'data' => ['count' => 0],
+            'data' => [
+                'count' => 0,
+                'cart' => $this->cartService->payload($request),
+            ],
         ]);
     }
 }

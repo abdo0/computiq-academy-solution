@@ -1,0 +1,164 @@
+======================================
+Computiq Academy - Dev Tasks
+======================================
+
+======================================
+Core Platform Tasks
+======================================
+
+1. Build the academy
+This includes the home page, courses pages, programs pages, academy talents page, HR page, organization page, and the supporting public pages needed for the academy.
+
+2. Build authentication pages
+Authentication should support sign up and sign in with email and password, plus Google login and GitHub login.
+
+3. Build role-based access for the 4 roles
+Each role should enter the correct area and see the correct features.
+
+4. Build role switching, similar to the eYouth idea
+Student (the default mode), HR, organization, and other role access should be easy to switch between through a top button or similar clean flow. Reference: https://eyouthlearning.com/en/
+
+5. Build payment and checkout flow
+The platform should support the full buying flow for courses and programs (online only for now) from start to finish.
+For the on-site courses, cash only. The academy will have only the registration and management flow for on-site items, such as uploading videos, attendance, acceptance, and related operations.
+After payment, the student should automatically receive access to the purchased course or program.
+
+(do not ask me why 6.1 not 7)
+6.1. Build the programs showcase in slide style.
+Programs should be displayed in a slide-style way, especially the on-site ones. If a program is clicked it should forward you into its page.
+
+6.2. Build the certification partner section.
+This should exist properly in the Academy, as that section does not exist in the current dashboard.
+
+6.3. Build the skill finder map.
+It should not appear in the new academy unless it is working correctly.
+
+7. Build content access after payment.
+After payment, the student should automatically receive access to the purchased course or program.
+
+8. Build search with simple filtering and categories.
+Users should be able to browse through clear categories and use simple filters in search for both courses and programs.
+
+9. Build clear separation between online and on-site courses.
+Display, booking, filtering, and all related flows should make the difference between online and on-site very clear.
+
+======================================
+Student Role Tasks
+======================================
+
+10. Build the student dashboard.
+The student dashboard should show enrolled courses or programs, progress, assignments, quizzes, certificates, and upcoming items.
+
+11. Build the student learning view around programs.
+The student platform should present programs correctly as the main learning offer, not only courses.
+Explanation:
+
+13. Build the online content page and payment page.
+When a course or program is published online, the student should be able to open the page, review the content details, and pay.
+Explanation:
+- The course page should contain: title, short summary, what you will learn, prerequisites, instructor, course duration, lesson or module list, included quizzes or coding tasks, certificate availability, price, comments and ratings, and the buy/enroll action.
+- The program page should contain: title, short summary, program objective, what the student will learn by the end, target audience, prerequisites, full list of included courses, instructor or partner information, duration, certificate or completion proof, price, comments and ratings, and the buy/enroll action.
+- Both pages should clearly show whether the item is online or on-site, whether it is open or closed, and what the student gets after payment.
+
+14. Build the student profile.
+The profile should be editable by the student.
+In addition, the student profile should be complete and ready for academy talents and future HR visibility.
+The scores of the online and on-site courses should be added together.
+Last point, there should be integration with LinkedIn, so the profile should have education and other sections to be fully integrated with LinkedIn.
+
+- Basic information: full name, profile image, headline, short bio, city, country, phone, and email.
+- Education section: university, department, degree, start year, graduation year, and current academic status.
+- Skills section: manual skills plus verified skills gained from courses, programs, and standalone exams.
+- Learning history: enrolled courses, completed courses, enrolled programs, completed programs, and learning progress.
+- Score and proof section: total score, online score, on-site score, certificates, badges, and verified achievements.
+- Projects and portfolio section: project title, short description, links, GitHub, or any other portfolio links when relevant.
+- Career section: CV, preferred role, preferred city, job availability, internship availability, and work preferences.
+- Social and external links: LinkedIn profile, GitHub, portfolio site, and any relevant public links.
+
+15. Build comments on courses.
+Students should be able to add comments or feedback on courses.
+Stars and comments should only be allowed if the student bought the course or the program, not necessarily after finishing or watching all of it.
+
+16. Build attendance status actions.
+The attend, absent, and not yet actions should exist and work correctly in the student side. This is for on-site courses only.
+
+17. Build quizzes inside the video learning flow (for both online and on-site).
+This should support multiple choice and true / false questions inside the content experience.
+
+18. Build coding assessment inside courses (for both online and on-site).
+For coding courses, code should run on test cases, and efficiency or performance should be checked when needed.
+
+19. Build standalone exams without courses.
+A user should be able to take an exam without taking the whole course, so the skill can appear in the profile or CV.
+
+20. Build certificates and profile skill proof.
+Students should have clear proof such as certificates, completed items, and verified skills.
+
+21. Build the guidance chatbot for students.
+The chatbot should help users decide what course or program to take based on goal, budget, and background.
+
+22. Build community basics for students.
+Students should have a simple community layer for interaction around courses or programs.
+
+23. Build retention features for students.
+The platform should keep students returning through progress visibility, reminders, and useful website activity.
+For example: notifications of jobs, new courses, important deadlines, and new comments or updates in enrolled items.
+
+24. Build student recognition features later.
+Items like student of the month or student of the course can be added as engagement features.
+
+======================================
+HR Role Tasks
+======================================
+
+25. Build the HR job posting and student application flow inside the new website.
+The new Academy should include a proper integrated HR flow for posting jobs and receiving student applications.
+
+26. Build HR dashboard pages.
+HR users should have their own working area for jobs, search, candidates, and plan usage.
+
+27. Build search and candidate filtering for HR.
+HR should be able to search academy talents with useful filters.
+
+28. Build candidate profile views for HR.
+HR should be able to open student profiles and review their skills, certificates, and related proof.
+
+29. Build HR plans.
+Our plans should be implemented as follows:
+Starter: 1 active job per month, Basic search, 20 profile views per month, Free.
+Growth: 5 active jobs per month, Advanced search, 150 profile views per month, $9.99.
+Pro: 25 active jobs per month, Advanced search, 1,000 profile views, $40 (20% off from Growth).
+Enterprise: Contact us, Unlimited active jobs, Custom access and support.
+
+(those plans are temporarily until competitor full analysis, and how we will adapt the prices and features for Iraqi Market)
+30. Build HR profile.
+It should contain:
+1- Company name, company logo, industry, company size, and company description.
+2- Official contact information such as work email, phone, website, company address or city, and surely the name of the user.
+3- Hiring information such as hiring focus, target roles, preferred locations, and internship or junior hiring preference.
+4- Plan information such as current subscription plan, plan status, usage, active jobs count, and profile views left.
+======================================
+Organization Role Tasks
+======================================
+
+31. Build organization registration and profile.
+Organizations such as universities should be able to create a profile and access their own role.
+The organization profile should contain: organization name, logo, type, city, website, official email, contact person, phone number, short description, and partnership status with the academy.
+
+32. Build a simple organization dashboard.
+Organizations should be able to see students and their ranking among universities.
+
+33. Build organization-linked student visibility.
+Students should be connectable to their university or organization. Students must select the university when creating the account.
+
+======================================
+Admin Integration Tasks
+======================================
+
+34. Use the already existing admin dashboard if possible.
+The already existing admin dashboard should stay as the main management source if possible.
+If not, the new dashboard should contain all the features above.
+
+======================================
+End of Document
+======================================

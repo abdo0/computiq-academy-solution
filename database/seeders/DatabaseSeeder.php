@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             AdminSeeder::class,
             UserSeeder::class,
+            StudentSeeder::class,
 
             // Basic entities
             CurrencySeeder::class,
@@ -51,6 +52,8 @@ class DatabaseSeeder extends Seeder
             InstructorSeeder::class,
             CourseSeeder::class,
             CourseCurriculumSeeder::class,
+            CourseCertificateTemplateSeeder::class,
+            CoursePurchaseSeeder::class,
             CourseReviewSeeder::class,
             LearningPathSeeder::class,
         ]);

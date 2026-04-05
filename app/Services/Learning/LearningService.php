@@ -20,6 +20,7 @@ class LearningService
 
     public function __construct(
         protected CourseCertificateService $courseCertificateService,
+        protected LessonMediaPayloadService $lessonMediaPayloadService,
     ) {
     }
 
@@ -223,6 +224,7 @@ class LearningService
             'resume_target' => $payload['resume_target'],
             'continue_url' => $continueUrl,
             'certificate_available' => $payload['certificate']['available'] ?? false,
+            'certificate_status' => $payload['certificate']['status'] ?? null,
             'certificate_url' => $payload['certificate']['download_url'] ?? null,
             'certificate' => $payload['certificate'] ?? null,
             'instructor' => $course->instructor ? [
@@ -323,7 +325,7 @@ class LearningService
                     'is_unlocked' => $lessonUnlocked,
                     'is_completed' => $isCompleted,
                     'last_position_seconds' => $latestProgress?->last_position_seconds,
-                    'video' => $this->buildLessonVideoPayload($lesson),
+                    'video' => $this->lessonMediaPayloadService->buildVideoPayload($lesson),
                     'documents' => $lesson->getMedia('documents')->map(fn ($media) => [
                         'id' => $media->id,
                         'name' => $media->name,
@@ -442,8 +444,6 @@ class LearningService
 
         $percent = $totalItems > 0 ? (int) round(($completedItems / $totalItems) * 100) : 0;
         $resumeTarget ??= $nextTarget;
-        $certificate = $this->courseCertificateService->ensureIssued($user, $course, $percent === 100);
-
         return [
             'id' => $course->id,
             'title' => $course->getTranslations('title'),
@@ -460,7 +460,7 @@ class LearningService
                 'percent' => $percent,
             ],
             'resume_target' => $resumeTarget,
-            'certificate' => $this->courseCertificateService->toPayload($certificate, $percent === 100, $course),
+            'certificate' => $this->courseCertificateService->toPayload($user, $course, $percent === 100),
             'category' => $course->category ? [
                 'id' => $course->category->id,
                 'name' => $course->category->getTranslations('name'),
@@ -480,32 +480,6 @@ class LearningService
                 'image' => $course->instructor_image,
             ],
         ];
-    }
-
-    protected function buildLessonVideoPayload(CourseLesson $lesson): ?array
-    {
-        if ($lesson->video_source_type === 'upload') {
-            $media = $lesson->getFirstMedia('video');
-
-            return $media ? [
-                'source_type' => 'upload',
-                'provider' => 'upload',
-                'url' => $media->getFullUrl(),
-                'mime_type' => $media->mime_type,
-                'name' => $media->name,
-            ] : null;
-        }
-
-        if ($lesson->video_source_type === 'embed' && $lesson->embed_url) {
-            return [
-                'source_type' => 'embed',
-                'provider' => $lesson->video_provider,
-                'url' => $lesson->video_url,
-                'embed_url' => $lesson->embed_url,
-            ];
-        }
-
-        return null;
     }
 
     protected function buildExamAttemptResponse(CourseExam $exam, CourseExamAttempt $attempt): array
@@ -531,6 +505,7 @@ class LearningService
     {
         return $course->fresh([
             'category',
+            'certificateTemplate.media',
             'instructor',
             'modules' => fn ($query) => $query->orderBy('sort_order'),
             'modules.lessons' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order'),
@@ -547,6 +522,7 @@ class LearningService
             ->where('is_active', true)
             ->with([
                 'category',
+                'certificateTemplate.media',
                 'instructor',
                 'modules' => fn ($query) => $query->orderBy('sort_order'),
                 'modules.lessons' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order'),

@@ -13,15 +13,18 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        User::firstOrCreate(
+        $user = User::firstOrCreate(
             ['email' => 'student@example.com'],
             [
                 'name' => 'Demo Student',
                 'password' => Hash::make('password'),
                 'phone' => '+964-1-234-5681',
+                'active_role' => 'student',
                 'is_active' => true,
                 'email_verified_at' => now(),
             ]
         );
+
+        $user->ensureDefaultAppRole();
     }
 }

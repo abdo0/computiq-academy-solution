@@ -7,45 +7,26 @@ import { useAppNavigate } from '../../hooks/useAppNavigate';
 
 interface CategoryCardsProps {
     sectionData?: HomeSection;
+    categories?: any[];
     isLoading?: boolean;
 }
 
-const FeaturesBand: React.FC<CategoryCardsProps> = ({ sectionData, isLoading = false }) => {
+const FeaturesBand: React.FC<CategoryCardsProps> = ({ sectionData, categories = [], isLoading = false }) => {
     const { language } = useLanguage();
-    const { __, t } = useTranslation();
+    const { __ } = useTranslation();
     const navigate = useAppNavigate();
     const isRTL = language === 'ar' || language === 'ku';
 
-    // Using images that match the screenshot's concept of desk/laptops/books
-    const defaultCategories = [
-        { 
-            image: "https://images.unsplash.com/photo-1434493789847-2f02dc6cf6be?q=80&w=400&auto=format&fit=crop", 
-            title: __('Cat personal dev') || 'التطوير الذاتي',
-            count: 11074,
-            link: '/courses'
-        },
-        { 
-            image: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=400&auto=format&fit=crop", 
-            title: __('Cat engineering') || 'هندسة',
-            count: 12240,
-            link: '/courses'
-        },
-        { 
-            image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=400&auto=format&fit=crop", 
-            title: __('Cat business') || 'تأسيس بزنس',
-            count: 535,
-            link: '/courses'
-        },
-    ];
-
-    const apiCategories = sectionData?.extra_data?.categories?.map((cat: any) => ({
-        image: cat.image,
-        title: t(cat.title),
-        count: cat.count,
-        link: cat.link || '/courses'
-    }));
-
-    const categoriesToDisplay = apiCategories || defaultCategories;
+    const fallbackCategoryImage = 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=400&auto=format&fit=crop';
+    const categoriesToDisplay = categories
+        .filter((category: any) => Number(category?.courses_count || 0) > 0)
+        .map((category: any) => ({
+            id: category.id,
+            image: category.image,
+            title: category.name?.[language as 'en' | 'ar' | 'ku'] || category.name?.en || category.slug,
+            count: Number(category.courses_count || 0),
+            link: `/courses?category=${encodeURIComponent(category.slug)}`,
+        }));
 
     const mainTitle = sectionData?.title?.[language as 'en' | 'ar' | 'ku'] || sectionData?.title?.['en'] || 'تعلم وطور أهم المهارات الشخصية والمهنية';
     const subTitle = sectionData?.description?.[language as 'en' | 'ar' | 'ku'] || sectionData?.description?.['en'] || 'عدد كبير من التخصصات بانتظارك';
@@ -94,10 +75,12 @@ const FeaturesBand: React.FC<CategoryCardsProps> = ({ sectionData, isLoading = f
                     {categoriesToDisplay.map((cat: any, idx: number) => {
                         const imageSrc = cat.image?.startsWith('http') || cat.image?.startsWith('data:') 
                                             ? cat.image 
-                                            : `/storage/${cat.image}`;
+                                            : cat.image
+                                                ? `/storage/${cat.image}`
+                                                : fallbackCategoryImage;
                         return (
                             <div 
-                                key={idx}
+                                key={cat.id || idx}
                                 onClick={() => navigate(cat.link)}
                                 className="group relative rounded-md overflow-hidden cursor-pointer min-h-[300px] lg:min-h-[340px] flex flex-col justify-end p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.12)] transition-all duration-500 hover:-translate-y-1.5 border border-transparent hover:border-white/20"
                             >
@@ -109,7 +92,7 @@ const FeaturesBand: React.FC<CategoryCardsProps> = ({ sectionData, isLoading = f
                                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                                         loading="lazy"
                                         onError={(e) => {
-                                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=400&auto=format&fit=crop';
+                                            (e.target as HTMLImageElement).src = fallbackCategoryImage;
                                         }}
                                     />
                                     {/* Heavy vignette gradient for text legibility */}
@@ -123,7 +106,7 @@ const FeaturesBand: React.FC<CategoryCardsProps> = ({ sectionData, isLoading = f
                                             {cat.title}
                                         </h3>
                                         <p className="text-sm font-bold text-gray-300 drop-shadow-md bg-white/10 backdrop-blur-md px-3 py-1 rounded-xl inline-block">
-                                            {cat.count} {__('Course')}
+                                            {cat.count} {__('Courses')}
                                         </p>
                                     </div>
                                     <div className="w-12 h-12 flex-shrink-0 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-white group-hover:bg-brand-600 group-hover:border-brand-500 transition-all duration-300 shadow-lg group-hover:shadow-brand-600/50 group-hover:scale-110">

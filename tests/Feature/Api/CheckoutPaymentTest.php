@@ -116,6 +116,33 @@ class CheckoutPaymentTest extends TestCase
             ->assertJsonPath('data.promo.code', 'SAVE10');
     }
 
+    public function test_guest_can_quote_checkout_from_session_cart(): void
+    {
+        $course = $this->createCourse('guest-quote-course', 175);
+
+        $this->withSession([
+            'guest_cart.course_ids' => [$course->id],
+        ])->postJson('/api/v1/checkout/quote', [
+            'payment_gateway_id' => $this->gateway->id,
+        ])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.count', 1)
+            ->assertJsonPath('data.items.0.course_id', (string) $course->id)
+            ->assertJsonPath('data.totals.subtotal_before_discount', '175.00');
+    }
+
+    public function test_guest_cannot_initiate_checkout_without_authentication(): void
+    {
+        $course = $this->createCourse('guest-initiate-course', 175);
+
+        $this->withSession([
+            'guest_cart.course_ids' => [$course->id],
+        ])->postJson('/api/v1/checkout/initiate', [
+            'payment_gateway_id' => $this->gateway->id,
+        ])->assertUnauthorized();
+    }
+
     public function test_checkout_quote_rejects_expired_promo_code(): void
     {
         $course = $this->createCourse('course-expired', 120);

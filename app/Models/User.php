@@ -6,6 +6,7 @@ namespace App\Models;
 use App\Traits\ActivityLoggable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -15,6 +16,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Spatie\Permission\Models\Role as SpatieRole;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements HasMedia
@@ -29,9 +31,11 @@ class User extends Authenticatable implements HasMedia
      */
     protected $fillable = [
         'name',
+        'real_name',
         'employment_id',
         'email',
         'is_active',
+        'active_role',
         'locale',
         'language',
         'phone',
@@ -40,6 +44,8 @@ class User extends Authenticatable implements HasMedia
         'profile_photo_path',
 
         'password',
+        'provider',
+        'provider_id',
         'last_activity_at',
         'country_code',
     ];
@@ -67,8 +73,17 @@ class User extends Authenticatable implements HasMedia
             'email_verified_at' => 'datetime',
             // 'password' => 'hashed',
             'is_active' => 'boolean',
-
+            'active_role' => 'string',
             'last_activity_at' => 'datetime',
+        ];
+    }
+
+    public static function appRoleMap(): array
+    {
+        return [
+            'student' => 'Student',
+            'hr' => 'HR',
+            'organization' => 'Organization',
         ];
     }
 
@@ -77,6 +92,7 @@ class User extends Authenticatable implements HasMedia
     {
         return [
             'name',
+            'real_name',
             'email',
         ];
     }
@@ -176,5 +192,49 @@ class User extends Authenticatable implements HasMedia
     public function courseCertificates(): HasMany
     {
         return $this->hasMany(CourseCertificate::class);
+    }
+
+    public function studentProfile(): HasOne
+    {
+        return $this->hasOne(StudentProfile::class);
+    }
+
+    public function ensureDefaultAppRole(): void
+    {
+        if (! $this->roles()->where('guard_name', $this->guard_name)->exists()) {
+            $this->assignRole(
+                SpatieRole::findOrCreate(self::appRoleMap()['student'], $this->guard_name)
+            );
+        }
+
+        if (! $this->active_role) {
+            $this->forceFill(['active_role' => 'student'])->save();
+        }
+    }
+
+    public function availableAppRoles(): array
+    {
+        $assignedRoleNames = $this->roles()
+            ->where('guard_name', $this->guard_name)
+            ->pluck('name')
+            ->all();
+
+        $availableRoles = [];
+
+        foreach (self::appRoleMap() as $slug => $roleName) {
+            if (in_array($roleName, $assignedRoleNames, true)) {
+                $availableRoles[] = $slug;
+            }
+        }
+
+        return $availableRoles ?: ['student'];
+    }
+
+    public function resolvedActiveRole(): string
+    {
+        $availableRoles = $this->availableAppRoles();
+        $activeRole = $this->active_role ?: 'student';
+
+        return in_array($activeRole, $availableRoles, true) ? $activeRole : 'student';
     }
 }

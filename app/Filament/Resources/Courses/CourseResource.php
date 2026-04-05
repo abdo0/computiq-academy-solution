@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Courses;
 use App\Filament\Resources\Courses\Pages\CreateCourse;
 use App\Filament\Resources\Courses\Pages\EditCourse;
 use App\Filament\Resources\Courses\Pages\ListCourses;
+use App\Filament\Resources\Courses\RelationManagers\CertificateTemplatesRelationManager;
 use App\Filament\Resources\Courses\RelationManagers\CourseExamsRelationManager;
 use App\Filament\Resources\Courses\RelationManagers\ModulesRelationManager;
 use App\Filament\Resources\Courses\Schemas\CourseForm;
@@ -63,6 +64,7 @@ class CourseResource extends Resource
         return [
             ModulesRelationManager::class,
             CourseExamsRelationManager::class,
+            CertificateTemplatesRelationManager::class,
         ];
     }
 
